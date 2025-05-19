@@ -1,5 +1,5 @@
 import unittest
-import pytemplate.main as main
+import energyunits.main as main
 
 
 class TestMain(unittest.TestCase):

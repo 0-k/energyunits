@@ -2,9 +2,6 @@ name: build
 
 on: [push]
 
-env:
-  CONFIG_PATH: ./examples/config.yml
-
 jobs:
   build:
 
