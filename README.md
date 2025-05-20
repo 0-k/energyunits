@@ -1,27 +1,28 @@
-# python-template
+# EnergyUnits
 
-[![CI](https://github.com/0-k/python-template/actions/workflows/workflow.yml/badge.svg)](https://github.com/0-k/python-template/actions/workflows/workflow.yml)
-[![codecov](https://codecov.io/gh/0-k/python-template/branch/master/graph/badge.svg)](https://codecov.io/gh/0-k/python-template)
+[![CI](https://github.com/0-k/energyunits/actions/workflows/workflow.yml/badge.svg)](https://github.com/0-k/energyunits/actions/workflows/workflow.yml)
+[![codecov](https://codecov.io/gh/0-k/energyunits/branch/master/graph/badge.svg)](https://codecov.io/gh/0-k/energyunits)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 
-Project template in Python
+A Python library for handling units, conversions, and calculations in energy system modeling.
 
-# Build a distribution manually
+## Features (under development)
 
-Be sure to install the development requirements:
-`pip install -r requirements-dev.txt`
+- Energy unit conversions (kWh, MWh, GJ, etc.)
+- Heating value (LHV/HHV) conversions
+- Carbon intensity calculations
+- Fuel property database
+- Energy density calculations
+- Currency conversion and inflation adjustments
+- Pandas integration for dataframe operations
+- Unit tests and code coverage
 
-To build, execute:
-`python3 -m build`
+## Installation
 
-To upload to PyPI (test):
-`python3 -m twine upload --repository testpypi dist/*`
-
-
-## TODO
-
-* Add todo items here
+```bash
+pip install energyunits
+```
 
 ## Credits
 

@@ -3,19 +3,35 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pytemplate"
+name = "energyunits"
 version = "0.0.1"
 authors = [
   { name="Martin Klein", email="hi@martinklein.co" },
 ]
-description = "Python template"
+description = "A Python library for handling units, conversions, and calculations in energy system modeling."
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = ["pyyaml"]
+keywords = ["energy", "units", "conversion", "modeling"]
+license = "MIT"
+dependencies = [
+    "numpy>=1.26.0",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+pandas = ["pandas>=2.0.0"]
+dev = [
+    "black>=24.3.0",
+    "isort>=5.12.0",
+    "sphinx>=7.0.0",
+    "build>=1.0.0",
+    "twine>=4.0.0",
+    "flake8>=6.0.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
 ]
 
 [project.urls]
