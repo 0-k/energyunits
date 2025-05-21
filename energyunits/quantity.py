@@ -1,12 +1,20 @@
+"""
+Improved Quantity class with simplified unit conversion methods.
+"""
+
 import numpy as np
+from typing import Union, Optional, List, Any
 from .registry import registry
-from .substance import substance_registry
 
 
 class Quantity:
     """A physical quantity with value and unit."""
 
-    def __init__(self, value, unit, substance=None, basis=None, reference_year=None):
+    def __init__(self, value: Union[float, int, List[float], np.ndarray],
+                 unit: str,
+                 substance: Optional[str] = None,
+                 basis: Optional[str] = None,
+                 reference_year: Optional[int] = None):
         """Initialize a physical quantity.
 
         Args:
@@ -25,8 +33,8 @@ class Quantity:
         # Get dimension from registry
         self.dimension = registry.get_dimension(unit)
 
-    def to(self, target_unit):
-        """Convert to another unit with the same dimension.
+    def to(self, target_unit: str) -> 'Quantity':
+        """Convert to another unit (same or compatible dimension).
 
         Args:
             target_unit: Target unit to convert to
@@ -34,73 +42,25 @@ class Quantity:
         Returns:
             A new Quantity object with converted value and target unit
         """
-        # Check if it's a substance-specific conversion between dimensions
-        if self.substance and registry.get_dimension(self.unit) != registry.get_dimension(target_unit):
-            # Handle special conversions based on substance properties
-            if (registry.get_dimension(self.unit) == "MASS" and
-                    registry.get_dimension(target_unit) == "VOLUME"):
-                # Convert mass to volume using density
-                # Get substance density (kg/m3)
-                density = substance_registry.get_density(self.substance)
+        # Get the dimensions
+        from_dim = self.dimension
+        to_dim = registry.get_dimension(target_unit)
 
-                # Convert to standard units (t -> kg, m3)
-                mass_kg = self.to("kg").value
+        # Case 1: Same dimension - standard conversion
+        if from_dim == to_dim:
+            # Get conversion factor from registry
+            factor = registry.get_conversion_factor(self.unit, target_unit)
+            # Apply conversion
+            new_value = self.value * factor
 
-                # Calculate volume in m3
-                volume_m3 = mass_kg / density
-
-                # Convert to target volume unit if not m3
-                if target_unit != "m3":
-                    factor = registry.get_conversion_factor("m3", target_unit)
-                    volume = volume_m3 * factor
-                else:
-                    volume = volume_m3
-
-                return Quantity(
-                    volume,
-                    target_unit,
-                    self.substance,
-                    self.basis,
-                    self.reference_year
-                )
-
-            elif (registry.get_dimension(self.unit) == "VOLUME" and
-                  registry.get_dimension(target_unit) == "MASS"):
-                # Convert volume to mass using density
-                # Get substance density (kg/m3)
-                density = substance_registry.get_density(self.substance)
-
-                # Convert to standard unit (m3)
-                volume_m3 = self.to("m3").value
-
-                # Calculate mass in kg
-                mass_kg = volume_m3 * density
-
-                # Convert to target mass unit
-                if target_unit != "kg":
-                    factor = registry.get_conversion_factor("kg", target_unit)
-                    mass = mass_kg * factor
-                else:
-                    mass = mass_kg
-
-                return Quantity(
-                    mass,
-                    target_unit,
-                    self.substance,
-                    self.basis,
-                    self.reference_year
-                )
-
-            else:
-                raise ValueError(
-                    f"Cannot convert from {self.unit} to {target_unit} for {self.substance}")
-
-        # Regular conversion for compatible units
-        # Get conversion factor from registry
-        factor = registry.get_conversion_factor(self.unit, target_unit)
-
-        # Apply conversion
-        new_value = self.value * factor
+        # Case 2: Different but compatible dimensions
+        elif registry.are_dimensions_compatible(from_dim, to_dim):
+            # Use the dimension relationship to convert
+            new_value = registry.convert_between_dimensions(
+                self.value, self.unit, target_unit, self.substance)
+        else:
+            raise ValueError(f"Cannot convert from {self.unit} ({from_dim}) to "
+                             f"{target_unit} ({to_dim})")
 
         # Return new quantity with same metadata
         return Quantity(
@@ -111,7 +71,7 @@ class Quantity:
             self.reference_year
         )
 
-    def for_duration(self, hours):
+    def for_duration(self, hours: float) -> 'Quantity':
         """Convert power to energy for a specified duration.
 
         Args:
@@ -120,25 +80,19 @@ class Quantity:
         Returns:
             Energy quantity
         """
-        if registry.get_dimension(self.unit) != "POWER":
+        if self.dimension != "POWER":
             raise ValueError(
                 f"for_duration only applies to power units, not {self.unit}")
 
-        # Map power unit to corresponding energy unit
-        power_to_energy = {
-            "W": "Wh",
-            "kW": "kWh",
-            "MW": "MWh",
-            "GW": "GWh",
-            "TW": "TWh",
-        }
+        # Get the corresponding energy unit
+        try:
+            energy_unit = registry.get_corresponding_unit(self.unit, "ENERGY")
+        except ValueError:
+            energy_unit = "MWh"  # Default if no direct correspondence
 
-        energy_unit = power_to_energy.get(self.unit)
-        if not energy_unit:
-            raise ValueError(f"No corresponding energy unit for {self.unit}")
-
-        # Power * time = energy
-        energy_value = self.value * hours
+        # Convert power to energy
+        energy_value = registry.convert_between_dimensions(
+            self.value, self.unit, energy_unit, self.substance, hours=hours)
 
         return Quantity(
             energy_value,
@@ -148,7 +102,7 @@ class Quantity:
             self.reference_year
         )
 
-    def average_power(self, hours):
+    def average_power(self, hours: float) -> 'Quantity':
         """Calculate average power from energy over a specified duration.
 
         Args:
@@ -157,34 +111,19 @@ class Quantity:
         Returns:
             Power quantity
         """
-        if registry.get_dimension(self.unit) != "ENERGY":
+        if self.dimension != "ENERGY":
             raise ValueError(
                 f"average_power only applies to energy units, not {self.unit}")
 
-        # Map energy unit to corresponding power unit
-        energy_to_power = {
-            "Wh": "W",
-            "kWh": "kW",
-            "MWh": "MW",
-            "GWh": "GW",
-            "TWh": "TW",
-        }
+        # Get the corresponding power unit
+        try:
+            power_unit = registry.get_corresponding_unit(self.unit, "POWER")
+        except ValueError:
+            power_unit = "MW"  # Default if no direct correspondence
 
-        power_unit = energy_to_power.get(self.unit)
-        if not power_unit:
-            # Convert to MWh first, then to MW
-            energy_mwh = self.to("MWh")
-            power_value = energy_mwh.value / hours
-            return Quantity(
-                power_value,
-                "MW",
-                self.substance,
-                self.basis,
-                self.reference_year
-            )
-
-        # Energy / time = power
-        power_value = self.value / hours
+        # Convert energy to power
+        power_value = registry.convert_between_dimensions(
+            self.value, self.unit, power_unit, self.substance, hours=hours)
 
         return Quantity(
             power_value,
@@ -194,7 +133,7 @@ class Quantity:
             self.reference_year
         )
 
-    def energy_content(self, basis="HHV"):
+    def energy_content(self, basis: str = "HHV") -> 'Quantity':
         """Calculate energy content based on substance properties.
 
         Args:
@@ -203,11 +142,13 @@ class Quantity:
         Returns:
             Energy quantity in MWh
         """
+        from .substance import substance_registry
+
         result = substance_registry.calculate_energy_content(self, basis)
         result.basis = basis
         return result
 
-    def to_lhv(self):
+    def to_lhv(self) -> 'Quantity':
         """Convert energy from HHV to LHV basis.
 
         Returns:
@@ -221,6 +162,8 @@ class Quantity:
 
         if self.substance is None:
             raise ValueError("Substance must be specified for HHV/LHV conversion")
+
+        from .substance import substance_registry
 
         # Get ratio of LHV to HHV
         ratio = substance_registry.get_lhv_hhv_ratio(self.substance)
@@ -237,7 +180,7 @@ class Quantity:
             self.reference_year
         )
 
-    def to_hhv(self):
+    def to_hhv(self) -> 'Quantity':
         """Convert energy from LHV to HHV basis.
 
         Returns:
@@ -251,6 +194,8 @@ class Quantity:
 
         if self.substance is None:
             raise ValueError("Substance must be specified for LHV/HHV conversion")
+
+        from .substance import substance_registry
 
         # Get ratio of LHV to HHV
         ratio = substance_registry.get_lhv_hhv_ratio(self.substance)
@@ -267,7 +212,7 @@ class Quantity:
             self.reference_year
         )
 
-    def usable_energy(self, moisture_content=None):
+    def usable_energy(self, moisture_content: Optional[float] = None) -> 'Quantity':
         """Calculate usable energy considering moisture content.
 
         Args:
@@ -279,6 +224,8 @@ class Quantity:
         """
         if self.substance is None:
             raise ValueError("Substance must be specified for usable energy calculation")
+
+        from .substance import substance_registry
 
         # Calculate energy content (LHV basis)
         energy = self.energy_content(basis="LHV")
@@ -308,13 +255,15 @@ class Quantity:
             self.reference_year
         )
 
-    def calculate_emissions(self):
+    def calculate_emissions(self) -> 'Quantity':
         """Calculate CO2 emissions for this energy quantity.
 
         Returns:
             Quantity object with CO2 emissions in t
         """
-        if registry.get_dimension(self.unit) != "ENERGY":
+        from .substance import substance_registry
+
+        if self.dimension != "ENERGY":
             # Try to convert to energy first if possible
             if self.substance:
                 energy = self.energy_content()
@@ -325,7 +274,7 @@ class Quantity:
 
         return substance_registry.calculate_emissions(self)
 
-    def adjust_inflation(self, target_year):
+    def adjust_inflation(self, target_year: int) -> 'Quantity':
         """Adjust a cost quantity for inflation.
 
         Args:
@@ -356,20 +305,20 @@ class Quantity:
             target_year
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         """String representation."""
         if self.substance:
             return f"{self.value} {self.unit} of {self.substance}"
         return f"{self.value} {self.unit}"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Detailed representation."""
         substance_str = f", '{self.substance}'" if self.substance else ""
         basis_str = f", basis='{self.basis}'" if self.basis else ""
         ref_year_str = f", reference_year={self.reference_year}" if self.reference_year else ""
         return f"Quantity({self.value}, '{self.unit}'{substance_str}{basis_str}{ref_year_str})"
 
-    def __add__(self, other):
+    def __add__(self, other: 'Quantity') -> 'Quantity':
         """Add two quantities with compatible units."""
         if not isinstance(other, Quantity):
             raise TypeError(f"Cannot add Quantity and {type(other)}")
@@ -399,7 +348,7 @@ class Quantity:
             self.reference_year
         )
 
-    def __mul__(self, other):
+    def __mul__(self, other: Union[int, float]) -> 'Quantity':
         """Multiply quantity by a scalar."""
         if isinstance(other, Quantity):
             raise NotImplementedError(
@@ -414,33 +363,36 @@ class Quantity:
             self.reference_year
         )
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: Union[int, float]) -> 'Quantity':
         """Right multiplication by scalar."""
         return self.__mul__(other)
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: Union['Quantity', int, float]) -> 'Quantity':
         """Division operator."""
         if isinstance(other, Quantity):
-            # Energy / time special case
-            if (self.dimension == "ENERGY" and
-                    other.dimension == "TIME"):
-                if self.unit == "MWh" and other.unit == "h":
-                    return Quantity(
-                        self.value / other.value,
-                        "MW",
-                        self.substance,
-                        self.basis,
-                        self.reference_year
-                    )
+            # Special case: Energy / Time = Power
+            if (self.dimension == "ENERGY" and other.dimension == "TIME"):
+                # Try to get the corresponding power unit
+                try:
+                    power_unit = registry.get_corresponding_unit(self.unit, "POWER")
+                except ValueError:
+                    power_unit = "MW"  # Default to MW if no correspondence
 
-                # Handle other energy/time combinations
-                # Convert both to standard units (MWh/h) first
+                # Convert both to standard units
                 energy_mwh = self.to("MWh")
                 time_h = other.to("h")
-                power_mw = energy_mwh.value / time_h.value
+
+                # Calculate power
+                power_value = energy_mwh.value / time_h.value
+
+                # Convert to target power unit if needed
+                if power_unit != "MW":
+                    factor = registry.get_conversion_factor("MW", power_unit)
+                    power_value = power_value * factor
+
                 return Quantity(
-                    power_mw,
-                    "MW",
+                    power_value,
+                    power_unit,
                     self.substance,
                     self.basis,
                     self.reference_year
@@ -464,34 +416,34 @@ class Quantity:
                 self.reference_year
             )
 
-    def __lt__(self, other):
+    def __lt__(self, other: 'Quantity') -> bool:
         """Less than comparison."""
         other_converted = other.to(self.unit)
         return np.all(self.value < other_converted.value)
 
-    def __gt__(self, other):
+    def __gt__(self, other: 'Quantity') -> bool:
         """Greater than comparison."""
         other_converted = other.to(self.unit)
         return np.all(self.value > other_converted.value)
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'Quantity') -> bool:
         """Equal comparison."""
         if not isinstance(other, Quantity):
             return False
         other_converted = other.to(self.unit)
         return np.all(self.value == other_converted.value)
 
-    def __le__(self, other):
+    def __le__(self, other: 'Quantity') -> bool:
         """Less than or equal comparison."""
         other_converted = other.to(self.unit)
         return np.all(self.value <= other_converted.value)
 
-    def __ge__(self, other):
+    def __ge__(self, other: 'Quantity') -> bool:
         """Greater than or equal comparison."""
         other_converted = other.to(self.unit)
         return np.all(self.value >= other_converted.value)
 
-    def __ne__(self, other):
+    def __ne__(self, other: 'Quantity') -> bool:
         """Not equal comparison."""
         if not isinstance(other, Quantity):
             return True
