@@ -264,8 +264,8 @@ class TestPandasIntegration:
         """Test integration with pandas DataFrames."""
         import pandas as pd
 
-        from energyunits.pandas import (add_units, calculate_emissions,
-                                        convert_units)
+        from energyunits.pandas_tools import (add_units, calculate_emissions,
+                                              convert_units)
 
         # Create dataframe
         df = pd.DataFrame(
