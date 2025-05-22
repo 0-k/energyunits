@@ -43,11 +43,11 @@ class TestQuantityBasics:
         """Test string and repr methods."""
         # Simple case
         q = Quantity(100, "MWh")
-        assert str(q) == "100 MWh"
+        assert str(q) == "100.00 MWh"
 
         # With substance
         q = Quantity(100, "t", "coal")
-        assert str(q) == "100 t of coal"
+        assert str(q) == "100.00 t of coal"
 
         # Repr should include more details
         q = Quantity(100, "MWh", "natural_gas", "HHV", 2020)

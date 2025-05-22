@@ -61,10 +61,10 @@ class UnitRegistry:
         # Conversion factors to domain-appropriate base units
         self._conversion_factors = {
             # Energy (base: MWh)
-            "J": 2.77778e-10,  # 1 J = 2.77778e-10 MWh
-            "kJ": 2.77778e-7,  # 1 kJ = 2.77778e-7 MWh
-            "MJ": 0.000277778,  # 1 MJ = 0.000277778 MWh
-            "GJ": 0.277778,  # 1 GJ = 0.277778 MWh
+            "J": 1e-9/3.6,  # 1 J = 2.77778e-10 MWh
+            "kJ": 1e-6/3.6,  # 1 kJ = 2.77778e-7 MWh
+            "MJ": 1e-3/3.6,  # 1 MJ = 0.000277778 MWh
+            "GJ": 1/3.6,  # 1 GJ = 0.277778 MWh
             "TJ": 277.778,  # 1 TJ = 277.778 MWh
             "PJ": 277778.0,  # 1 PJ = 277,778 MWh
             "EJ": 277778000.0,  # 1 EJ = 277,778,000 MWh

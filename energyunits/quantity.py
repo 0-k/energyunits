@@ -299,8 +299,8 @@ class Quantity:
     def __str__(self) -> str:
         """String representation."""
         if self.substance:
-            return f"{self.value} {self.unit} of {self.substance}"
-        return f"{self.value} {self.unit}"
+            return f"{self.value:.2f} {self.unit} of {self.substance}"
+        return f"{self.value:.2f} {self.unit}"
 
     def __repr__(self) -> str:
         """Detailed representation."""
