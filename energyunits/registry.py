@@ -2,8 +2,9 @@
 Enhanced unit registry with improved conversion logic and dimension relationships.
 """
 
+from typing import Any, Callable, Dict, Optional, Tuple
+
 import numpy as np
-from typing import Dict, Tuple, Optional, Callable, Any
 
 
 class UnitRegistry:
@@ -28,32 +29,27 @@ class UnitRegistry:
             "TWh": "ENERGY",
             "PWh": "ENERGY",
             "MMBTU": "ENERGY",
-
             # Power
             "W": "POWER",
             "kW": "POWER",
             "MW": "POWER",
             "GW": "POWER",
             "TW": "POWER",
-
             # Mass
             "g": "MASS",
             "kg": "MASS",
             "t": "MASS",
             "Mt": "MASS",
             "Gt": "MASS",
-
             # Volume
             "m3": "VOLUME",
             "L": "VOLUME",
             "barrel": "VOLUME",
-
             # Time
             "s": "TIME",
             "min": "TIME",
             "h": "TIME",
             "a": "TIME",
-
             # Currency
             "USD": "CURRENCY",
             "EUR": "CURRENCY",
@@ -65,65 +61,57 @@ class UnitRegistry:
         # Conversion factors to domain-appropriate base units
         self._conversion_factors = {
             # Energy (base: MWh)
-            "J": 2.77778e-10,      # 1 J = 2.77778e-10 MWh
-            "kJ": 2.77778e-7,      # 1 kJ = 2.77778e-7 MWh
-            "MJ": 0.000277778,     # 1 MJ = 0.000277778 MWh
-            "GJ": 0.277778,        # 1 GJ = 0.277778 MWh
-            "TJ": 277.778,         # 1 TJ = 277.778 MWh
-            "PJ": 277778.0,        # 1 PJ = 277,778 MWh
-            "EJ": 277778000.0,     # 1 EJ = 277,778,000 MWh
-            "Wh": 0.000001,        # 1 Wh = 0.000001 MWh
-            "kWh": 0.001,          # 1 kWh = 0.001 MWh
-            "MWh": 1.0,            # 1 MWh = 1.0 MWh
-            "GWh": 1000.0,         # 1 GWh = 1,000 MWh
-            "TWh": 1000000.0,      # 1 TWh = 1,000,000 MWh
-            "PWh": 1000000000.0,   # 1 PWh = 1,000,000,000 MWh
-            "MMBTU": 0.293071,     # 1 MMBTU = 0.293071 MWh
-
+            "J": 2.77778e-10,  # 1 J = 2.77778e-10 MWh
+            "kJ": 2.77778e-7,  # 1 kJ = 2.77778e-7 MWh
+            "MJ": 0.000277778,  # 1 MJ = 0.000277778 MWh
+            "GJ": 0.277778,  # 1 GJ = 0.277778 MWh
+            "TJ": 277.778,  # 1 TJ = 277.778 MWh
+            "PJ": 277778.0,  # 1 PJ = 277,778 MWh
+            "EJ": 277778000.0,  # 1 EJ = 277,778,000 MWh
+            "Wh": 0.000001,  # 1 Wh = 0.000001 MWh
+            "kWh": 0.001,  # 1 kWh = 0.001 MWh
+            "MWh": 1.0,  # 1 MWh = 1.0 MWh
+            "GWh": 1000.0,  # 1 GWh = 1,000 MWh
+            "TWh": 1000000.0,  # 1 TWh = 1,000,000 MWh
+            "PWh": 1000000000.0,  # 1 PWh = 1,000,000,000 MWh
+            "MMBTU": 0.293071,  # 1 MMBTU = 0.293071 MWh
             # Power (base: MW)
-            "W": 0.000001,         # 1 W = 0.000001 MW
-            "kW": 0.001,           # 1 kW = 0.001 MW
-            "MW": 1.0,             # 1 MW = 1.0 MW
-            "GW": 1000.0,          # 1 GW = 1,000 MW
-            "TW": 1000000.0,       # 1 TW = 1,000,000 MW
-
+            "W": 0.000001,  # 1 W = 0.000001 MW
+            "kW": 0.001,  # 1 kW = 0.001 MW
+            "MW": 1.0,  # 1 MW = 1.0 MW
+            "GW": 1000.0,  # 1 GW = 1,000 MW
+            "TW": 1000000.0,  # 1 TW = 1,000,000 MW
             # Mass (base: t)
-            "g": 0.000001,         # 1 g = 0.000001 t
-            "kg": 0.001,           # 1 kg = 0.001 t
-            "t": 1.0,              # 1 t = 1.0 t
-            "Mt": 1000000.0,       # 1 Mt = 1,000,000 t
-            "Gt": 1000000000.0,    # 1 Gt = 1,000,000,000 t
-
+            "g": 0.000001,  # 1 g = 0.000001 t
+            "kg": 0.001,  # 1 kg = 0.001 t
+            "t": 1.0,  # 1 t = 1.0 t
+            "Mt": 1000000.0,  # 1 Mt = 1,000,000 t
+            "Gt": 1000000000.0,  # 1 Gt = 1,000,000,000 t
             # Volume (base: m3)
-            "m3": 1.0,             # 1 m3 = 1.0 m3
-            "L": 0.001,            # 1 L = 0.001 m3
-            "barrel": 0.159,       # 1 barrel = 0.159 m3 (oil barrel)
-
+            "m3": 1.0,  # 1 m3 = 1.0 m3
+            "L": 0.001,  # 1 L = 0.001 m3
+            "barrel": 0.159,  # 1 barrel = 0.159 m3 (oil barrel)
             # Time (base: h)
-            "s": 1 / 3600,         # 1 s = 1/3600 h
-            "min": 1 / 60,         # 1 min = 1/60 h
-            "h": 1.0,              # 1 h = 1.0 h
-            "a": 8760,             # 1 a (year) = 8760 h
-
+            "s": 1 / 3600,  # 1 s = 1/3600 h
+            "min": 1 / 60,  # 1 min = 1/60 h
+            "h": 1.0,  # 1 h = 1.0 h
+            "a": 8760,  # 1 a (year) = 8760 h
             # Currency (base: USD)
-            "USD": 1.0,            # 1 USD = 1.0 USD
-            "EUR": 1.08,           # 1 EUR = 1.08 USD (approximate)
-            "GBP": 1.27,           # 1 GBP = 1.27 USD (approximate)
-            "JPY": 0.0067,         # 1 JPY = 0.0067 USD (approximate)
-            "CNY": 0.14,           # 1 CNY = 0.14 USD (approximate)
+            "USD": 1.0,  # 1 USD = 1.0 USD
+            "EUR": 1.08,  # 1 EUR = 1.08 USD (approximate)
+            "GBP": 1.27,  # 1 GBP = 1.27 USD (approximate)
+            "JPY": 0.0067,  # 1 JPY = 0.0067 USD (approximate)
+            "CNY": 0.14,  # 1 CNY = 0.14 USD (approximate)
         }
 
         # Define relationships between dimensions
         self._dimension_relationships = {
             # Energy to Power
             ("ENERGY", "POWER"): self._energy_to_power,
-
             # Power to Energy
             ("POWER", "ENERGY"): self._power_to_energy,
-
             # Mass to Volume (requires substance properties)
             ("MASS", "VOLUME"): self._mass_to_volume,
-
             # Volume to Mass (requires substance properties)
             ("VOLUME", "MASS"): self._volume_to_mass,
         }
@@ -144,7 +132,6 @@ class UnitRegistry:
             "MW": "MWh",
             "GW": "GWh",
             "TW": "TWh",
-
             # Energy to Power
             "Wh": "W",
             "kWh": "kW",
@@ -158,7 +145,9 @@ class UnitRegistry:
         # Handle compound units
         if "/" in unit:
             numerator, denominator = unit.split("/", 1)
-            return f"{self.get_dimension(numerator)}_PER_{self.get_dimension(denominator)}"
+            return (
+                f"{self.get_dimension(numerator)}_PER_{self.get_dimension(denominator)}"
+            )
 
         if unit in self._dimensions:
             return self._dimensions[unit]
@@ -177,8 +166,14 @@ class UnitRegistry:
 
         return False
 
-    def convert_between_dimensions(self, value: float, from_unit: str, to_unit: str,
-                                  substance: Optional[str] = None, **kwargs) -> float:
+    def convert_between_dimensions(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        **kwargs,
+    ) -> float:
         """Convert a value between different but related dimensions.
 
         Args:
@@ -202,8 +197,15 @@ class UnitRegistry:
 
         raise ValueError(f"No conversion defined between {from_dim} and {to_dim}")
 
-    def _energy_to_power(self, value: float, from_unit: str, to_unit: str,
-                        substance: Optional[str] = None, hours: float = 1.0, **kwargs) -> float:
+    def _energy_to_power(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        hours: float = 1.0,
+        **kwargs,
+    ) -> float:
         """Convert energy to power by dividing by time (default = 1 hour)."""
         # Convert to standard units first (MWh)
         energy_mwh = value * self.get_conversion_factor(from_unit, "MWh")
@@ -214,8 +216,15 @@ class UnitRegistry:
         # Convert from MW to the target power unit
         return power_mw * self.get_conversion_factor("MW", to_unit)
 
-    def _power_to_energy(self, value: float, from_unit: str, to_unit: str,
-                         substance: Optional[str] = None, hours: float = 1.0, **kwargs) -> float:
+    def _power_to_energy(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        hours: float = 1.0,
+        **kwargs,
+    ) -> float:
         """Convert power to energy by multiplying by time (default = 1 hour)."""
         # Convert to standard units first (MW)
         power_mw = value * self.get_conversion_factor(from_unit, "MW")
@@ -226,14 +235,22 @@ class UnitRegistry:
         # Convert from MWh to the target energy unit
         return energy_mwh * self.get_conversion_factor("MWh", to_unit)
 
-    def _mass_to_volume(self, value: float, from_unit: str, to_unit: str,
-                        substance: Optional[str] = None, **kwargs) -> float:
+    def _mass_to_volume(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        **kwargs,
+    ) -> float:
         """Convert mass to volume using substance density."""
         # This requires the substance registry
         from .substance import substance_registry
 
         if substance is None:
-            raise ValueError("Substance must be specified for mass to volume conversion")
+            raise ValueError(
+                "Substance must be specified for mass to volume conversion"
+            )
 
         # Get substance density (kg/m3)
         density = substance_registry.get_density(substance)
@@ -247,14 +264,22 @@ class UnitRegistry:
         # Convert to target volume unit
         return volume_m3 * self.get_conversion_factor("m3", to_unit)
 
-    def _volume_to_mass(self, value: float, from_unit: str, to_unit: str,
-                        substance: Optional[str] = None, **kwargs) -> float:
+    def _volume_to_mass(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        **kwargs,
+    ) -> float:
         """Convert volume to mass using substance density."""
         # This requires the substance registry
         from .substance import substance_registry
 
         if substance is None:
-            raise ValueError("Substance must be specified for volume to mass conversion")
+            raise ValueError(
+                "Substance must be specified for volume to mass conversion"
+            )
 
         # Get substance density (kg/m3)
         density = substance_registry.get_density(substance)
@@ -293,7 +318,8 @@ class UnitRegistry:
 
         if from_factor is None or to_factor is None:
             raise ValueError(
-                f"Conversion factor not defined for {from_unit} or {to_unit}")
+                f"Conversion factor not defined for {from_unit} or {to_unit}"
+            )
 
         return from_factor / to_factor
 

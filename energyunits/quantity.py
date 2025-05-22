@@ -2,19 +2,24 @@
 Improved Quantity class with simplified unit conversion methods.
 """
 
+from typing import Any, List, Optional, Union
+
 import numpy as np
-from typing import Union, Optional, List, Any
+
 from .registry import registry
 
 
 class Quantity:
     """A physical quantity with value and unit."""
 
-    def __init__(self, value: Union[float, int, List[float], np.ndarray],
-                 unit: str,
-                 substance: Optional[str] = None,
-                 basis: Optional[str] = None,
-                 reference_year: Optional[int] = None):
+    def __init__(
+        self,
+        value: Union[float, int, List[float], np.ndarray],
+        unit: str,
+        substance: Optional[str] = None,
+        basis: Optional[str] = None,
+        reference_year: Optional[int] = None,
+    ):
         """Initialize a physical quantity.
 
         Args:
@@ -33,7 +38,7 @@ class Quantity:
         # Get dimension from registry
         self.dimension = registry.get_dimension(unit)
 
-    def to(self, target_unit: str) -> 'Quantity':
+    def to(self, target_unit: str) -> "Quantity":
         """Convert to another unit (same or compatible dimension).
 
         Args:
@@ -57,21 +62,20 @@ class Quantity:
         elif registry.are_dimensions_compatible(from_dim, to_dim):
             # Use the dimension relationship to convert
             new_value = registry.convert_between_dimensions(
-                self.value, self.unit, target_unit, self.substance)
+                self.value, self.unit, target_unit, self.substance
+            )
         else:
-            raise ValueError(f"Cannot convert from {self.unit} ({from_dim}) to "
-                             f"{target_unit} ({to_dim})")
+            raise ValueError(
+                f"Cannot convert from {self.unit} ({from_dim}) to "
+                f"{target_unit} ({to_dim})"
+            )
 
         # Return new quantity with same metadata
         return Quantity(
-            new_value,
-            target_unit,
-            self.substance,
-            self.basis,
-            self.reference_year
+            new_value, target_unit, self.substance, self.basis, self.reference_year
         )
 
-    def for_duration(self, hours: float) -> 'Quantity':
+    def for_duration(self, hours: float) -> "Quantity":
         """Convert power to energy for a specified duration.
 
         Args:
@@ -82,7 +86,8 @@ class Quantity:
         """
         if self.dimension != "POWER":
             raise ValueError(
-                f"for_duration only applies to power units, not {self.unit}")
+                f"for_duration only applies to power units, not {self.unit}"
+            )
 
         # Get the corresponding energy unit
         try:
@@ -92,17 +97,14 @@ class Quantity:
 
         # Convert power to energy
         energy_value = registry.convert_between_dimensions(
-            self.value, self.unit, energy_unit, self.substance, hours=hours)
-
-        return Quantity(
-            energy_value,
-            energy_unit,
-            self.substance,
-            self.basis,
-            self.reference_year
+            self.value, self.unit, energy_unit, self.substance, hours=hours
         )
 
-    def average_power(self, hours: float) -> 'Quantity':
+        return Quantity(
+            energy_value, energy_unit, self.substance, self.basis, self.reference_year
+        )
+
+    def average_power(self, hours: float) -> "Quantity":
         """Calculate average power from energy over a specified duration.
 
         Args:
@@ -113,7 +115,8 @@ class Quantity:
         """
         if self.dimension != "ENERGY":
             raise ValueError(
-                f"average_power only applies to energy units, not {self.unit}")
+                f"average_power only applies to energy units, not {self.unit}"
+            )
 
         # Get the corresponding power unit
         try:
@@ -123,17 +126,14 @@ class Quantity:
 
         # Convert energy to power
         power_value = registry.convert_between_dimensions(
-            self.value, self.unit, power_unit, self.substance, hours=hours)
-
-        return Quantity(
-            power_value,
-            power_unit,
-            self.substance,
-            self.basis,
-            self.reference_year
+            self.value, self.unit, power_unit, self.substance, hours=hours
         )
 
-    def energy_content(self, basis: str = "HHV") -> 'Quantity':
+        return Quantity(
+            power_value, power_unit, self.substance, self.basis, self.reference_year
+        )
+
+    def energy_content(self, basis: str = "HHV") -> "Quantity":
         """Calculate energy content based on substance properties.
 
         Args:
@@ -148,7 +148,7 @@ class Quantity:
         result.basis = basis
         return result
 
-    def to_lhv(self) -> 'Quantity':
+    def to_lhv(self) -> "Quantity":
         """Convert energy from HHV to LHV basis.
 
         Returns:
@@ -173,14 +173,10 @@ class Quantity:
 
         # Return new quantity
         return Quantity(
-            new_value,
-            self.unit,
-            self.substance,
-            "LHV",
-            self.reference_year
+            new_value, self.unit, self.substance, "LHV", self.reference_year
         )
 
-    def to_hhv(self) -> 'Quantity':
+    def to_hhv(self) -> "Quantity":
         """Convert energy from LHV to HHV basis.
 
         Returns:
@@ -205,14 +201,10 @@ class Quantity:
 
         # Return new quantity
         return Quantity(
-            new_value,
-            self.unit,
-            self.substance,
-            "HHV",
-            self.reference_year
+            new_value, self.unit, self.substance, "HHV", self.reference_year
         )
 
-    def usable_energy(self, moisture_content: Optional[float] = None) -> 'Quantity':
+    def usable_energy(self, moisture_content: Optional[float] = None) -> "Quantity":
         """Calculate usable energy considering moisture content.
 
         Args:
@@ -223,7 +215,9 @@ class Quantity:
             Energy quantity adjusted for moisture
         """
         if self.substance is None:
-            raise ValueError("Substance must be specified for usable energy calculation")
+            raise ValueError(
+                "Substance must be specified for usable energy calculation"
+            )
 
         from .substance import substance_registry
 
@@ -252,10 +246,10 @@ class Quantity:
             energy.unit,
             self.substance,
             "LHV",  # Usable energy is typically LHV
-            self.reference_year
+            self.reference_year,
         )
 
-    def calculate_emissions(self) -> 'Quantity':
+    def calculate_emissions(self) -> "Quantity":
         """Calculate CO2 emissions for this energy quantity.
 
         Returns:
@@ -270,11 +264,12 @@ class Quantity:
                 return energy.calculate_emissions()
             else:
                 raise ValueError(
-                    f"Cannot calculate emissions for {self.unit} without substance")
+                    f"Cannot calculate emissions for {self.unit} without substance"
+                )
 
         return substance_registry.calculate_emissions(self)
 
-    def adjust_inflation(self, target_year: int) -> 'Quantity':
+    def adjust_inflation(self, target_year: int) -> "Quantity":
         """Adjust a cost quantity for inflation.
 
         Args:
@@ -298,11 +293,7 @@ class Quantity:
 
         # Return adjusted quantity
         return Quantity(
-            adjusted_value,
-            self.unit,
-            self.substance,
-            self.basis,
-            target_year
+            adjusted_value, self.unit, self.substance, self.basis, target_year
         )
 
     def __str__(self) -> str:
@@ -315,10 +306,12 @@ class Quantity:
         """Detailed representation."""
         substance_str = f", '{self.substance}'" if self.substance else ""
         basis_str = f", basis='{self.basis}'" if self.basis else ""
-        ref_year_str = f", reference_year={self.reference_year}" if self.reference_year else ""
+        ref_year_str = (
+            f", reference_year={self.reference_year}" if self.reference_year else ""
+        )
         return f"Quantity({self.value}, '{self.unit}'{substance_str}{basis_str}{ref_year_str})"
 
-    def __add__(self, other: 'Quantity') -> 'Quantity':
+    def __add__(self, other: "Quantity") -> "Quantity":
         """Add two quantities with compatible units."""
         if not isinstance(other, Quantity):
             raise TypeError(f"Cannot add Quantity and {type(other)}")
@@ -340,19 +333,14 @@ class Quantity:
             basis = None  # Clear basis if mixing different bases
 
         # Return new quantity
-        return Quantity(
-            result_value,
-            self.unit,
-            substance,
-            basis,
-            self.reference_year
-        )
+        return Quantity(result_value, self.unit, substance, basis, self.reference_year)
 
-    def __mul__(self, other: Union[int, float]) -> 'Quantity':
+    def __mul__(self, other: Union[int, float]) -> "Quantity":
         """Multiply quantity by a scalar."""
         if isinstance(other, Quantity):
             raise NotImplementedError(
-                "Multiplication between quantities not implemented yet")
+                "Multiplication between quantities not implemented yet"
+            )
 
         # Scalar multiplication
         return Quantity(
@@ -360,18 +348,18 @@ class Quantity:
             self.unit,
             self.substance,
             self.basis,
-            self.reference_year
+            self.reference_year,
         )
 
-    def __rmul__(self, other: Union[int, float]) -> 'Quantity':
+    def __rmul__(self, other: Union[int, float]) -> "Quantity":
         """Right multiplication by scalar."""
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union['Quantity', int, float]) -> 'Quantity':
+    def __truediv__(self, other: Union["Quantity", int, float]) -> "Quantity":
         """Division operator."""
         if isinstance(other, Quantity):
             # Special case: Energy / Time = Power
-            if (self.dimension == "ENERGY" and other.dimension == "TIME"):
+            if self.dimension == "ENERGY" and other.dimension == "TIME":
                 # Try to get the corresponding power unit
                 try:
                     power_unit = registry.get_corresponding_unit(self.unit, "POWER")
@@ -395,7 +383,7 @@ class Quantity:
                     power_unit,
                     self.substance,
                     self.basis,
-                    self.reference_year
+                    self.reference_year,
                 )
 
             # General case - create compound unit
@@ -404,7 +392,7 @@ class Quantity:
                 f"{self.unit}/{other.unit}",
                 self.substance,
                 self.basis,
-                self.reference_year
+                self.reference_year,
             )
         else:
             # Division by scalar
@@ -413,37 +401,37 @@ class Quantity:
                 self.unit,
                 self.substance,
                 self.basis,
-                self.reference_year
+                self.reference_year,
             )
 
-    def __lt__(self, other: 'Quantity') -> bool:
+    def __lt__(self, other: "Quantity") -> bool:
         """Less than comparison."""
         other_converted = other.to(self.unit)
         return np.all(self.value < other_converted.value)
 
-    def __gt__(self, other: 'Quantity') -> bool:
+    def __gt__(self, other: "Quantity") -> bool:
         """Greater than comparison."""
         other_converted = other.to(self.unit)
         return np.all(self.value > other_converted.value)
 
-    def __eq__(self, other: 'Quantity') -> bool:
+    def __eq__(self, other: "Quantity") -> bool:
         """Equal comparison."""
         if not isinstance(other, Quantity):
             return False
         other_converted = other.to(self.unit)
         return np.all(self.value == other_converted.value)
 
-    def __le__(self, other: 'Quantity') -> bool:
+    def __le__(self, other: "Quantity") -> bool:
         """Less than or equal comparison."""
         other_converted = other.to(self.unit)
         return np.all(self.value <= other_converted.value)
 
-    def __ge__(self, other: 'Quantity') -> bool:
+    def __ge__(self, other: "Quantity") -> bool:
         """Greater than or equal comparison."""
         other_converted = other.to(self.unit)
         return np.all(self.value >= other_converted.value)
 
-    def __ne__(self, other: 'Quantity') -> bool:
+    def __ne__(self, other: "Quantity") -> bool:
         """Not equal comparison."""
         if not isinstance(other, Quantity):
             return True

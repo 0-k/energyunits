@@ -30,6 +30,7 @@ from .substance import substance_registry
 # Import pandas integration if pandas is available
 try:
     import pandas as pd
+
     from . import pandas_tools
 except ImportError:
     # Pandas integration is optional

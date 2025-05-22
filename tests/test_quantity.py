@@ -5,8 +5,9 @@ These tests focus on Quantity operations such as arithmetic,
 conversions, and special methods.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from energyunits import Quantity
 
 

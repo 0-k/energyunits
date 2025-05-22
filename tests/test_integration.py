@@ -5,8 +5,9 @@ These tests focus on realistic scenarios that combine multiple features
 to model energy systems and complex workflows.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from energyunits import Quantity
 
 
@@ -28,7 +29,9 @@ class TestEnergySystemModels:
         # Values should match
         assert annual_generation.value == pytest.approx(annual_generation_alt.value)
         assert annual_generation.unit == "GWh"
-        assert annual_generation.value == pytest.approx(7446)  # 1000 * 0.85 * 8760 / 1000
+        assert annual_generation.value == pytest.approx(
+            7446
+        )  # 1000 * 0.85 * 8760 / 1000
 
         # Fuel consumption
         # First get energy content of coal
@@ -78,7 +81,8 @@ class TestEnergySystemModels:
         assert wind_generation.value == pytest.approx(200 * 8760 * 0.35)
         assert solar_generation.value == pytest.approx(100 * 8760 * 0.25)
         assert total_generation.value == pytest.approx(
-            (200 * 8760 * 0.35) + (100 * 8760 * 0.25))
+            (200 * 8760 * 0.35) + (100 * 8760 * 0.25)
+        )
 
         # CO2 emissions (should be very low or zero for renewables)
         wind_emissions = wind_generation.calculate_emissions()
@@ -112,7 +116,9 @@ class TestEnergySystemModels:
         discharging_power = Quantity(20, "MW")
 
         # Time to fully discharge from 50%
-        hours_to_discharge = (state_of_charge * battery_capacity.value) / discharging_power.value
+        hours_to_discharge = (
+            state_of_charge * battery_capacity.value
+        ) / discharging_power.value
         assert hours_to_discharge == pytest.approx(2.5)  # 50 MWh / 20 MW = 2.5 h
 
     def test_energy_cost_calculations(self):

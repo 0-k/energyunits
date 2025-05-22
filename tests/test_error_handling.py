@@ -5,8 +5,9 @@ These tests verify that appropriate errors are raised for invalid operations
 and that error messages are helpful and descriptive.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from energyunits import Quantity
 from energyunits.registry import registry
 
@@ -62,7 +63,8 @@ class TestRegistryErrors:
         # Unknown substance in convert_between_dimensions
         with pytest.raises(ValueError) as excinfo:
             registry.convert_between_dimensions(
-                1000, "kg", "m3", substance="unknown_substance")
+                1000, "kg", "m3", substance="unknown_substance"
+            )
         assert "Unknown substance: unknown_substance" in str(excinfo.value)
 
 

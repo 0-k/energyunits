@@ -22,8 +22,9 @@ Example:
     ```
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from .quantity import Quantity
 from .substance import substance_registry
 
@@ -43,11 +44,11 @@ def add_units(df, column, unit):
     df_copy = df.copy()
 
     # Store unit information in DataFrame attributes
-    if hasattr(df_copy, 'attrs'):
+    if hasattr(df_copy, "attrs"):
         df_copy.attrs[f"{column}_unit"] = unit
     else:
         # For older pandas versions without attrs
-        df_copy._metadata = getattr(df_copy, '_metadata', []) + [f"{column}_unit"]
+        df_copy._metadata = getattr(df_copy, "_metadata", []) + [f"{column}_unit"]
         setattr(df_copy, f"{column}_unit", unit)
 
     return df_copy
@@ -66,7 +67,7 @@ def convert_units(df, column, target_unit):
     """
     # Get current unit from metadata
     current_unit = None
-    if hasattr(df, 'attrs'):
+    if hasattr(df, "attrs"):
         current_unit = df.attrs.get(f"{column}_unit")
     else:
         current_unit = getattr(df, f"{column}_unit", None)
@@ -79,13 +80,14 @@ def convert_units(df, column, target_unit):
 
     # Get conversion factor using registry
     from .registry import registry
+
     factor = registry.get_conversion_factor(current_unit, target_unit)
 
     # Apply conversion
     df_copy[column] = df_copy[column] * factor
 
     # Update unit information
-    if hasattr(df_copy, 'attrs'):
+    if hasattr(df_copy, "attrs"):
         df_copy.attrs[f"{column}_unit"] = target_unit
     else:
         setattr(df_copy, f"{column}_unit", target_unit)
@@ -93,7 +95,7 @@ def convert_units(df, column, target_unit):
     return df_copy
 
 
-def calculate_emissions(df, energy_col, fuel_col, output_col='emissions'):
+def calculate_emissions(df, energy_col, fuel_col, output_col="emissions"):
     """Calculate CO2 emissions based on energy values and fuel types.
 
     Args:
@@ -110,7 +112,7 @@ def calculate_emissions(df, energy_col, fuel_col, output_col='emissions'):
 
     # Get energy unit from metadata
     energy_unit = None
-    if hasattr(df, 'attrs'):
+    if hasattr(df, "attrs"):
         energy_unit = df.attrs.get(f"{energy_col}_unit")
     else:
         energy_unit = getattr(df, f"{energy_col}_unit", None)
@@ -138,22 +140,22 @@ def calculate_emissions(df, energy_col, fuel_col, output_col='emissions'):
 
         except (ValueError, KeyError):
             # Set zero emissions for unknown fuels or renewables
-            if fuel_type in ['wind', 'solar', 'hydro', 'nuclear']:
+            if fuel_type in ["wind", "solar", "hydro", "nuclear"]:
                 df_copy.loc[idx, output_col] = 0.0
             else:
                 # Keep NaN for truly unknown substances
                 df_copy.loc[idx, output_col] = np.nan
 
     # Add unit information for emissions column
-    if hasattr(df_copy, 'attrs'):
-        df_copy.attrs[f"{output_col}_unit"] = 't'
+    if hasattr(df_copy, "attrs"):
+        df_copy.attrs[f"{output_col}_unit"] = "t"
     else:
-        setattr(df_copy, f"{output_col}_unit", 't')
+        setattr(df_copy, f"{output_col}_unit", "t")
 
     return df_copy
 
 
-def energy_balance(df, columns, name='balance'):
+def energy_balance(df, columns, name="balance"):
     """Calculate an energy balance from multiple columns.
 
     Args:
@@ -170,7 +172,7 @@ def energy_balance(df, columns, name='balance'):
     # Get unit from first column (all columns must have same unit)
     first_col = list(columns.keys())[0]
     unit = None
-    if hasattr(df, 'attrs'):
+    if hasattr(df, "attrs"):
         unit = df.attrs.get(f"{first_col}_unit")
     else:
         unit = getattr(df, f"{first_col}_unit", None)
@@ -185,7 +187,7 @@ def energy_balance(df, columns, name='balance'):
     for col, sign in columns.items():
         # Check unit compatibility
         col_unit = None
-        if hasattr(df, 'attrs'):
+        if hasattr(df, "attrs"):
             col_unit = df.attrs.get(f"{col}_unit")
         else:
             col_unit = getattr(df, f"{col}_unit", None)
@@ -197,7 +199,7 @@ def energy_balance(df, columns, name='balance'):
         df_copy[name] += sign * df_copy[col]
 
     # Add unit information for balance column
-    if hasattr(df_copy, 'attrs'):
+    if hasattr(df_copy, "attrs"):
         df_copy.attrs[f"{name}_unit"] = unit
     else:
         setattr(df_copy, f"{name}_unit", unit)

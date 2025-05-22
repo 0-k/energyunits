@@ -4,8 +4,9 @@ Edge case tests for the EnergyUnits library.
 These tests focus on extreme values, boundary conditions, and unusual scenarios.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from energyunits import Quantity
 
 
@@ -102,7 +103,6 @@ class TestExtremeValues:
         assert np.all(result.value == np.array([1100, 1200, 1300]))
 
 
-
 class TestUnusualScenarios:
     def test_compound_unit_operations(self):
         """Test operations with compound units."""
@@ -139,7 +139,7 @@ class TestUnusualScenarios:
 
         # These values depend on the exact properties in the substance database
         # But we can check they're positive and in a reasonable range
-        #TODO: input correct values
+        # TODO: input correct values
         assert gas_mass.value > 0
         assert gas_energy.value > 0
 

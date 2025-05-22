@@ -5,8 +5,9 @@ These tests verify the core functionality of the registry including unit convers
 dimension relationships, and the handling of compound units.
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from energyunits.registry import registry
 from energyunits.substance import substance_registry
 
@@ -34,7 +35,7 @@ class TestUnitRegistry:
         assert registry.get_conversion_factor("barrel", "m3") == pytest.approx(0.159)
 
         # Time units
-        assert registry.get_conversion_factor("min", "h") == pytest.approx(1/60)
+        assert registry.get_conversion_factor("min", "h") == pytest.approx(1 / 60)
         assert registry.get_conversion_factor("h", "s") == pytest.approx(3600)
 
     def test_large_unit_conversions(self):
@@ -55,7 +56,9 @@ class TestUnitRegistry:
     def test_compound_unit_conversions(self):
         """Test conversions between compound units."""
         # Energy prices
-        assert registry.get_conversion_factor("USD/MWh", "USD/GJ") == pytest.approx(0.277778)
+        assert registry.get_conversion_factor("USD/MWh", "USD/GJ") == pytest.approx(
+            0.277778
+        )
         assert registry.get_conversion_factor("EUR/GJ", "EUR/MWh") == pytest.approx(3.6)
 
         # Different currencies
@@ -63,7 +66,7 @@ class TestUnitRegistry:
         price_factor = registry.get_conversion_factor("USD/MWh", "EUR/MWh")
         currency_factor = registry.get_conversion_factor("USD", "EUR")
         assert price_factor == pytest.approx(currency_factor)
-        assert price_factor == pytest.approx(1/1.08)
+        assert price_factor == pytest.approx(1 / 1.08)
 
         # Energy intensity
         assert registry.get_conversion_factor("MWh/t", "GJ/t") == pytest.approx(3.6)
@@ -88,15 +91,20 @@ class TestUnitRegistry:
     def test_substance_based_conversions(self):
         """Test substance-specific conversions between mass and volume."""
         # Create temporary test data in the substance registry if needed
-        if 'water' not in substance_registry._substances:
-            substance_registry._substances['water'] = {
-                'name': 'Water',
-                'density': 1000,  # kg/m3
-                'hhv': 0, 'lhv': 0, 'carbon_intensity': 0, 'moisture_content': 0
+        if "water" not in substance_registry._substances:
+            substance_registry._substances["water"] = {
+                "name": "Water",
+                "density": 1000,  # kg/m3
+                "hhv": 0,
+                "lhv": 0,
+                "carbon_intensity": 0,
+                "moisture_content": 0,
             }
 
         # Mass to volume for water (1000 kg = 1 m3)
-        result = registry.convert_between_dimensions(1000, "kg", "m3", substance="water")
+        result = registry.convert_between_dimensions(
+            1000, "kg", "m3", substance="water"
+        )
         assert result == pytest.approx(1.0, rel=1e-2)
 
         # Volume to mass for water (2 m3 = 2000 kg)
@@ -106,7 +114,9 @@ class TestUnitRegistry:
         # Test with natural gas
         # Natural gas density ≈ 0.75 kg/m3
         # 750 kg of natural gas ≈ 1000 m3
-        result = registry.convert_between_dimensions(750, "kg", "m3", substance="natural_gas")
+        result = registry.convert_between_dimensions(
+            750, "kg", "m3", substance="natural_gas"
+        )
         assert result == pytest.approx(1000.0, rel=0.1)
 
         # Test with different units
