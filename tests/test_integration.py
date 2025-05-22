@@ -20,11 +20,17 @@ class TestEnergySystemModels:
         # Annual energy generation
         capacity_factor = 0.85  # 85% capacity factor
         hours_per_year = 8760
-        annual_generation = plant_capacity * capacity_factor * hours_per_year / 1000
+
+        # FIXED: Use for_duration to properly convert MW to MWh, then convert to GWh
+        annual_generation_mwh = (
+            plant_capacity.for_duration(hours=hours_per_year) * capacity_factor
+        )
+        annual_generation = annual_generation_mwh.to("GWh")
 
         # Alternative calculation using for_duration
         daily_generation = plant_capacity.for_duration(hours=24) * capacity_factor
-        annual_generation_alt = daily_generation * 365 / 1000  # Convert to GWh
+        annual_generation_alt_mwh = daily_generation * 365
+        annual_generation_alt = annual_generation_alt_mwh.to("GWh")
 
         # Values should match
         assert annual_generation.value == pytest.approx(annual_generation_alt.value)

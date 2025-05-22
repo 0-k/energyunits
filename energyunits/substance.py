@@ -143,6 +143,39 @@ class SubstanceRegistry:
                 "carbon_intensity": 25,  # kg CO2/MWh (considered renewable)
                 "moisture_content": 0.30,  # 30% moisture typical
             },
+            # Renewables
+            "wind": {
+                "name": "Wind Energy",
+                "hhv": 0.0,  # MJ/kg (not applicable)
+                "lhv": 0.0,  # MJ/kg (not applicable)
+                "density": 0.0,  # kg/m3 (not applicable)
+                "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
+                "moisture_content": 0.0,  # not applicable
+            },
+            "solar": {
+                "name": "Solar Energy",
+                "hhv": 0.0,  # MJ/kg (not applicable)
+                "lhv": 0.0,  # MJ/kg (not applicable)
+                "density": 0.0,  # kg/m3 (not applicable)
+                "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
+                "moisture_content": 0.0,  # not applicable
+            },
+            "hydro": {
+                "name": "Hydro Energy",
+                "hhv": 0.0,  # MJ/kg (not applicable)
+                "lhv": 0.0,  # MJ/kg (not applicable)
+                "density": 0.0,  # kg/m3 (not applicable)
+                "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
+                "moisture_content": 0.0,  # not applicable
+            },
+            "nuclear": {
+                "name": "Nuclear Energy",
+                "hhv": 0.0,  # MJ/kg (not applicable)
+                "lhv": 0.0,  # MJ/kg (not applicable)
+                "density": 0.0,  # kg/m3 (not applicable)
+                "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
+                "moisture_content": 0.0,  # not applicable
+            },
             # Other fuels
             "hydrogen": {
                 "name": "Hydrogen",
