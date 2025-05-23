@@ -273,7 +273,7 @@ class Quantity:
 
         from .substance import substance_registry
 
-        lhv_hhv_ratio = substance_registry.get_lhv_hhv_ratio(self.substance)
+        lhv_hhv_ratio = substance_registry.lhv_hhv_ratio(self.substance)
 
         if current_basis.upper() == "HHV" and target_basis == "LHV":
             new_value = self.value * lhv_hhv_ratio

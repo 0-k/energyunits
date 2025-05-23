@@ -256,7 +256,6 @@ class UnitRegistry:
         **kwargs,
     ) -> float:
         """Convert mass to volume using substance density."""
-        # This requires the substance registry
         from .substance import substance_registry
 
         if substance is None:
@@ -265,7 +264,7 @@ class UnitRegistry:
             )
 
         # Get substance density (kg/m3)
-        density = substance_registry.get_density(substance)
+        density = substance_registry.density(substance)
 
         # Convert to kg first
         mass_kg = value * self.get_conversion_factor(from_unit, "kg")
@@ -285,7 +284,6 @@ class UnitRegistry:
         **kwargs,
     ) -> float:
         """Convert volume to mass using substance density."""
-        # This requires the substance registry
         from .substance import substance_registry
 
         if substance is None:
@@ -294,7 +292,7 @@ class UnitRegistry:
             )
 
         # Get substance density (kg/m3)
-        density = substance_registry.get_density(substance)
+        density = substance_registry.density(substance)
 
         # Convert to m3 first
         volume_m3 = value * self.get_conversion_factor(from_unit, "m3")
@@ -314,7 +312,6 @@ class UnitRegistry:
         **kwargs,
     ) -> float:
         """Convert energy to mass using substance heating value."""
-        # This requires the substance registry
         from .substance import substance_registry
 
         if substance is None:
@@ -325,15 +322,18 @@ class UnitRegistry:
         # Convert energy to MWh first
         energy_mwh = value * self.get_conversion_factor(from_unit, "MWh")
 
-        # Get heating value (use LHV by default, or HHV if specified)
+        # Get heating value in MJ/kg and convert to MWh/t
         basis = kwargs.get("basis", "LHV")
         if basis.upper() == "HHV":
-            heating_value = substance_registry.get_hhv(substance, "MWh/t")
+            heating_value_mj_kg = substance_registry.hhv(substance)
         else:
-            heating_value = substance_registry.get_lhv(substance, "MWh/t")
+            heating_value_mj_kg = substance_registry.lhv(substance)
+
+        # Convert MJ/kg to MWh/t: MJ/kg * 0.2778 MWh/MJ * 1000 kg/t = 277.8 MWh/t
+        heating_value_mwh_t = heating_value_mj_kg * 0.2778
 
         # Calculate mass in tonnes
-        mass_t = energy_mwh / heating_value
+        mass_t = energy_mwh / heating_value_mwh_t
 
         # Convert to kg
         mass_kg = mass_t * 1000
@@ -350,7 +350,6 @@ class UnitRegistry:
         **kwargs,
     ) -> float:
         """Convert mass to energy using substance heating value."""
-        # This requires the substance registry
         from .substance import substance_registry
 
         if substance is None:
@@ -364,15 +363,18 @@ class UnitRegistry:
         # Convert to tonnes
         mass_t = mass_kg / 1000
 
-        # Get heating value (use LHV by default, or HHV if specified)
+        # Get heating value in MJ/kg and convert to MWh/t
         basis = kwargs.get("basis", "LHV")
         if basis.upper() == "HHV":
-            heating_value = substance_registry.get_hhv(substance, "MWh/t")
+            heating_value_mj_kg = substance_registry.hhv(substance)
         else:
-            heating_value = substance_registry.get_lhv(substance, "MWh/t")
+            heating_value_mj_kg = substance_registry.lhv(substance)
+
+        # Convert MJ/kg to MWh/t: MJ/kg * 0.2778 MWh/MJ * 1000 kg/t = 277.8 MWh/t
+        heating_value_mwh_t = heating_value_mj_kg * 0.2778
 
         # Calculate energy in MWh
-        energy_mwh = mass_t * heating_value
+        energy_mwh = mass_t * heating_value_mwh_t
 
         # Convert to target energy unit
         return energy_mwh * self.get_conversion_factor("MWh", to_unit)

@@ -2,6 +2,11 @@
 Substance module for the EnergyUnits library.
 
 Contains database of substances with their properties for energy system modeling.
+All values are stored in standard units:
+- Heating values: MJ/kg
+- Density: kg/m3
+- Carbon intensity: kg CO2/MWh
+- Content fractions: dimensionless (0-1)
 """
 
 import numpy as np
@@ -256,122 +261,45 @@ class SubstanceRegistry:
             "barrel": 0.159,  # m3 per barrel
         }
 
-    def get_substance(self, substance_id):
-        """Get substance data by ID."""
+    def __getitem__(self, substance_id):
+        """Dict-like access to substance data."""
         if substance_id not in self._substances:
             raise ValueError(f"Unknown substance: {substance_id}")
         return self._substances[substance_id]
 
-    def get_hhv(self, substance_id, unit="MJ/kg"):
-        """Get higher heating value (HHV) for a substance."""
-        substance = self.get_substance(substance_id)
-        hhv = substance["hhv"]
+    def __contains__(self, substance_id):
+        """Check if substance exists."""
+        return substance_id in self._substances
 
+    def hhv(self, substance_id):
+        """Get higher heating value in MJ/kg."""
+        substance = self[substance_id]
+        hhv = substance["hhv"]
         if hhv is None:
             raise ValueError(f"Substance '{substance_id}' has no heating value (not a combustible fuel)")
+        return hhv
 
-        if unit == "MJ/kg":
-            return hhv
-        elif unit == "MWh/t":
-            return hhv * 0.2778
-        elif unit == "kWh/kg":
-            return hhv * 0.2778
-        else:
-            raise ValueError(f"Unsupported HHV unit: {unit}")
-
-    def get_lhv(self, substance_id, unit="MJ/kg"):
-        """Get lower heating value (LHV) for a substance."""
-        substance = self.get_substance(substance_id)
+    def lhv(self, substance_id):
+        """Get lower heating value in MJ/kg."""
+        substance = self[substance_id]
         lhv = substance["lhv"]
-
         if lhv is None:
             raise ValueError(f"Substance '{substance_id}' has no heating value (not a combustible fuel)")
+        return lhv
 
-        if unit == "MJ/kg":
-            return lhv
-        elif unit == "MWh/t":
-            return lhv * 0.2778
-        elif unit == "kWh/kg":
-            return lhv * 0.2778
-        else:
-            raise ValueError(f"Unsupported LHV unit: {unit}")
-
-    def get_density(self, substance_id):
-        """Get density for a substance in kg/m3."""
-        substance = self.get_substance(substance_id)
+    def density(self, substance_id):
+        """Get density in kg/m3."""
+        substance = self[substance_id]
         density = substance["density"]
-
         if density is None:
             raise ValueError(f"Substance '{substance_id}' has no defined density")
-
         return density
 
-    def get_carbon_intensity(self, substance_id):
-        """Get carbon intensity for a substance in kg CO2/MWh."""
-        substance = self.get_substance(substance_id)
-        return substance["carbon_intensity"]
-
-    def get_carbon_content(self, substance_id):
-        """Get carbon content for a substance (mass fraction)."""
-        substance = self.get_substance(substance_id)
-        return substance["carbon_content"]
-
-    def get_hydrogen_content(self, substance_id):
-        """Get hydrogen content for a substance (mass fraction)."""
-        substance = self.get_substance(substance_id)
-        return substance["hydrogen_content"]
-
-    def get_ash_content(self, substance_id):
-        """Get ash content for a substance (mass fraction)."""
-        substance = self.get_substance(substance_id)
-        return substance["ash_content"]
-
-    def get_lhv_hhv_ratio(self, substance_id):
-        """Get the ratio of LHV to HHV for a substance."""
-        substance = self.get_substance(substance_id)
-        hhv = substance["hhv"]
-        lhv = substance["lhv"]
-
-        if hhv is None or lhv is None:
-            raise ValueError(f"Substance '{substance_id}' has no heating values for LHV/HHV ratio")
-
+    def lhv_hhv_ratio(self, substance_id):
+        """Get the ratio of LHV to HHV."""
+        hhv = self.hhv(substance_id)
+        lhv = self.lhv(substance_id)
         return lhv / hhv
-
-    def calculate_energy_content(self, quantity, basis="HHV"):
-        """Calculate energy content for a substance quantity."""
-        from .quantity import Quantity
-
-        if quantity.substance is None:
-            raise ValueError("Substance must be specified for energy content calculation")
-
-        substance_id = quantity.substance
-
-        # Convert to mass units if not already
-        if quantity.unit in ["t", "kg", "g"]:
-            mass_t = quantity.to("t").value
-        elif quantity.unit in ["m3", "L"] + list(self._volumetric_units.keys()):
-            if quantity.unit in self._volumetric_units:
-                volume_m3 = quantity.value * self._volumetric_units[quantity.unit]
-            elif quantity.unit == "L":
-                volume_m3 = quantity.value * 0.001
-            else:
-                volume_m3 = quantity.value
-
-            density = self.get_density(substance_id)
-            mass_t = (volume_m3 * density) / 1000
-        else:
-            raise ValueError(f"Cannot calculate energy content from unit: {quantity.unit}")
-
-        # Get heating value in MWh/t
-        if basis.upper() == "HHV":
-            heating_value = self.get_hhv(substance_id, "MWh/t")
-        elif basis.upper() == "LHV":
-            heating_value = self.get_lhv(substance_id, "MWh/t")
-        else:
-            raise ValueError(f"Invalid heating value basis: {basis}")
-
-        energy_mwh = mass_t * heating_value
-        return Quantity(energy_mwh, "MWh", substance_id)
 
     def calculate_combustion_product(self, fuel_quantity, target_substance):
         """Calculate combustion products from fuel based on stoichiometry."""
@@ -384,20 +312,22 @@ class SubstanceRegistry:
         fuel_t = fuel_quantity.to("t")
         fuel_mass = fuel_t.value
 
+        substance = self[fuel_quantity.substance]
+
         if target_substance == "CO2":
-            carbon_fraction = self.get_carbon_content(fuel_quantity.substance)
+            carbon_fraction = substance["carbon_content"]
             carbon_mass = fuel_mass * carbon_fraction
             co2_mass = carbon_mass * (44 / 12)  # C + O2 → CO2
             return Quantity(co2_mass, "t", "CO2")
 
         elif target_substance == "H2O":
-            hydrogen_fraction = self.get_hydrogen_content(fuel_quantity.substance)
+            hydrogen_fraction = substance["hydrogen_content"]
             hydrogen_mass = fuel_mass * hydrogen_fraction
             water_mass = hydrogen_mass * (18 / 2)  # 2H + ½O2 → H2O
             return Quantity(water_mass, "t", "H2O")
 
         elif target_substance == "ash":
-            ash_fraction = self.get_ash_content(fuel_quantity.substance)
+            ash_fraction = substance["ash_content"]
             ash_mass = fuel_mass * ash_fraction
             return Quantity(ash_mass, "t", "ash")
 
