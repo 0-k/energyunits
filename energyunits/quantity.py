@@ -1,7 +1,3 @@
-"""
-Improved Quantity class with simplified unit conversion methods.
-"""
-
 from typing import Any, List, Optional, Union
 
 import numpy as np
@@ -38,15 +34,45 @@ class Quantity:
         # Get dimension from registry
         self.dimension = registry.get_dimension(unit)
 
-    def to(self, target_unit: str) -> "Quantity":
-        """Convert to another unit (same or compatible dimension).
+    def to(
+        self, target_unit: Optional[str] = None, basis: Optional[str] = None
+    ) -> "Quantity":
+        """Convert to another unit and/or basis.
 
         Args:
-            target_unit: Target unit to convert to
+            target_unit: Target unit to convert to (optional)
+            basis: Target heating value basis - 'HHV' or 'LHV' (optional)
 
         Returns:
-            A new Quantity object with converted value and target unit
+            A new Quantity object with converted unit and/or basis
+
+        Examples:
+            >>> energy = Quantity(100, "MWh")
+            >>> energy.to("GJ")                    # Unit conversion only
+            >>> energy.to(basis="LHV")             # Basis conversion only
+            >>> energy.to("GJ", basis="LHV")       # Both conversions
         """
+        # Start with current quantity
+        result = self
+
+        # Convert basis first if requested and different
+        if basis is not None and self.basis != basis:
+            result = result._convert_basis(basis)
+
+        # Convert unit if requested
+        if target_unit is not None:
+            result = result._convert_unit(target_unit)
+
+        # If no changes requested, return a copy
+        if target_unit is None and basis is None:
+            return Quantity(
+                self.value, self.unit, self.substance, self.basis, self.reference_year
+            )
+
+        return result
+
+    def _convert_unit(self, target_unit: str) -> "Quantity":
+        """Internal method to convert unit only."""
         # Get the dimensions
         from_dim = self.dimension
         to_dim = registry.get_dimension(target_unit)
@@ -64,7 +90,7 @@ class Quantity:
             # Pass basis if available
             kwargs = {}
             if self.basis is not None:
-                kwargs['basis'] = self.basis
+                kwargs["basis"] = self.basis
 
             new_value = registry.convert_between_dimensions(
                 self.value, self.unit, target_unit, self.substance, **kwargs
@@ -78,6 +104,44 @@ class Quantity:
         # Return new quantity with same metadata
         return Quantity(
             new_value, target_unit, self.substance, self.basis, self.reference_year
+        )
+
+    def _convert_basis(self, target_basis: str) -> "Quantity":
+        """Internal method to convert heating value basis only."""
+        if target_basis.upper() not in ["HHV", "LHV"]:
+            raise ValueError("Basis must be 'HHV' or 'LHV'")
+
+        if self.substance is None:
+            raise ValueError("Substance must be specified for basis conversion")
+
+        current_basis = self.basis or "LHV"  # Default to LHV if not specified
+        target_basis = target_basis.upper()
+
+        if current_basis.upper() == target_basis:
+            # No conversion needed, but update basis attribute
+            return Quantity(
+                self.value, self.unit, self.substance, target_basis, self.reference_year
+            )
+
+        from .substance import substance_registry
+
+        # Get the ratio of LHV to HHV for this substance
+        lhv_hhv_ratio = substance_registry.get_lhv_hhv_ratio(self.substance)
+
+        if current_basis.upper() == "HHV" and target_basis == "LHV":
+            # Convert from HHV to LHV
+            new_value = self.value * lhv_hhv_ratio
+        elif current_basis.upper() == "LHV" and target_basis == "HHV":
+            # Convert from LHV to HHV
+            new_value = self.value / lhv_hhv_ratio
+        else:
+            # Should not reach here due to earlier checks
+            raise ValueError(
+                f"Invalid basis conversion: {current_basis} to {target_basis}"
+            )
+
+        return Quantity(
+            new_value, self.unit, self.substance, target_basis, self.reference_year
         )
 
     def for_duration(self, hours: float) -> "Quantity":
@@ -138,77 +202,6 @@ class Quantity:
             power_value, power_unit, self.substance, self.basis, self.reference_year
         )
 
-    def energy_content(self, basis: str = "HHV") -> "Quantity":
-        """Calculate energy content based on substance properties.
-
-        Args:
-            basis: Heating value basis ("HHV" or "LHV")
-
-        Returns:
-            Energy quantity in MWh
-        """
-        from .substance import substance_registry
-
-        result = substance_registry.calculate_energy_content(self, basis)
-        result.basis = basis
-        return result
-
-    def to_lhv(self) -> "Quantity":
-        """Convert energy from HHV to LHV basis.
-
-        Returns:
-            Energy quantity with LHV basis
-        """
-        if self.basis is None:
-            self.basis = "HHV"  # Assume HHV if not specified
-
-        if self.basis == "LHV":
-            return self  # Already LHV
-
-        if self.substance is None:
-            raise ValueError("Substance must be specified for HHV/LHV conversion")
-
-        from .substance import substance_registry
-
-        # Get ratio of LHV to HHV
-        ratio = substance_registry.get_lhv_hhv_ratio(self.substance)
-
-        # Apply ratio
-        new_value = self.value * ratio
-
-        # Return new quantity
-        return Quantity(
-            new_value, self.unit, self.substance, "LHV", self.reference_year
-        )
-
-    def to_hhv(self) -> "Quantity":
-        """Convert energy from LHV to HHV basis.
-
-        Returns:
-            Energy quantity with HHV basis
-        """
-        if self.basis is None:
-            self.basis = "LHV"  # Assume LHV if not specified
-
-        if self.basis == "HHV":
-            return self  # Already HHV
-
-        if self.substance is None:
-            raise ValueError("Substance must be specified for LHV/HHV conversion")
-
-        from .substance import substance_registry
-
-        # Get ratio of LHV to HHV
-        ratio = substance_registry.get_lhv_hhv_ratio(self.substance)
-
-        # Apply inverse ratio
-        new_value = self.value / ratio
-
-        # Return new quantity
-        return Quantity(
-            new_value, self.unit, self.substance, "HHV", self.reference_year
-        )
-
     def usable_energy(self, moisture_content: Optional[float] = None) -> "Quantity":
         """Calculate usable energy considering moisture content.
 
@@ -227,7 +220,7 @@ class Quantity:
         from .substance import substance_registry
 
         # Calculate energy content (LHV basis)
-        energy = self.energy_content(basis="LHV")
+        energy = self.to("MWh", basis="LHV")
 
         # Get moisture adjustment factor
         if moisture_content is None:
@@ -265,7 +258,7 @@ class Quantity:
         if self.dimension != "ENERGY":
             # Try to convert to energy first if possible
             if self.substance:
-                energy = self.energy_content()
+                energy = self.to("MWh")
                 return energy.calculate_emissions()
             else:
                 raise ValueError(

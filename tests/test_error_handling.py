@@ -44,7 +44,9 @@ class TestRegistryErrors:
         # Dimensions that require substance but none provided
         with pytest.raises(ValueError) as excinfo:
             registry.convert_between_dimensions(100, "MWh", "kg")
-        assert "Substance must be specified for energy to mass conversion" in str(excinfo.value)
+        assert "Substance must be specified for energy to mass conversion" in str(
+            excinfo.value
+        )
 
         # Truly incompatible dimensions (no conversion relationship defined)
         with pytest.raises(ValueError) as excinfo:
@@ -87,7 +89,9 @@ class TestQuantityErrors:
         energy = Quantity(100, "MWh")
         with pytest.raises(ValueError) as excinfo:
             energy.to("kg")
-        assert "Substance must be specified for energy to mass conversion" in str(excinfo.value)
+        assert "Substance must be specified for energy to mass conversion" in str(
+            excinfo.value
+        )
 
         # Unknown target unit
         with pytest.raises(ValueError) as excinfo:
@@ -97,7 +101,9 @@ class TestQuantityErrors:
         # Truly incompatible units (no conversion path exists)
         with pytest.raises(ValueError) as excinfo:
             energy.to("USD")
-        assert "Cannot convert from MWh (ENERGY) to USD (CURRENCY)" in str(excinfo.value)
+        assert "Cannot convert from MWh (ENERGY) to USD (CURRENCY)" in str(
+            excinfo.value
+        )
 
     def test_duration_errors(self):
         """Test errors in for_duration and average_power methods."""
@@ -114,17 +120,10 @@ class TestQuantityErrors:
         assert "average_power only applies to energy units" in str(excinfo.value)
 
     def test_substance_errors(self):
-        """Test errors related to substance handling."""
-        # Energy content calculation requires substance
-        energy = Quantity(100, "MWh")  # No substance
-        with pytest.raises(ValueError) as excinfo:
-            energy.energy_content()
-        assert "Substance must be specified" in str(excinfo.value)
-
         # Heating value conversion requires substance
         energy = Quantity(100, "MWh")  # No substance
         with pytest.raises(ValueError) as excinfo:
-            energy.to_lhv()
+            energy.to(basis="LHV")
         assert "Substance must be specified" in str(excinfo.value)
 
         # Usable energy calculation requires substance

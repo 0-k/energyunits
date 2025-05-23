@@ -122,8 +122,7 @@ is_larger = energy_large > energy_small  # True (3.6 GJ > 1 GJ)
 import numpy as np
 import pandas as pd
 
-from energyunits.pandas_tools import (add_units, calculate_emissions,
-                                      convert_units)
+from energyunits.pandas_tools import add_units, calculate_emissions, convert_units
 
 # Create dataframe with energy data
 df = pd.DataFrame(

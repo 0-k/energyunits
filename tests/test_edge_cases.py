@@ -132,7 +132,7 @@ class TestUnusualScenarios:
         # Volume → Mass → Energy
         gas_volume = Quantity(1000, "m3", "natural_gas")
         gas_mass = gas_volume.to("kg")  # Should convert using density
-        gas_energy = gas_mass.energy_content()  # Should calculate energy content
+        gas_energy = gas_mass.to("MWh")  # Should calculate energy content
 
         assert gas_mass.unit == "kg"
         assert gas_energy.unit == "MWh"
@@ -168,4 +168,4 @@ class TestUnusualScenarios:
 
         # Energy content calculations require substance
         with pytest.raises(ValueError):
-            energy = mixture.energy_content()
+            energy = mixture.to("MWh")

@@ -42,7 +42,7 @@ class TestEnergySystemModels:
         # Fuel consumption
         # First get energy content of coal
         coal_unit = Quantity(1, "t", "coal")
-        coal_energy = coal_unit.energy_content()  # In MWh
+        coal_energy = coal_unit.to("MWh")  # In MWh
 
         # Calculate required coal
         annual_generation_mwh = annual_generation.to("MWh")
@@ -197,7 +197,7 @@ class TestCrossIndustryScenarios:
         diesel_mass = diesel.to("kg")
 
         # Calculate energy content
-        diesel_energy = diesel_mass.energy_content()
+        diesel_energy = diesel_mass.to("MWh")
 
         assert diesel_energy.unit == "MWh"
         assert diesel_energy.value > 0

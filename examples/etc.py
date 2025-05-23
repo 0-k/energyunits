@@ -1,6 +1,5 @@
 from energyunits import Quantity
 
-
 # Project parameters
 capacity = Quantity(200, "MW")
 capacity_factor = 0.35

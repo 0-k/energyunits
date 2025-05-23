@@ -61,13 +61,13 @@ class UnitRegistry:
         # Conversion factors to domain-appropriate base units
         self._conversion_factors = {
             # Energy (base: MWh)
-            "J": 1e-9/3.6,
-            "kJ": 1e-6/3.6,
-            "MJ": 1e-3/3.6,
-            "GJ": 1/3.6,
-            "TJ": 1e3/3.6,
-            "PJ": 1e6/3.6,
-            "EJ": 1e9/3.6,
+            "J": 1e-9 / 3.6,
+            "kJ": 1e-6 / 3.6,
+            "MJ": 1e-3 / 3.6,
+            "GJ": 1 / 3.6,
+            "TJ": 1e3 / 3.6,
+            "PJ": 1e6 / 3.6,
+            "EJ": 1e9 / 3.6,
             "Wh": 1e-6,
             "kWh": 1e-3,  # 1 kWh = 0.001 MWh
             "MWh": 1,  # 1 MWh = 1.0 MWh

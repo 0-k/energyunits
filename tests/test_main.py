@@ -132,14 +132,15 @@ class TestHeatingValues:
         from energyunits import Quantity
 
         # Energy content
-        coal = Quantity(1000, "t", "coal")
-        energy_hhv = coal.energy_content(basis="HHV")
-        energy_lhv = coal.energy_content(basis="LHV")
+        energy_hhv = Quantity(1000, "t", "coal", basis="HHV").to("MWh")
+        energy_lhv = Quantity(1000, "t", "coal", basis="LHV").to("MWh")
+        energy_to_lhv = energy_hhv.to(basis="LHV")
 
         # HHV should be higher than LHV
         assert energy_hhv.value > energy_lhv.value
         assert energy_hhv.unit == "MWh"
         assert energy_lhv.unit == "MWh"
+        assert energy_lhv.value == energy_to_lhv.value
 
         # Typical value for coal is ~8.1 MWh/ton (HHV)
         assert energy_hhv.value == pytest.approx(8140, rel=0.2)
@@ -150,7 +151,7 @@ class TestHeatingValues:
 
         # HHV to LHV conversion
         gas_energy_hhv = Quantity(1000, "MWh", substance="natural_gas", basis="HHV")
-        gas_energy_lhv = gas_energy_hhv.to_lhv()
+        gas_energy_lhv = gas_energy_hhv.to(basis="LHV")
 
         # LHV should be lower (typically ~10% for natural gas)
         assert gas_energy_lhv.value < gas_energy_hhv.value
@@ -264,8 +265,11 @@ class TestPandasIntegration:
         """Test integration with pandas DataFrames."""
         import pandas as pd
 
-        from energyunits.pandas_tools import (add_units, calculate_emissions,
-                                              convert_units)
+        from energyunits.pandas_tools import (
+            add_units,
+            calculate_emissions,
+            convert_units,
+        )
 
         # Create dataframe
         df = pd.DataFrame(
