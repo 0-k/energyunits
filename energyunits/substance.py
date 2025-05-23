@@ -403,23 +403,6 @@ class SubstanceRegistry:
         else:
             raise ValueError(f"Unknown combustion product: {target_substance}")
 
-    def calculate_emissions(self, energy_quantity):
-        """Calculate CO2 emissions for an energy quantity."""
-        from .quantity import Quantity
-
-        if energy_quantity.substance is None:
-            raise ValueError("Substance must be specified for emissions calculation")
-
-        if energy_quantity.dimension != "ENERGY":
-            raise ValueError(f"Expected energy units, got: {energy_quantity.unit}")
-
-        energy_mwh = energy_quantity.to("MWh").value
-        intensity = self.get_carbon_intensity(energy_quantity.substance)
-        emissions_kg = energy_mwh * intensity
-        emissions_t = emissions_kg / 1000
-
-        return Quantity(emissions_t, "t", "CO2")
-
 
 # Global instance
 substance_registry = SubstanceRegistry()

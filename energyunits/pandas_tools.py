@@ -26,7 +26,6 @@ import numpy as np
 import pandas as pd
 
 from .quantity import Quantity
-from .substance import substance_registry
 
 
 def add_units(df, column, unit):
@@ -116,8 +115,8 @@ def calculate_emissions(df, energy_col, fuel_col, output_col="emissions"):
             # Create Quantity object
             energy = Quantity(energy_value, energy_unit, fuel_type)
 
-            # Calculate emissions
-            emissions = substance_registry.calculate_emissions(energy)
+            # Calculate emissions using unified .to() method
+            emissions = energy.to("t", substance="CO2")
 
             # Store emissions value
             df_copy.loc[idx, output_col] = emissions.value

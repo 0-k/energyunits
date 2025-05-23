@@ -64,16 +64,13 @@ from energyunits import Quantity
 
 # Get energy content with specific heating value basis
 coal = Quantity(1000, "t", "coal")
-energy_hhv = coal.energy_content(basis="HHV")  # ~8140 MWh
-energy_lhv = coal.energy_content(basis="LHV")  # ~7730 MWh
+energy_hhv = coal.to(basis="HHV")  # ~8140 MWh
+energy_lhv = coal.to(basis="LHV")  # ~7730 MWh
 
 # Convert energy between HHV and LHV bases
 gas_energy_hhv = Quantity(1000, "MWh", substance="natural_gas", basis="HHV")
-gas_energy_lhv = gas_energy_hhv.to_lhv()  # ~900 MWh (depends on fuel)
+gas_energy_lhv = gas_energy_hhv.to(basis="LHV")  # ~900 MWh (depends on fuel)
 
-# Get directly usable energy
-biomass = Quantity(500, "t", "wood_pellets")
-usable_energy = biomass.usable_energy(moisture_content=0.1)  # MWh
 
 
 ## Compound Units
@@ -154,3 +151,13 @@ from energyunits import Quantity
 # Adjust for inflation
 capex_2015 = Quantity(1000, "USD/kW", reference_year=2015)
 capex_current = capex_2015.adjust_inflation(target_year=2025)
+
+
+gas = Quantity(10, "MWh", "natural_gas")
+
+ # Calculate required gas volume
+gas_volume = gas.to("m3")
+print(gas_volume)
+emissions = gas.to(substance="CO2")
+print(emissions.to("t"))
+

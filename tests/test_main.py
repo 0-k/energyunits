@@ -159,6 +159,33 @@ class TestHeatingValues:
             0.9 * gas_energy_hhv.value, rel=0.1
         )
 
+    def test_co2_emissions_conversion(self):
+        """Test converting to CO2 emissions using unified .to() method."""
+        from energyunits import Quantity
+
+        # Test emissions calculation from fuel mass
+        coal = Quantity(1000, "t", "coal")
+        emissions = coal.to("t", substance="CO2")
+
+        assert emissions.unit == "t"
+        assert emissions.substance == "CO2"
+        assert emissions.value > 0
+
+        # Test emissions calculation from energy
+        energy = Quantity(1000, "MWh", "natural_gas")
+        emissions_from_energy = energy.to("t", substance="CO2")
+
+        assert emissions_from_energy.unit == "t"
+        assert emissions_from_energy.substance == "CO2"
+        assert emissions_from_energy.value > 0
+
+        # Test renewables have zero emissions
+        wind_energy = Quantity(1000, "MWh", "wind")
+        wind_emissions = wind_energy.to("t", substance="CO2")
+
+        assert wind_emissions.value == pytest.approx(0)
+        assert wind_emissions.substance == "CO2"
+
 
 class TestCompoundUnits:
     def test_energy_prices(self):
@@ -280,7 +307,7 @@ class TestPandasIntegration:
         assert df_gj.attrs["generation_unit"] == "GJ"
         assert df_gj["generation"][0] == pytest.approx(360)
 
-        # Calculate emissions
+        # Calculate emissions using the updated pandas function (which uses unified .to() method)
         df_emissions = calculate_emissions(
             df_with_units, energy_col="generation", fuel_col="fuel_type"
         )

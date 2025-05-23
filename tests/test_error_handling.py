@@ -146,7 +146,7 @@ class TestQuantityErrors:
         # Cannot calculate emissions for non-energy without substance
         mass = Quantity(100, "t")  # No substance
         with pytest.raises(ValueError) as excinfo:
-            mass.calculate_emissions()
+            mass.to(substance="CO2")
         assert "Source substance must be specified for substance conversion" in str(excinfo.value)
 
     def test_inflation_adjustment_errors(self):

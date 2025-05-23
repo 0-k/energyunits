@@ -54,6 +54,7 @@ class Quantity:
             >>> coal = Quantity(1000, "kg", "coal")
             >>> coal.to("kg", substance="CO2")            # Combustion product
             >>> coal.to("t", basis="LHV", substance="CO2") # Combined conversions
+            >>> coal.to("t", substance="CO2")             # Calculate CO2 emissions
         """
         result = self
 
@@ -108,14 +109,6 @@ class Quantity:
         return Quantity(
             power_value, power_unit, self.substance, self.basis, self.reference_year
         )
-
-    def calculate_emissions(self) -> "Quantity":
-        """Calculate CO2 emissions (convenience wrapper for .to(substance="CO2"))."""
-        # Handle renewables specially - they have zero emissions but no heating values
-        if self.substance in ["wind", "solar", "hydro", "nuclear"]:
-            return Quantity(0.0, "t", "CO2")
-
-        return self.to("t", substance="CO2")
 
     def adjust_inflation(self, target_year: int) -> "Quantity":
         """Adjust a cost quantity for inflation."""
@@ -236,7 +229,6 @@ class Quantity:
         other_converted = other.to(self.unit)
         return np.any(self.value != other_converted.value)
 
-    # Internal methods - not part of public API
     def _convert_unit(self, target_unit: str) -> "Quantity":
         """Internal method to convert unit only."""
         from_dim = self.dimension

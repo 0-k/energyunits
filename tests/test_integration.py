@@ -55,7 +55,7 @@ class TestEnergySystemModels:
         assert coal_quantity.unit == "t"
 
         # CO2 emissions
-        emissions = annual_generation_mwh.calculate_emissions()
+        emissions = annual_generation_mwh.to(substance="CO2").to("t")
 
         assert emissions.unit == "t"
         assert emissions.substance == "CO2"
@@ -91,8 +91,8 @@ class TestEnergySystemModels:
         )
 
         # CO2 emissions (should be very low or zero for renewables)
-        wind_emissions = wind_generation.calculate_emissions()
-        solar_emissions = solar_generation.calculate_emissions()
+        wind_emissions = wind_generation.to(substance="CO2")
+        solar_emissions = solar_generation.to(substance="CO2")
 
         # Renewables typically have zero direct emissions
         assert wind_emissions.value == pytest.approx(0)
@@ -181,7 +181,7 @@ class TestCrossIndustryScenarios:
         assert gas_volume.value > 0
 
         # Calculate CO2 emissions from the gas (which has substance specified)
-        emissions = gas.calculate_emissions()
+        emissions = gas.to(substance="CO2").to("t")
 
         assert emissions.substance == "CO2"
         assert emissions.unit == "t"
@@ -203,10 +203,10 @@ class TestCrossIndustryScenarios:
         assert diesel_energy.value > 0
 
         # Calculate emissions
-        emissions = diesel_energy.calculate_emissions()
+        emissions = diesel_energy.to(substance="CO2")
 
         assert emissions.substance == "CO2"
-        assert emissions.unit == "t"
+        assert emissions.unit == "kg"
         assert emissions.value > 0
 
         # Electric equivalent (assuming 30% efficiency for diesel engine)
@@ -239,7 +239,7 @@ class TestCrossIndustryScenarios:
         electricity = Quantity(electricity_required, "MWh")
 
         # Compare emissions
-        gas_emissions = gas_energy.calculate_emissions()
+        gas_emissions = gas_energy.to(substance="CO2")
 
         # Electricity emissions depend on grid mix
         # For this test, assume 200 kg CO2/MWh (mostly renewable grid)
