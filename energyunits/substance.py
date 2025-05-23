@@ -32,7 +32,6 @@ class SubstanceRegistry:
         #     'lhv': value in MJ/kg,
         #     'density': value in kg/m3,
         #     'carbon_intensity': value in kg CO2/MWh (LHV basis),
-        #     'moisture_content': typical moisture content (mass fraction),
         # }
         self._substances = {
             # Coal
@@ -42,7 +41,6 @@ class SubstanceRegistry:
                 "lhv": 27.8,  # MJ/kg
                 "density": 833,  # kg/m3 (bulk density)
                 "carbon_intensity": 340,  # kg CO2/MWh
-                "moisture_content": 0.10,  # 10% moisture typical
             },
             "lignite": {
                 "name": "Lignite Coal",
@@ -50,7 +48,6 @@ class SubstanceRegistry:
                 "lhv": 14.0,  # MJ/kg
                 "density": 700,  # kg/m3
                 "carbon_intensity": 400,  # kg CO2/MWh
-                "moisture_content": 0.40,  # 40% moisture typical
             },
             "bituminous": {
                 "name": "Bituminous Coal",
@@ -58,7 +55,6 @@ class SubstanceRegistry:
                 "lhv": 28.5,  # MJ/kg
                 "density": 833,  # kg/m3
                 "carbon_intensity": 330,  # kg CO2/MWh
-                "moisture_content": 0.05,  # 5% moisture typical
             },
             "anthracite": {
                 "name": "Anthracite Coal",
@@ -66,7 +62,6 @@ class SubstanceRegistry:
                 "lhv": 31.5,  # MJ/kg
                 "density": 1000,  # kg/m3
                 "carbon_intensity": 320,  # kg CO2/MWh
-                "moisture_content": 0.03,  # 3% moisture typical
             },
             # Natural Gas
             "natural_gas": {
@@ -75,7 +70,6 @@ class SubstanceRegistry:
                 "lhv": 49.5,  # MJ/kg
                 "density": 0.75,  # kg/m3
                 "carbon_intensity": 200,  # kg CO2/MWh
-                "moisture_content": 0.0,  # 0% moisture
             },
             "lng": {
                 "name": "Liquefied Natural Gas",
@@ -83,7 +77,6 @@ class SubstanceRegistry:
                 "lhv": 49.5,  # MJ/kg
                 "density": 450,  # kg/m3
                 "carbon_intensity": 210,  # kg CO2/MWh (slightly higher due to liquefaction process)
-                "moisture_content": 0.0,  # 0% moisture
             },
             # Oil Products
             "crude_oil": {
@@ -92,7 +85,6 @@ class SubstanceRegistry:
                 "lhv": 42.5,  # MJ/kg
                 "density": 870,  # kg/m3
                 "carbon_intensity": 270,  # kg CO2/MWh
-                "moisture_content": 0.0,  # 0% moisture
             },
             "oil": {  # Generic oil for tests
                 "name": "Oil (generic)",
@@ -100,7 +92,6 @@ class SubstanceRegistry:
                 "lhv": 42.5,  # MJ/kg
                 "density": 870,  # kg/m3
                 "carbon_intensity": 270,  # kg CO2/MWh
-                "moisture_content": 0.0,  # 0% moisture
             },
             "fuel_oil": {
                 "name": "Heavy Fuel Oil",
@@ -108,7 +99,6 @@ class SubstanceRegistry:
                 "lhv": 40.5,  # MJ/kg
                 "density": 950,  # kg/m3
                 "carbon_intensity": 285,  # kg CO2/MWh
-                "moisture_content": 0.0,  # 0% moisture
             },
             "diesel": {
                 "name": "Diesel",
@@ -116,7 +106,6 @@ class SubstanceRegistry:
                 "lhv": 42.8,  # MJ/kg
                 "density": 840,  # kg/m3
                 "carbon_intensity": 265,  # kg CO2/MWh
-                "moisture_content": 0.0,  # 0% moisture
             },
             "gasoline": {
                 "name": "Gasoline",
@@ -124,7 +113,6 @@ class SubstanceRegistry:
                 "lhv": 44.0,  # MJ/kg
                 "density": 750,  # kg/m3
                 "carbon_intensity": 255,  # kg CO2/MWh
-                "moisture_content": 0.0,  # 0% moisture
             },
             # Biomass
             "wood_pellets": {
@@ -133,7 +121,6 @@ class SubstanceRegistry:
                 "lhv": 18.5,  # MJ/kg
                 "density": 650,  # kg/m3
                 "carbon_intensity": 20,  # kg CO2/MWh (considered renewable)
-                "moisture_content": 0.08,  # 8% moisture typical for pellets
             },
             "wood_chips": {
                 "name": "Wood Chips",
@@ -141,7 +128,6 @@ class SubstanceRegistry:
                 "lhv": 16.0,  # MJ/kg
                 "density": 350,  # kg/m3
                 "carbon_intensity": 25,  # kg CO2/MWh (considered renewable)
-                "moisture_content": 0.30,  # 30% moisture typical
             },
             # Renewables
             "wind": {
@@ -150,7 +136,6 @@ class SubstanceRegistry:
                 "lhv": 0.0,  # MJ/kg (not applicable)
                 "density": 0.0,  # kg/m3 (not applicable)
                 "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
-                "moisture_content": 0.0,  # not applicable
             },
             "solar": {
                 "name": "Solar Energy",
@@ -158,7 +143,6 @@ class SubstanceRegistry:
                 "lhv": 0.0,  # MJ/kg (not applicable)
                 "density": 0.0,  # kg/m3 (not applicable)
                 "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
-                "moisture_content": 0.0,  # not applicable
             },
             "hydro": {
                 "name": "Hydro Energy",
@@ -166,7 +150,6 @@ class SubstanceRegistry:
                 "lhv": 0.0,  # MJ/kg (not applicable)
                 "density": 0.0,  # kg/m3 (not applicable)
                 "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
-                "moisture_content": 0.0,  # not applicable
             },
             "nuclear": {
                 "name": "Nuclear Energy",
@@ -174,7 +157,6 @@ class SubstanceRegistry:
                 "lhv": 0.0,  # MJ/kg (not applicable)
                 "density": 0.0,  # kg/m3 (not applicable)
                 "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
-                "moisture_content": 0.0,  # not applicable
             },
             # Other fuels
             "hydrogen": {
@@ -183,7 +165,6 @@ class SubstanceRegistry:
                 "lhv": 120.0,  # MJ/kg
                 "density": 0.09,  # kg/m3 (at standard conditions)
                 "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
-                "moisture_content": 0.0,  # 0% moisture
             },
             "methanol": {
                 "name": "Methanol",
@@ -191,7 +172,6 @@ class SubstanceRegistry:
                 "lhv": 19.9,  # MJ/kg
                 "density": 795,  # kg/m3
                 "carbon_intensity": 240,  # kg CO2/MWh
-                "moisture_content": 0.0,  # 0% moisture
             },
             # Greenhouse gases
             "CO2": {
@@ -200,7 +180,6 @@ class SubstanceRegistry:
                 "lhv": 0.0,  # MJ/kg
                 "density": 1.98,  # kg/m3 (at standard conditions)
                 "carbon_intensity": 0.0,  # kg CO2/MWh (not applicable)
-                "moisture_content": 0.0,  # 0% moisture
             },
             "methane": {
                 "name": "Methane",
@@ -208,7 +187,6 @@ class SubstanceRegistry:
                 "lhv": 50.0,  # MJ/kg
                 "density": 0.68,  # kg/m3 (at standard conditions)
                 "carbon_intensity": 200,  # kg CO2/MWh
-                "moisture_content": 0.0,  # 0% moisture
             },
         }
 

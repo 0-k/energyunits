@@ -159,18 +159,6 @@ class TestHeatingValues:
             0.9 * gas_energy_hhv.value, rel=0.1
         )
 
-    def test_usable_energy(self):
-        """Test calculating usable energy with moisture content."""
-        from energyunits import Quantity
-
-        # Usable energy calculation
-        biomass = Quantity(500, "t", "wood_pellets")
-        usable_energy = biomass.usable_energy(moisture_content=0.1)
-
-        assert usable_energy.unit == "MWh"
-        # Value will depend on energy content and moisture adjustment factor
-        assert usable_energy.value > 0
-
 
 class TestCompoundUnits:
     def test_energy_prices(self):

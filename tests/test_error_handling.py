@@ -126,18 +126,6 @@ class TestQuantityErrors:
             energy.to(basis="LHV")
         assert "Substance must be specified" in str(excinfo.value)
 
-        # Usable energy calculation requires substance
-        biomass = Quantity(100, "t")  # No substance
-        with pytest.raises(ValueError) as excinfo:
-            biomass.usable_energy()
-        assert "Substance must be specified" in str(excinfo.value)
-
-        # Invalid moisture content
-        biomass = Quantity(100, "t", "wood_pellets")
-        with pytest.raises(ValueError) as excinfo:
-            biomass.usable_energy(moisture_content=1.5)  # > 1.0
-        assert "Moisture content must be between 0 and 1" in str(excinfo.value)
-
     def test_arithmetic_errors(self):
         """Test errors in arithmetic operations."""
         # Cannot add Quantity and non-Quantity

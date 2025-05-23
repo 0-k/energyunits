@@ -202,51 +202,6 @@ class Quantity:
             power_value, power_unit, self.substance, self.basis, self.reference_year
         )
 
-    def usable_energy(self, moisture_content: Optional[float] = None) -> "Quantity":
-        """Calculate usable energy considering moisture content.
-
-        Args:
-            moisture_content: Override moisture content (0.0 to 1.0),
-                             if None, uses default for substance
-
-        Returns:
-            Energy quantity adjusted for moisture
-        """
-        if self.substance is None:
-            raise ValueError(
-                "Substance must be specified for usable energy calculation"
-            )
-
-        from .substance import substance_registry
-
-        # Calculate energy content (LHV basis)
-        energy = self.to("MWh", basis="LHV")
-
-        # Get moisture adjustment factor
-        if moisture_content is None:
-            moisture_content = substance_registry.get_moisture_content(self.substance)
-        else:
-            # Validate moisture content
-            if not 0 <= moisture_content <= 1:
-                raise ValueError("Moisture content must be between 0 and 1")
-
-        # Typical substance moisture content
-        typical_moisture = substance_registry.get_moisture_content(self.substance)
-
-        # Adjust energy for moisture difference
-        # More moisture = less usable energy
-        moisture_factor = (1 - moisture_content) / (1 - typical_moisture)
-        adjusted_value = energy.value * moisture_factor
-
-        # Return adjusted energy
-        return Quantity(
-            adjusted_value,
-            energy.unit,
-            self.substance,
-            "LHV",  # Usable energy is typically LHV
-            self.reference_year,
-        )
-
     def calculate_emissions(self) -> "Quantity":
         """Calculate CO2 emissions for this energy quantity.
 
