@@ -61,43 +61,43 @@ class UnitRegistry:
         # Conversion factors to domain-appropriate base units
         self._conversion_factors = {
             # Energy (base: MWh)
-            "J": 1e-9/3.6,  # 1 J = 2.77778e-10 MWh
-            "kJ": 1e-6/3.6,  # 1 kJ = 2.77778e-7 MWh
-            "MJ": 1e-3/3.6,  # 1 MJ = 0.000277778 MWh
-            "GJ": 1/3.6,  # 1 GJ = 0.277778 MWh
-            "TJ": 277.778,  # 1 TJ = 277.778 MWh
-            "PJ": 277778.0,  # 1 PJ = 277,778 MWh
-            "EJ": 277778000.0,  # 1 EJ = 277,778,000 MWh
-            "Wh": 0.000001,  # 1 Wh = 0.000001 MWh
-            "kWh": 0.001,  # 1 kWh = 0.001 MWh
-            "MWh": 1.0,  # 1 MWh = 1.0 MWh
-            "GWh": 1000.0,  # 1 GWh = 1,000 MWh
-            "TWh": 1000000.0,  # 1 TWh = 1,000,000 MWh
-            "PWh": 1000000000.0,  # 1 PWh = 1,000,000,000 MWh
+            "J": 1e-9/3.6,
+            "kJ": 1e-6/3.6,
+            "MJ": 1e-3/3.6,
+            "GJ": 1/3.6,
+            "TJ": 1e3/3.6,
+            "PJ": 1e6/3.6,
+            "EJ": 1e9/3.6,
+            "Wh": 1e-6,
+            "kWh": 1e-3,  # 1 kWh = 0.001 MWh
+            "MWh": 1,  # 1 MWh = 1.0 MWh
+            "GWh": 1e3,  # 1 GWh = 1,000 MWh
+            "TWh": 1e6,  # 1 TWh = 1,000,000 MWh
+            "PWh": 1e9,  # 1 PWh = 1,000,000,000 MWh
             "MMBTU": 0.293071,  # 1 MMBTU = 0.293071 MWh
             # Power (base: MW)
-            "W": 0.000001,  # 1 W = 0.000001 MW
-            "kW": 0.001,  # 1 kW = 0.001 MW
-            "MW": 1.0,  # 1 MW = 1.0 MW
-            "GW": 1000.0,  # 1 GW = 1,000 MW
-            "TW": 1000000.0,  # 1 TW = 1,000,000 MW
+            "W": 1e-6,  # 1 W = 0.000001 MW
+            "kW": 1e-3,  # 1 kW = 0.001 MW
+            "MW": 1,  # 1 MW = 1.0 MW
+            "GW": 1e3,  # 1 GW = 1,000 MW
+            "TW": 1e6,  # 1 TW = 1,000,000 MW
             # Mass (base: t)
-            "g": 0.000001,  # 1 g = 0.000001 t
-            "kg": 0.001,  # 1 kg = 0.001 t
-            "t": 1.0,  # 1 t = 1.0 t
-            "Mt": 1000000.0,  # 1 Mt = 1,000,000 t
-            "Gt": 1000000000.0,  # 1 Gt = 1,000,000,000 t
+            "g": 1e-6,  # 1 g = 0.000001 t
+            "kg": 1e-3,  # 1 kg = 0.001 t
+            "t": 1,  # 1 t = 1.0 t
+            "Mt": 1e6,  # 1 Mt = 1,000,000 t
+            "Gt": 1e9,  # 1 Gt = 1,000,000,000 t
             # Volume (base: m3)
-            "m3": 1.0,  # 1 m3 = 1.0 m3
-            "L": 0.001,  # 1 L = 0.001 m3
+            "m3": 1,  # 1 m3 = 1.0 m3
+            "L": 1e-3,  # 1 L = 0.001 m3
             "barrel": 0.159,  # 1 barrel = 0.159 m3 (oil barrel)
             # Time (base: h)
             "s": 1 / 3600,  # 1 s = 1/3600 h
             "min": 1 / 60,  # 1 min = 1/60 h
-            "h": 1.0,  # 1 h = 1.0 h
+            "h": 1,  # 1 h = 1.0 h
             "a": 8760,  # 1 a (year) = 8760 h
             # Currency (base: USD)
-            "USD": 1.0,  # 1 USD = 1.0 USD
+            "USD": 1,  # 1 USD = 1.0 USD
             "EUR": 1.08,  # 1 EUR = 1.08 USD (approximate)
             "GBP": 1.27,  # 1 GBP = 1.27 USD (approximate)
             "JPY": 0.0067,  # 1 JPY = 0.0067 USD (approximate)

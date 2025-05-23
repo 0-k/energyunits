@@ -44,12 +44,7 @@ def add_units(df, column, unit):
     df_copy = df.copy()
 
     # Store unit information in DataFrame attributes
-    if hasattr(df_copy, "attrs"):
-        df_copy.attrs[f"{column}_unit"] = unit
-    else:
-        # For older pandas versions without attrs
-        df_copy._metadata = getattr(df_copy, "_metadata", []) + [f"{column}_unit"]
-        setattr(df_copy, f"{column}_unit", unit)
+    df_copy.attrs[f"{column}_unit"] = unit
 
     return df_copy
 
@@ -66,11 +61,7 @@ def convert_units(df, column, target_unit):
         DataFrame with converted values and updated unit information
     """
     # Get current unit from metadata
-    current_unit = None
-    if hasattr(df, "attrs"):
-        current_unit = df.attrs.get(f"{column}_unit")
-    else:
-        current_unit = getattr(df, f"{column}_unit", None)
+    current_unit = df.attrs.get(f"{column}_unit")
 
     if current_unit is None:
         raise ValueError(f"No unit information found for column '{column}'")
@@ -87,10 +78,7 @@ def convert_units(df, column, target_unit):
     df_copy[column] = df_copy[column] * factor
 
     # Update unit information
-    if hasattr(df_copy, "attrs"):
-        df_copy.attrs[f"{column}_unit"] = target_unit
-    else:
-        setattr(df_copy, f"{column}_unit", target_unit)
+    df_copy.attrs[f"{column}_unit"] = target_unit
 
     return df_copy
 
@@ -111,11 +99,7 @@ def calculate_emissions(df, energy_col, fuel_col, output_col="emissions"):
     df_copy = df.copy()
 
     # Get energy unit from metadata
-    energy_unit = None
-    if hasattr(df, "attrs"):
-        energy_unit = df.attrs.get(f"{energy_col}_unit")
-    else:
-        energy_unit = getattr(df, f"{energy_col}_unit", None)
+    energy_unit = df.attrs.get(f"{energy_col}_unit")
 
     if energy_unit is None:
         raise ValueError(f"No unit information found for column '{energy_col}'")
@@ -147,10 +131,7 @@ def calculate_emissions(df, energy_col, fuel_col, output_col="emissions"):
                 df_copy.loc[idx, output_col] = np.nan
 
     # Add unit information for emissions column
-    if hasattr(df_copy, "attrs"):
-        df_copy.attrs[f"{output_col}_unit"] = "t"
-    else:
-        setattr(df_copy, f"{output_col}_unit", "t")
+    df_copy.attrs[f"{output_col}_unit"] = "t"
 
     return df_copy
 
@@ -171,11 +152,7 @@ def energy_balance(df, columns, name="balance"):
 
     # Get unit from first column (all columns must have same unit)
     first_col = list(columns.keys())[0]
-    unit = None
-    if hasattr(df, "attrs"):
-        unit = df.attrs.get(f"{first_col}_unit")
-    else:
-        unit = getattr(df, f"{first_col}_unit", None)
+    unit = df.attrs.get(f"{first_col}_unit")
 
     if unit is None:
         raise ValueError(f"No unit information found for column '{first_col}'")
@@ -186,11 +163,7 @@ def energy_balance(df, columns, name="balance"):
     # Calculate balance
     for col, sign in columns.items():
         # Check unit compatibility
-        col_unit = None
-        if hasattr(df, "attrs"):
-            col_unit = df.attrs.get(f"{col}_unit")
-        else:
-            col_unit = getattr(df, f"{col}_unit", None)
+        col_unit = df.attrs.get(f"{col}_unit")
 
         if col_unit != unit:
             raise ValueError(f"Incompatible units: {unit} and {col_unit}")
@@ -199,9 +172,6 @@ def energy_balance(df, columns, name="balance"):
         df_copy[name] += sign * df_copy[col]
 
     # Add unit information for balance column
-    if hasattr(df_copy, "attrs"):
-        df_copy.attrs[f"{name}_unit"] = unit
-    else:
-        setattr(df_copy, f"{name}_unit", unit)
+    df_copy.attrs[f"{name}_unit"] = unit
 
     return df_copy
