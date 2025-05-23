@@ -41,10 +41,15 @@ class TestRegistryErrors:
             registry.get_conversion_factor("MWh", "kg")
         assert "Incompatible units: MWh and kg" in str(excinfo.value)
 
-        # Incompatible dimensions in convert_between_dimensions
+        # Dimensions that require substance but none provided
         with pytest.raises(ValueError) as excinfo:
             registry.convert_between_dimensions(100, "MWh", "kg")
-        assert "No conversion defined between ENERGY and MASS" in str(excinfo.value)
+        assert "Substance must be specified for energy to mass conversion" in str(excinfo.value)
+
+        # Truly incompatible dimensions (no conversion relationship defined)
+        with pytest.raises(ValueError) as excinfo:
+            registry.convert_between_dimensions(100, "MWh", "USD")
+        assert "No conversion defined between ENERGY and CURRENCY" in str(excinfo.value)
 
     def test_missing_substance_errors(self):
         """Test errors when substance is missing but required."""
@@ -78,16 +83,21 @@ class TestQuantityErrors:
 
     def test_conversion_errors(self):
         """Test errors in Quantity.to() method."""
-        # Incompatible units
+        # Conversion that requires substance but none provided
         energy = Quantity(100, "MWh")
         with pytest.raises(ValueError) as excinfo:
             energy.to("kg")
-        assert "Cannot convert from MWh (ENERGY) to kg (MASS)" in str(excinfo.value)
+        assert "Substance must be specified for energy to mass conversion" in str(excinfo.value)
 
         # Unknown target unit
         with pytest.raises(ValueError) as excinfo:
             energy.to("unknown_unit")
         assert "Unknown unit: unknown_unit" in str(excinfo.value)
+
+        # Truly incompatible units (no conversion path exists)
+        with pytest.raises(ValueError) as excinfo:
+            energy.to("USD")
+        assert "Cannot convert from MWh (ENERGY) to USD (CURRENCY)" in str(excinfo.value)
 
     def test_duration_errors(self):
         """Test errors in for_duration and average_power methods."""

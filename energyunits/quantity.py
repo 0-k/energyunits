@@ -61,8 +61,13 @@ class Quantity:
         # Case 2: Different but compatible dimensions
         elif registry.are_dimensions_compatible(from_dim, to_dim):
             # Use the dimension relationship to convert
+            # Pass basis if available
+            kwargs = {}
+            if self.basis is not None:
+                kwargs['basis'] = self.basis
+
             new_value = registry.convert_between_dimensions(
-                self.value, self.unit, target_unit, self.substance
+                self.value, self.unit, target_unit, self.substance, **kwargs
             )
         else:
             raise ValueError(

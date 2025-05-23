@@ -148,6 +148,13 @@ class TestUnitRegistry:
         assert registry.are_dimensions_compatible("MASS", "VOLUME") == True
         assert registry.are_dimensions_compatible("VOLUME", "MASS") == True
 
-        # Unrelated dimensions
-        assert registry.are_dimensions_compatible("ENERGY", "MASS") == False
-        assert registry.are_dimensions_compatible("POWER", "VOLUME") == False
+        # Energy system conversions (NEW in this version!)
+        assert registry.are_dimensions_compatible("ENERGY", "MASS") == True
+        assert registry.are_dimensions_compatible("MASS", "ENERGY") == True
+        assert registry.are_dimensions_compatible("ENERGY", "VOLUME") == True
+        assert registry.are_dimensions_compatible("VOLUME", "ENERGY") == True
+
+        # Truly unrelated dimensions
+        assert registry.are_dimensions_compatible("ENERGY", "CURRENCY") == False
+        assert registry.are_dimensions_compatible("POWER", "CURRENCY") == False
+        assert registry.are_dimensions_compatible("MASS", "TIME") == False

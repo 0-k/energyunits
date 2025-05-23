@@ -180,8 +180,8 @@ class TestCrossIndustryScenarios:
         # The value depends on the exact properties in the substance database
         assert gas_volume.value > 0
 
-        # Calculate CO2 emissions
-        emissions = energy_needed.calculate_emissions()
+        # Calculate CO2 emissions from the gas (which has substance specified)
+        emissions = gas.calculate_emissions()
 
         assert emissions.substance == "CO2"
         assert emissions.unit == "t"

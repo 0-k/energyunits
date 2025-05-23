@@ -114,6 +114,14 @@ class UnitRegistry:
             ("MASS", "VOLUME"): self._mass_to_volume,
             # Volume to Mass (requires substance properties)
             ("VOLUME", "MASS"): self._volume_to_mass,
+            # Energy to Mass (requires substance properties)
+            ("ENERGY", "MASS"): self._energy_to_mass,
+            # Mass to Energy (requires substance properties)
+            ("MASS", "ENERGY"): self._mass_to_energy,
+            # Energy to Volume (requires substance properties)
+            ("ENERGY", "VOLUME"): self._energy_to_volume,
+            # Volume to Energy (requires substance properties)
+            ("VOLUME", "ENERGY"): self._volume_to_energy,
         }
 
         # Map standard unit pairs for dimension relationships
@@ -122,6 +130,10 @@ class UnitRegistry:
             ("POWER", "ENERGY"): ("MW", "MWh"),
             ("MASS", "VOLUME"): ("kg", "m3"),
             ("VOLUME", "MASS"): ("m3", "kg"),
+            ("ENERGY", "MASS"): ("MWh", "kg"),
+            ("MASS", "ENERGY"): ("kg", "MWh"),
+            ("ENERGY", "VOLUME"): ("MWh", "m3"),
+            ("VOLUME", "ENERGY"): ("m3", "MWh"),
         }
 
         # Map for corresponding units (e.g., MW → MWh, W → Wh)
@@ -292,6 +304,118 @@ class UnitRegistry:
 
         # Convert to target mass unit
         return mass_kg * self.get_conversion_factor("kg", to_unit)
+
+    def _energy_to_mass(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        **kwargs,
+    ) -> float:
+        """Convert energy to mass using substance heating value."""
+        # This requires the substance registry
+        from .substance import substance_registry
+
+        if substance is None:
+            raise ValueError(
+                "Substance must be specified for energy to mass conversion"
+            )
+
+        # Convert energy to MWh first
+        energy_mwh = value * self.get_conversion_factor(from_unit, "MWh")
+
+        # Get heating value (use LHV by default, or HHV if specified)
+        basis = kwargs.get("basis", "LHV")
+        if basis.upper() == "HHV":
+            heating_value = substance_registry.get_hhv(substance, "MWh/t")
+        else:
+            heating_value = substance_registry.get_lhv(substance, "MWh/t")
+
+        # Calculate mass in tonnes
+        mass_t = energy_mwh / heating_value
+
+        # Convert to kg
+        mass_kg = mass_t * 1000
+
+        # Convert to target mass unit
+        return mass_kg * self.get_conversion_factor("kg", to_unit)
+
+    def _mass_to_energy(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        **kwargs,
+    ) -> float:
+        """Convert mass to energy using substance heating value."""
+        # This requires the substance registry
+        from .substance import substance_registry
+
+        if substance is None:
+            raise ValueError(
+                "Substance must be specified for mass to energy conversion"
+            )
+
+        # Convert to kg first
+        mass_kg = value * self.get_conversion_factor(from_unit, "kg")
+
+        # Convert to tonnes
+        mass_t = mass_kg / 1000
+
+        # Get heating value (use LHV by default, or HHV if specified)
+        basis = kwargs.get("basis", "LHV")
+        if basis.upper() == "HHV":
+            heating_value = substance_registry.get_hhv(substance, "MWh/t")
+        else:
+            heating_value = substance_registry.get_lhv(substance, "MWh/t")
+
+        # Calculate energy in MWh
+        energy_mwh = mass_t * heating_value
+
+        # Convert to target energy unit
+        return energy_mwh * self.get_conversion_factor("MWh", to_unit)
+
+    def _energy_to_volume(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        **kwargs,
+    ) -> float:
+        """Convert energy to volume via mass (energy → mass → volume)."""
+        if substance is None:
+            raise ValueError(
+                "Substance must be specified for energy to volume conversion"
+            )
+
+        # First convert energy to mass
+        mass_kg = self._energy_to_mass(value, from_unit, "kg", substance, **kwargs)
+
+        # Then convert mass to volume
+        return self._mass_to_volume(mass_kg, "kg", to_unit, substance, **kwargs)
+
+    def _volume_to_energy(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        **kwargs,
+    ) -> float:
+        """Convert volume to energy via mass (volume → mass → energy)."""
+        if substance is None:
+            raise ValueError(
+                "Substance must be specified for volume to energy conversion"
+            )
+
+        # First convert volume to mass
+        mass_kg = self._volume_to_mass(value, from_unit, "kg", substance, **kwargs)
+
+        # Then convert mass to energy
+        return self._mass_to_energy(mass_kg, "kg", to_unit, substance, **kwargs)
 
     def get_conversion_factor(self, from_unit: str, to_unit: str) -> float:
         """Get conversion factor between compatible units."""
