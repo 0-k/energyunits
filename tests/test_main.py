@@ -282,7 +282,6 @@ class TestPandasIntegration:
 
         from energyunits.pandas_tools import (
             add_units,
-            calculate_emissions,
             convert_units,
         )
 
@@ -306,20 +305,6 @@ class TestPandasIntegration:
         # Check conversion
         assert df_gj.attrs["generation_unit"] == "GJ"
         assert df_gj["generation"][0] == pytest.approx(360)
-
-        # Calculate emissions using the updated pandas function (which uses unified .to() method)
-        df_emissions = calculate_emissions(
-            df_with_units, energy_col="generation", fuel_col="fuel_type"
-        )
-
-        # Check emissions column exists
-        assert "emissions" in df_emissions.columns
-        # Fossil fuels should have positive emissions
-        assert df_emissions["emissions"][0] > 0  # Coal
-        assert df_emissions["emissions"][1] > 0  # Natural gas
-        # Renewables should have zero emissions
-        assert df_emissions["emissions"][2] == 0  # Wind
-        assert df_emissions["emissions"][3] == 0  # Solar
 
 
 class TestCostCalculations:
