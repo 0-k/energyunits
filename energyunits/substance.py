@@ -1,20 +1,7 @@
 """
 Substance module for the EnergyUnits library.
 
-This module contains a database of substances with their properties
-(heating values, densities, carbon intensities) and related functions.
-
-Example:
-    ```python
-    from energyunits import Quantity
-
-    # Get energy content of coal
-    coal = Quantity(1000, "t", "coal")
-    energy_hhv = coal.energy_content(basis="HHV")  # ~8140 MWh
-
-    # Calculate CO2 emissions
-    emissions = energy_hhv.calculate_emissions()  # tCO2
-    ```
+Contains database of substances with their properties for energy system modeling.
 """
 
 import numpy as np
@@ -24,23 +11,18 @@ class SubstanceRegistry:
     """Registry of substances and their properties."""
 
     def __init__(self):
-        """Initialize the substance registry with default values."""
-        # Database format:
-        # 'substance_id': {
-        #     'name': 'Human readable name',
-        #     'hhv': value in MJ/kg,
-        #     'lhv': value in MJ/kg,
-        #     'density': value in kg/m3,
-        #     'carbon_intensity': value in kg CO2/MWh (LHV basis),
-        # }
+        """Initialize the substance registry."""
         self._substances = {
             # Coal
             "coal": {
                 "name": "Coal (generic)",
                 "hhv": 29.3,  # MJ/kg
                 "lhv": 27.8,  # MJ/kg
-                "density": 833,  # kg/m3 (bulk density)
+                "density": 833,  # kg/m3
                 "carbon_intensity": 340,  # kg CO2/MWh
+                "carbon_content": 0.75,
+                "hydrogen_content": 0.05,
+                "ash_content": 0.10,
             },
             "lignite": {
                 "name": "Lignite Coal",
@@ -48,6 +30,9 @@ class SubstanceRegistry:
                 "lhv": 14.0,  # MJ/kg
                 "density": 700,  # kg/m3
                 "carbon_intensity": 400,  # kg CO2/MWh
+                "carbon_content": 0.65,
+                "hydrogen_content": 0.04,
+                "ash_content": 0.15,
             },
             "bituminous": {
                 "name": "Bituminous Coal",
@@ -55,6 +40,9 @@ class SubstanceRegistry:
                 "lhv": 28.5,  # MJ/kg
                 "density": 833,  # kg/m3
                 "carbon_intensity": 330,  # kg CO2/MWh
+                "carbon_content": 0.80,
+                "hydrogen_content": 0.05,
+                "ash_content": 0.08,
             },
             "anthracite": {
                 "name": "Anthracite Coal",
@@ -62,6 +50,9 @@ class SubstanceRegistry:
                 "lhv": 31.5,  # MJ/kg
                 "density": 1000,  # kg/m3
                 "carbon_intensity": 320,  # kg CO2/MWh
+                "carbon_content": 0.85,
+                "hydrogen_content": 0.04,
+                "ash_content": 0.05,
             },
             # Natural Gas
             "natural_gas": {
@@ -70,13 +61,29 @@ class SubstanceRegistry:
                 "lhv": 49.5,  # MJ/kg
                 "density": 0.75,  # kg/m3
                 "carbon_intensity": 200,  # kg CO2/MWh
+                "carbon_content": 0.75,
+                "hydrogen_content": 0.25,
+                "ash_content": 0.0,
             },
             "lng": {
                 "name": "Liquefied Natural Gas",
                 "hhv": 55.0,  # MJ/kg
                 "lhv": 49.5,  # MJ/kg
                 "density": 450,  # kg/m3
-                "carbon_intensity": 210,  # kg CO2/MWh (slightly higher due to liquefaction process)
+                "carbon_intensity": 210,  # kg CO2/MWh
+                "carbon_content": 0.75,
+                "hydrogen_content": 0.25,
+                "ash_content": 0.0,
+            },
+            "methane": {
+                "name": "Methane",
+                "hhv": 55.5,  # MJ/kg
+                "lhv": 50.0,  # MJ/kg
+                "density": 0.68,  # kg/m3
+                "carbon_intensity": 200,  # kg CO2/MWh
+                "carbon_content": 0.75,
+                "hydrogen_content": 0.25,
+                "ash_content": 0.0,
             },
             # Oil Products
             "crude_oil": {
@@ -85,13 +92,19 @@ class SubstanceRegistry:
                 "lhv": 42.5,  # MJ/kg
                 "density": 870,  # kg/m3
                 "carbon_intensity": 270,  # kg CO2/MWh
+                "carbon_content": 0.85,
+                "hydrogen_content": 0.13,
+                "ash_content": 0.001,
             },
-            "oil": {  # Generic oil for tests
+            "oil": {
                 "name": "Oil (generic)",
                 "hhv": 45.0,  # MJ/kg
                 "lhv": 42.5,  # MJ/kg
                 "density": 870,  # kg/m3
                 "carbon_intensity": 270,  # kg CO2/MWh
+                "carbon_content": 0.85,
+                "hydrogen_content": 0.13,
+                "ash_content": 0.001,
             },
             "fuel_oil": {
                 "name": "Heavy Fuel Oil",
@@ -99,6 +112,9 @@ class SubstanceRegistry:
                 "lhv": 40.5,  # MJ/kg
                 "density": 950,  # kg/m3
                 "carbon_intensity": 285,  # kg CO2/MWh
+                "carbon_content": 0.87,
+                "hydrogen_content": 0.11,
+                "ash_content": 0.005,
             },
             "diesel": {
                 "name": "Diesel",
@@ -106,6 +122,9 @@ class SubstanceRegistry:
                 "lhv": 42.8,  # MJ/kg
                 "density": 840,  # kg/m3
                 "carbon_intensity": 265,  # kg CO2/MWh
+                "carbon_content": 0.86,
+                "hydrogen_content": 0.14,
+                "ash_content": 0.0,
             },
             "gasoline": {
                 "name": "Gasoline",
@@ -113,6 +132,9 @@ class SubstanceRegistry:
                 "lhv": 44.0,  # MJ/kg
                 "density": 750,  # kg/m3
                 "carbon_intensity": 255,  # kg CO2/MWh
+                "carbon_content": 0.85,
+                "hydrogen_content": 0.15,
+                "ash_content": 0.0,
             },
             # Biomass
             "wood_pellets": {
@@ -120,51 +142,72 @@ class SubstanceRegistry:
                 "hhv": 20.0,  # MJ/kg
                 "lhv": 18.5,  # MJ/kg
                 "density": 650,  # kg/m3
-                "carbon_intensity": 20,  # kg CO2/MWh (considered renewable)
+                "carbon_intensity": 20,  # kg CO2/MWh
+                "carbon_content": 0.50,
+                "hydrogen_content": 0.06,
+                "ash_content": 0.01,
             },
             "wood_chips": {
                 "name": "Wood Chips",
                 "hhv": 19.0,  # MJ/kg
                 "lhv": 16.0,  # MJ/kg
                 "density": 350,  # kg/m3
-                "carbon_intensity": 25,  # kg CO2/MWh (considered renewable)
+                "carbon_intensity": 25,  # kg CO2/MWh
+                "carbon_content": 0.48,
+                "hydrogen_content": 0.06,
+                "ash_content": 0.02,
             },
-            # Renewables
+            # Renewables (no combustion)
             "wind": {
                 "name": "Wind Energy",
-                "hhv": 0.0,  # MJ/kg (not applicable)
-                "lhv": 0.0,  # MJ/kg (not applicable)
-                "density": 0.0,  # kg/m3 (not applicable)
-                "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
+                "hhv": None,
+                "lhv": None,
+                "density": None,
+                "carbon_intensity": 0,  # kg CO2/MWh
+                "carbon_content": 0.0,
+                "hydrogen_content": 0.0,
+                "ash_content": 0.0,
             },
             "solar": {
                 "name": "Solar Energy",
-                "hhv": 0.0,  # MJ/kg (not applicable)
-                "lhv": 0.0,  # MJ/kg (not applicable)
-                "density": 0.0,  # kg/m3 (not applicable)
-                "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
+                "hhv": None,
+                "lhv": None,
+                "density": None,
+                "carbon_intensity": 0,  # kg CO2/MWh
+                "carbon_content": 0.0,
+                "hydrogen_content": 0.0,
+                "ash_content": 0.0,
             },
             "hydro": {
                 "name": "Hydro Energy",
-                "hhv": 0.0,  # MJ/kg (not applicable)
-                "lhv": 0.0,  # MJ/kg (not applicable)
-                "density": 0.0,  # kg/m3 (not applicable)
-                "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
+                "hhv": None,
+                "lhv": None,
+                "density": None,
+                "carbon_intensity": 0,  # kg CO2/MWh
+                "carbon_content": 0.0,
+                "hydrogen_content": 0.0,
+                "ash_content": 0.0,
             },
             "nuclear": {
                 "name": "Nuclear Energy",
-                "hhv": 0.0,  # MJ/kg (not applicable)
-                "lhv": 0.0,  # MJ/kg (not applicable)
-                "density": 0.0,  # kg/m3 (not applicable)
-                "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
+                "hhv": None,
+                "lhv": None,
+                "density": None,
+                "carbon_intensity": 0,  # kg CO2/MWh
+                "carbon_content": 0.0,
+                "hydrogen_content": 0.0,
+                "ash_content": 0.0,
             },
             # Other fuels
             "hydrogen": {
                 "name": "Hydrogen",
                 "hhv": 142.0,  # MJ/kg
                 "lhv": 120.0,  # MJ/kg
-                "density": 0.09,  # kg/m3 (at standard conditions)
-                "carbon_intensity": 0,  # kg CO2/MWh (zero direct emissions)
+                "density": 0.09,  # kg/m3
+                "carbon_intensity": 0,  # kg CO2/MWh
+                "carbon_content": 0.0,
+                "hydrogen_content": 1.0,
+                "ash_content": 0.0,
             },
             "methanol": {
                 "name": "Methanol",
@@ -172,25 +215,43 @@ class SubstanceRegistry:
                 "lhv": 19.9,  # MJ/kg
                 "density": 795,  # kg/m3
                 "carbon_intensity": 240,  # kg CO2/MWh
+                "carbon_content": 0.375,
+                "hydrogen_content": 0.125,
+                "ash_content": 0.0,
             },
-            # Greenhouse gases
+            # Combustion products
             "CO2": {
                 "name": "Carbon Dioxide",
-                "hhv": 0.0,  # MJ/kg (not a fuel)
-                "lhv": 0.0,  # MJ/kg
-                "density": 1.98,  # kg/m3 (at standard conditions)
-                "carbon_intensity": 0.0,  # kg CO2/MWh (not applicable)
+                "hhv": None,
+                "lhv": None,
+                "density": 1.98,  # kg/m3
+                "carbon_intensity": 0.0,
+                "carbon_content": 0.273,
+                "hydrogen_content": 0.0,
+                "ash_content": 0.0,
             },
-            "methane": {
-                "name": "Methane",
-                "hhv": 55.5,  # MJ/kg
-                "lhv": 50.0,  # MJ/kg
-                "density": 0.68,  # kg/m3 (at standard conditions)
-                "carbon_intensity": 200,  # kg CO2/MWh
+            "H2O": {
+                "name": "Water",
+                "hhv": None,
+                "lhv": None,
+                "density": 1000,  # kg/m3
+                "carbon_intensity": 0.0,
+                "carbon_content": 0.0,
+                "hydrogen_content": 0.111,
+                "ash_content": 0.0,
+            },
+            "ash": {
+                "name": "Ash",
+                "hhv": None,
+                "lhv": None,
+                "density": 1500,  # kg/m3
+                "carbon_intensity": 0.0,
+                "carbon_content": 0.0,
+                "hydrogen_content": 0.0,
+                "ash_content": 1.0,
             },
         }
 
-        # Unit conversions
         self._volumetric_units = {
             "barrel": 0.159,  # m3 per barrel
         }
@@ -199,7 +260,6 @@ class SubstanceRegistry:
         """Get substance data by ID."""
         if substance_id not in self._substances:
             raise ValueError(f"Unknown substance: {substance_id}")
-
         return self._substances[substance_id]
 
     def get_hhv(self, substance_id, unit="MJ/kg"):
@@ -207,13 +267,15 @@ class SubstanceRegistry:
         substance = self.get_substance(substance_id)
         hhv = substance["hhv"]
 
-        # Convert from MJ/kg to requested unit
+        if hhv is None:
+            raise ValueError(f"Substance '{substance_id}' has no heating value (not a combustible fuel)")
+
         if unit == "MJ/kg":
             return hhv
         elif unit == "MWh/t":
-            return hhv * 0.2778  # 1 MJ/kg = 0.2778 MWh/t
+            return hhv * 0.2778
         elif unit == "kWh/kg":
-            return hhv * 0.2778  # 1 MJ/kg = 0.2778 kWh/kg
+            return hhv * 0.2778
         else:
             raise ValueError(f"Unsupported HHV unit: {unit}")
 
@@ -222,76 +284,83 @@ class SubstanceRegistry:
         substance = self.get_substance(substance_id)
         lhv = substance["lhv"]
 
-        # Convert from MJ/kg to requested unit
+        if lhv is None:
+            raise ValueError(f"Substance '{substance_id}' has no heating value (not a combustible fuel)")
+
         if unit == "MJ/kg":
             return lhv
         elif unit == "MWh/t":
-            return lhv * 0.2778  # 1 MJ/kg = 0.2778 MWh/t
+            return lhv * 0.2778
         elif unit == "kWh/kg":
-            return lhv * 0.2778  # 1 MJ/kg = 0.2778 kWh/kg
+            return lhv * 0.2778
         else:
             raise ValueError(f"Unsupported LHV unit: {unit}")
 
     def get_density(self, substance_id):
         """Get density for a substance in kg/m3."""
         substance = self.get_substance(substance_id)
-        return substance["density"]
+        density = substance["density"]
+
+        if density is None:
+            raise ValueError(f"Substance '{substance_id}' has no defined density")
+
+        return density
 
     def get_carbon_intensity(self, substance_id):
         """Get carbon intensity for a substance in kg CO2/MWh."""
         substance = self.get_substance(substance_id)
         return substance["carbon_intensity"]
 
-    def get_moisture_content(self, substance_id):
-        """Get typical moisture content for a substance."""
+    def get_carbon_content(self, substance_id):
+        """Get carbon content for a substance (mass fraction)."""
         substance = self.get_substance(substance_id)
-        return substance["moisture_content"]
+        return substance["carbon_content"]
+
+    def get_hydrogen_content(self, substance_id):
+        """Get hydrogen content for a substance (mass fraction)."""
+        substance = self.get_substance(substance_id)
+        return substance["hydrogen_content"]
+
+    def get_ash_content(self, substance_id):
+        """Get ash content for a substance (mass fraction)."""
+        substance = self.get_substance(substance_id)
+        return substance["ash_content"]
 
     def get_lhv_hhv_ratio(self, substance_id):
         """Get the ratio of LHV to HHV for a substance."""
         substance = self.get_substance(substance_id)
-        return substance["lhv"] / substance["hhv"]
+        hhv = substance["hhv"]
+        lhv = substance["lhv"]
+
+        if hhv is None or lhv is None:
+            raise ValueError(f"Substance '{substance_id}' has no heating values for LHV/HHV ratio")
+
+        return lhv / hhv
 
     def calculate_energy_content(self, quantity, basis="HHV"):
-        """Calculate energy content for a substance quantity.
-
-        Args:
-            quantity: A Quantity object with substance attribute
-            basis: 'HHV' or 'LHV'
-
-        Returns:
-            A Quantity object with energy in MWh
-        """
+        """Calculate energy content for a substance quantity."""
         from .quantity import Quantity
 
         if quantity.substance is None:
-            raise ValueError(
-                "Substance must be specified for energy content calculation"
-            )
+            raise ValueError("Substance must be specified for energy content calculation")
 
         substance_id = quantity.substance
 
         # Convert to mass units if not already
         if quantity.unit in ["t", "kg", "g"]:
-            # Already in mass units, convert to tonnes
             mass_t = quantity.to("t").value
         elif quantity.unit in ["m3", "L"] + list(self._volumetric_units.keys()):
-            # Convert from volume to mass
             if quantity.unit in self._volumetric_units:
-                # Convert to m3 first
                 volume_m3 = quantity.value * self._volumetric_units[quantity.unit]
             elif quantity.unit == "L":
                 volume_m3 = quantity.value * 0.001
-            else:  # m3
+            else:
                 volume_m3 = quantity.value
 
-            # Convert to tonnes
-            density = self.get_density(substance_id)  # kg/m3
-            mass_t = (volume_m3 * density) / 1000  # t
+            density = self.get_density(substance_id)
+            mass_t = (volume_m3 * density) / 1000
         else:
-            raise ValueError(
-                f"Cannot calculate energy content from unit: {quantity.unit}"
-            )
+            raise ValueError(f"Cannot calculate energy content from unit: {quantity.unit}")
 
         # Get heating value in MWh/t
         if basis.upper() == "HHV":
@@ -301,21 +370,41 @@ class SubstanceRegistry:
         else:
             raise ValueError(f"Invalid heating value basis: {basis}")
 
-        # Calculate energy content
         energy_mwh = mass_t * heating_value
-
-        # Return as a new quantity
         return Quantity(energy_mwh, "MWh", substance_id)
 
+    def calculate_combustion_product(self, fuel_quantity, target_substance):
+        """Calculate combustion products from fuel based on stoichiometry."""
+        from .quantity import Quantity
+
+        if fuel_quantity.substance is None:
+            raise ValueError("Fuel substance must be specified for combustion product calculation")
+
+        fuel_kg = fuel_quantity.to("kg")
+        fuel_mass = fuel_kg.value
+
+        if target_substance == "CO2":
+            carbon_fraction = self.get_carbon_content(fuel_quantity.substance)
+            carbon_mass = fuel_mass * carbon_fraction
+            co2_mass = carbon_mass * (44 / 12)  # C + O2 → CO2
+            return Quantity(co2_mass, "kg", "CO2")
+
+        elif target_substance == "H2O":
+            hydrogen_fraction = self.get_hydrogen_content(fuel_quantity.substance)
+            hydrogen_mass = fuel_mass * hydrogen_fraction
+            water_mass = hydrogen_mass * (18 / 2)  # 2H + ½O2 → H2O
+            return Quantity(water_mass, "kg", "H2O")
+
+        elif target_substance == "ash":
+            ash_fraction = self.get_ash_content(fuel_quantity.substance)
+            ash_mass = fuel_mass * ash_fraction
+            return Quantity(ash_mass, "kg", "ash")
+
+        else:
+            raise ValueError(f"Unknown combustion product: {target_substance}")
+
     def calculate_emissions(self, energy_quantity):
-        """Calculate CO2 emissions for an energy quantity.
-
-        Args:
-            energy_quantity: A Quantity object with energy units and substance
-
-        Returns:
-            A Quantity object with CO2 emissions in t
-        """
+        """Calculate CO2 emissions for an energy quantity."""
         from .quantity import Quantity
 
         if energy_quantity.substance is None:
@@ -324,19 +413,13 @@ class SubstanceRegistry:
         if energy_quantity.dimension != "ENERGY":
             raise ValueError(f"Expected energy units, got: {energy_quantity.unit}")
 
-        # Convert to MWh
         energy_mwh = energy_quantity.to("MWh").value
-
-        # Get carbon intensity in kg CO2/MWh
         intensity = self.get_carbon_intensity(energy_quantity.substance)
-
-        # Calculate emissions
         emissions_kg = energy_mwh * intensity
         emissions_t = emissions_kg / 1000
 
-        # Return as a new quantity
         return Quantity(emissions_t, "t", "CO2")
 
 
-# Create a global substance registry instance
+# Global instance
 substance_registry = SubstanceRegistry()

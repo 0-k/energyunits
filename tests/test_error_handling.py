@@ -147,7 +147,7 @@ class TestQuantityErrors:
         mass = Quantity(100, "t")  # No substance
         with pytest.raises(ValueError) as excinfo:
             mass.calculate_emissions()
-        assert "Cannot calculate emissions" in str(excinfo.value)
+        assert "Source substance must be specified for substance conversion" in str(excinfo.value)
 
     def test_inflation_adjustment_errors(self):
         """Test errors in inflation adjustments."""
