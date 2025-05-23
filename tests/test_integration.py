@@ -206,7 +206,7 @@ class TestCrossIndustryScenarios:
         emissions = diesel_energy.to(substance="CO2")
 
         assert emissions.substance == "CO2"
-        assert emissions.unit == "kg"
+        assert emissions.unit == "t"
         assert emissions.value > 0
 
         # Electric equivalent (assuming 30% efficiency for diesel engine)

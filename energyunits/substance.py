@@ -380,25 +380,26 @@ class SubstanceRegistry:
         if fuel_quantity.substance is None:
             raise ValueError("Fuel substance must be specified for combustion product calculation")
 
-        fuel_kg = fuel_quantity.to("kg")
-        fuel_mass = fuel_kg.value
+        # Convert to tonnes (base mass unit)
+        fuel_t = fuel_quantity.to("t")
+        fuel_mass = fuel_t.value
 
         if target_substance == "CO2":
             carbon_fraction = self.get_carbon_content(fuel_quantity.substance)
             carbon_mass = fuel_mass * carbon_fraction
             co2_mass = carbon_mass * (44 / 12)  # C + O2 → CO2
-            return Quantity(co2_mass, "kg", "CO2")
+            return Quantity(co2_mass, "t", "CO2")
 
         elif target_substance == "H2O":
             hydrogen_fraction = self.get_hydrogen_content(fuel_quantity.substance)
             hydrogen_mass = fuel_mass * hydrogen_fraction
             water_mass = hydrogen_mass * (18 / 2)  # 2H + ½O2 → H2O
-            return Quantity(water_mass, "kg", "H2O")
+            return Quantity(water_mass, "t", "H2O")
 
         elif target_substance == "ash":
             ash_fraction = self.get_ash_content(fuel_quantity.substance)
             ash_mass = fuel_mass * ash_fraction
-            return Quantity(ash_mass, "kg", "ash")
+            return Quantity(ash_mass, "t", "ash")
 
         else:
             raise ValueError(f"Unknown combustion product: {target_substance}")

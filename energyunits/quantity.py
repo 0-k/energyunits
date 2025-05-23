@@ -229,6 +229,7 @@ class Quantity:
         other_converted = other.to(self.unit)
         return np.any(self.value != other_converted.value)
 
+    # Internal methods - not part of public API
     def _convert_unit(self, target_unit: str) -> "Quantity":
         """Internal method to convert unit only."""
         from_dim = self.dimension
@@ -296,16 +297,12 @@ class Quantity:
 
         # Handle renewables specially - they have zero combustion products
         if self.substance in ["wind", "solar", "hydro", "nuclear"]:
-            return Quantity(0.0, "kg", target_substance)
-
-        if self.dimension == "ENERGY":
-            fuel_mass = self.to("kg")
-        else:
-            fuel_mass = self
+            return Quantity(0.0, "t", target_substance)
 
         from .substance import substance_registry
 
-        combustion_product = substance_registry.calculate_combustion_product(fuel_mass, target_substance)
+        # Pass self directly - calculate_combustion_product handles the mass conversion
+        combustion_product = substance_registry.calculate_combustion_product(self, target_substance)
 
         return Quantity(
             combustion_product.value, combustion_product.unit, target_substance,
