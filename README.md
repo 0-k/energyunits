@@ -45,9 +45,6 @@ capex_2025 = capex_2020.to(reference_year=2025)  # Auto-adjusts for inflation
 power = Quantity(100, "MW")
 time = Quantity(24, "h") 
 energy = power * time  # → 2400 MWh
-
-# Combined conversions in one call
-result = coal.to("MWh", basis="LHV", substance="CO2")
 ```
 
 ## Use Cases
@@ -60,11 +57,11 @@ electricity_output = Quantity(400, "MWh")
 
 # Calculate efficiency
 efficiency = electricity_output / fuel_input.to("MWh")
-print(f"Plant efficiency: {efficiency:.1%}")
+print(f"Plant efficiency: {efficiency.value:.1%}")
 
 # Emission intensity  
 co2_rate = fuel_input.to("t", substance="CO2") / electricity_output
-print(f"CO2 intensity: {co2_rate:.2f} t CO2/MWh")
+print(f"CO2 intensity: {co2_rate.value:.2f} t CO2/MWh")
 ```
 
 ### Techno-Economic Modeling
@@ -78,7 +75,7 @@ annual_generation = Quantity(8760 * capacity_factor, "h") * Quantity(1, "MW")
 
 # Calculate levelized cost component
 lcoe_capex = capex_today / (annual_generation * 20)  # 20-year lifetime
-print(f"CAPEX component: {lcoe_capex:.2f} USD/MWh")
+print(f"CAPEX component: {lcoe_capex.value:.2f} USD/MWh")
 ```
 
 ### Fuel Analysis
@@ -86,11 +83,11 @@ print(f"CAPEX component: {lcoe_capex:.2f} USD/MWh")
 # Compare fuel heating values
 coal_hhv = Quantity(1, "t", "coal").to("MWh", basis="HHV")
 coal_lhv = Quantity(1, "t", "coal").to("MWh", basis="LHV") 
-wood_lhv = Quantity(1, "t", "wood").to("MWh", basis="LHV")
+wood_lhv = Quantity(1, "t", "wood_pellets").to("MWh", basis="LHV")
 
-print(f"Coal HHV: {coal_hhv:.1f}")
-print(f"Coal LHV: {coal_lhv:.1f}")  
-print(f"Wood LHV: {wood_lhv:.1f}")
+print(f"Coal HHV: {coal_hhv.value:.1f}")
+print(f"Coal LHV: {coal_lhv.value:.1f}")  
+print(f"Wood LHV: {wood_lhv.value:.1f}")
 ```
 
 ## Advanced Features
@@ -179,8 +176,8 @@ df = pd.DataFrame({
     'hours': [24, 12, 8] 
 })
 
-# Convert columns with units
-df['energy_MWh'] = convert_units(df['power'], 'MW') * convert_units(df['hours'], 'h')
+# Calculate energy in MWh (convert MW*h to MWh)
+df['energy_MWh'] = df['power'] * df['hours'] / 1000
 df['energy_GJ'] = df['energy_MWh'].apply(lambda x: Quantity(x, 'MWh').to('GJ').value)
 ```
 
