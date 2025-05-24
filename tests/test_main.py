@@ -1,12 +1,4 @@
-"""
-Test implementations for the EnergyUnits library.
-
-These tests correspond to the examples in the API Examples document
-(see /examples/development.py) and can be used for test-driven development.
-"""
-
 import numpy as np
-import pandas as pd
 import pytest
 
 
@@ -75,16 +67,16 @@ class TestPowerEnergyConversions:
         assert energy_1yr.unit == "MWh"
 
     def test_energy_to_average_power(self):
-            """Test calculating average power using division."""
-            from energyunits import Quantity
+        """Test calculating average power using division."""
+        from energyunits import Quantity
 
-            # Energy to power using division
-            energy = Quantity(240, "MWh")
-            time = Quantity(12, "h")
-            avg_power = energy / time
+        # Energy to power using division
+        energy = Quantity(240, "MWh")
+        time = Quantity(12, "h")
+        avg_power = energy / time
 
-            assert avg_power.value == pytest.approx(20)
-            assert avg_power.unit == "MW"
+        assert avg_power.value == pytest.approx(20)
+        assert avg_power.unit == "MW"
 
 
 class TestSubstances:
@@ -285,10 +277,7 @@ class TestPandasIntegration:
         """Test integration with pandas DataFrames."""
         import pandas as pd
 
-        from energyunits.pandas_tools import (
-            add_units,
-            convert_units,
-        )
+        from energyunits.pandas_tools import add_units, convert_units
 
         # Create dataframe
         df = pd.DataFrame(
@@ -321,7 +310,7 @@ class TestCostCalculations:
         capex_2015 = Quantity(1000, "USD/kW", reference_year=2015)
 
         # Adjust for inflation
-        capex_2025 = capex_2015.adjust_inflation(target_year=2025)
+        capex_2025 = capex_2015.to(reference_year=2025)
 
         assert capex_2025.unit == "USD/kW"
         assert (

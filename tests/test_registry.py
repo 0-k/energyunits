@@ -5,7 +5,6 @@ These tests verify the core functionality of the registry including unit convers
 dimension relationships, and the handling of compound units.
 """
 
-import numpy as np
 import pytest
 
 from energyunits.registry import registry

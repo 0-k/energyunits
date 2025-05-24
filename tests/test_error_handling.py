@@ -5,7 +5,6 @@ These tests verify that appropriate errors are raised for invalid operations
 and that error messages are helpful and descriptive.
 """
 
-import numpy as np
 import pytest
 
 from energyunits import Quantity
@@ -126,12 +125,14 @@ class TestQuantityErrors:
         mass = Quantity(100, "t")  # No substance
         with pytest.raises(ValueError) as excinfo:
             mass.to(substance="CO2")
-        assert "Source substance must be specified for substance conversion" in str(excinfo.value)
+        assert "Source substance must be specified for substance conversion" in str(
+            excinfo.value
+        )
 
     def test_inflation_adjustment_errors(self):
         """Test errors in inflation adjustments."""
         # Reference year required
         cost = Quantity(100, "USD/kW")  # No reference_year
         with pytest.raises(ValueError) as excinfo:
-            cost.adjust_inflation(target_year=2025)
+            cost.to(reference_year=2025)
         assert "Reference year not specified" in str(excinfo.value)

@@ -2,9 +2,7 @@
 Enhanced unit registry with improved conversion logic and dimension relationships.
 """
 
-from typing import Any, Callable, Dict, Optional, Tuple
-
-import numpy as np
+from typing import Any, Callable, Dict, Optional
 
 
 class UnitRegistry:
@@ -136,6 +134,16 @@ class UnitRegistry:
             ("VOLUME", "ENERGY"): ("m3", "MWh"),
         }
 
+        # Define base units for each dimension
+        self._base_units = {
+            "ENERGY": "MWh",
+            "POWER": "MW",
+            "MASS": "t",
+            "VOLUME": "m3",
+            "TIME": "h",
+            "CURRENCY": "USD",
+        }
+
         # Map for corresponding units (e.g., MW → MWh, W → Wh)
         self._corresponding_units = {
             # Power to Energy
@@ -154,16 +162,20 @@ class UnitRegistry:
 
     def get_dimension(self, unit: str) -> str:
         """Get the dimension of a unit with improved handling of compound units."""
+        # Handle dimensionless (empty string)
+        if unit == "":
+            return "DIMENSIONLESS"
+
         # Handle compound units
         if "/" in unit:
             numerator, denominator = unit.split("/", 1)
             num_dim = self.get_dimension(numerator)
             den_dim = self.get_dimension(denominator)
-            
+
             # Normalize compound dimensions to fundamental equivalents
             if num_dim == "ENERGY" and den_dim == "TIME":
                 return "POWER"
-            
+
             return f"{num_dim}_PER_{den_dim}"
 
         if unit in self._dimensions:
@@ -473,7 +485,9 @@ class UnitRegistry:
 
         raise ValueError(f"No corresponding {target_dimension} unit for {unit}")
 
-    def _convert_compound_to_simple(self, from_unit: str, to_unit: str, dimension: str) -> float:
+    def _convert_compound_to_simple(
+        self, from_unit: str, to_unit: str, dimension: str
+    ) -> float:
         """Convert between compound and simple units of the same fundamental dimension."""
         # Determine which is compound and which is simple
         if "/" in from_unit:
@@ -489,28 +503,243 @@ class UnitRegistry:
         if dimension == "POWER":
             # For ENERGY/TIME -> POWER conversions
             num_unit, den_unit = compound_unit.split("/", 1)
-            
+
             # Convert numerator to base energy unit (MWh)
             energy_factor = self.get_conversion_factor(num_unit, "MWh")
-            
+
             # Convert denominator to base time unit (h)
             time_factor = self.get_conversion_factor(den_unit, "h")
-            
+
             # Calculate compound unit value: energy_factor / time_factor gives MW
             compound_value_in_mw = energy_factor / time_factor
-            
+
             # Convert from MW to target simple unit
             mw_to_simple_factor = self.get_conversion_factor("MW", simple_unit)
             compound_to_simple_factor = compound_value_in_mw * mw_to_simple_factor
-            
+
         else:
-            raise ValueError(f"Compound to simple conversion not implemented for dimension: {dimension}")
+            raise ValueError(
+                f"Compound to simple conversion not implemented for dimension: {dimension}"
+            )
 
         # Return the conversion factor in the correct direction
         if is_from_compound:
             return compound_to_simple_factor
         else:
             return 1.0 / compound_to_simple_factor
+
+    def add_unit(self, unit: str, dimension: str, conversion_factor: float) -> None:
+        """
+        Add a new unit to the registry at runtime.
+
+        Args:
+            unit: Unit symbol (e.g., "hp", "BTU")
+            dimension: Physical dimension (e.g., "POWER", "ENERGY")
+            conversion_factor: Factor to convert TO base unit (unit * factor = base_unit)
+
+        Examples:
+            >>> registry.add_unit("hp", "POWER", 0.000746)  # 1 hp = 0.000746 MW
+            >>> registry.add_unit("BTU", "ENERGY", 0.0002931)  # 1 BTU ≈ 0.0002931 MWh
+        """
+        # Validate dimension exists or add it
+        if dimension not in self._base_units:
+            # For custom dimensions, use first unit as base
+            self._base_units[dimension] = unit
+            # Set factor to 1.0 for new base unit
+            if unit not in self._conversion_factors:
+                conversion_factor = 1.0
+
+        # Add to dimensions registry
+        self._dimensions[unit] = dimension
+
+        # Add conversion factor
+        self._conversion_factors[unit] = conversion_factor
+
+    def add_unit_with_reference(
+        self, unit: str, dimension: str, reference_value: float, reference_unit: str
+    ) -> None:
+        """
+        Add a new unit by specifying its value relative to an existing unit.
+
+        Args:
+            unit: New unit symbol
+            dimension: Physical dimension
+            reference_value: How many reference units equal 1 new unit
+            reference_unit: Existing unit to reference
+
+        Examples:
+            >>> registry.add_unit_with_reference("hp", "POWER", 0.746, "kW")  # 1 hp = 0.746 kW
+            >>> registry.add_unit_with_reference("therm", "ENERGY", 105.5, "MJ")  # 1 therm = 105.5 MJ
+        """
+        # Get conversion factor for reference unit
+        if reference_unit not in self._conversion_factors:
+            raise ValueError(f"Reference unit '{reference_unit}' not found in registry")
+
+        reference_factor = self._conversion_factors[reference_unit]
+
+        # Calculate conversion factor: new_unit * factor = base_unit
+        # 1 new_unit = reference_value * reference_unit
+        # 1 new_unit = reference_value * reference_factor * base_unit
+        conversion_factor = reference_value * reference_factor
+
+        self.add_unit(unit, dimension, conversion_factor)
+
+    def add_corresponding_unit(self, unit1: str, unit2: str) -> None:
+        """
+        Add a correspondence between two units (e.g., power ↔ energy).
+
+        Args:
+            unit1: First unit (e.g., "MW")
+            unit2: Corresponding unit (e.g., "MWh")
+
+        Examples:
+            >>> registry.add_corresponding_unit("hp", "hp·h")
+            >>> registry.add_corresponding_unit("therm/h", "therm")
+        """
+        self._corresponding_units[unit1] = unit2
+        self._corresponding_units[unit2] = unit1
+
+    def add_dimension_conversion(
+        self, from_dim: str, to_dim: str, conversion_func: Callable
+    ) -> None:
+        """
+        Add a custom conversion function between dimensions.
+
+        Args:
+            from_dim: Source dimension
+            to_dim: Target dimension
+            conversion_func: Function that takes (value, substance, **kwargs) and returns converted value
+
+        Examples:
+            >>> def custom_energy_to_mass(value, substance, **kwargs):
+            ...     # Custom conversion logic here
+            ...     return value * custom_factor
+            >>> registry.add_dimension_conversion("ENERGY", "MASS", custom_energy_to_mass)
+        """
+        # Store conversion function
+        if not hasattr(self, "_custom_conversions"):
+            self._custom_conversions = {}
+        self._custom_conversions[(from_dim, to_dim)] = conversion_func
+
+    def remove_unit(self, unit: str) -> None:
+        """
+        Remove a unit from the registry.
+
+        Args:
+            unit: Unit symbol to remove
+
+        Raises:
+            ValueError: If unit is a base unit or doesn't exist
+        """
+        if unit not in self._dimensions:
+            raise ValueError(f"Unit '{unit}' not found in registry")
+
+        dimension = self._dimensions[unit]
+        if self._base_units.get(dimension) == unit:
+            raise ValueError(
+                f"Cannot remove base unit '{unit}' for dimension '{dimension}'"
+            )
+
+        # Remove from all registries
+        del self._dimensions[unit]
+        if unit in self._conversion_factors:
+            del self._conversion_factors[unit]
+        if unit in self._corresponding_units:
+            corresponding = self._corresponding_units[unit]
+            del self._corresponding_units[unit]
+            if corresponding in self._corresponding_units:
+                del self._corresponding_units[corresponding]
+
+    def list_units(self, dimension: Optional[str] = None) -> Dict[str, str]:
+        """
+        List all units in the registry, optionally filtered by dimension.
+
+        Args:
+            dimension: Optional dimension filter
+
+        Returns:
+            Dictionary mapping unit → dimension
+        """
+        if dimension is None:
+            return dict(self._dimensions)
+        else:
+            return {
+                unit: dim for unit, dim in self._dimensions.items() if dim == dimension
+            }
+
+    def get_unit_info(self, unit: str) -> Dict[str, Any]:
+        """
+        Get detailed information about a unit.
+
+        Args:
+            unit: Unit symbol
+
+        Returns:
+            Dictionary with unit information
+
+        Raises:
+            ValueError: If unit not found
+        """
+        if unit not in self._dimensions:
+            raise ValueError(f"Unit '{unit}' not found in registry")
+
+        dimension = self._dimensions[unit]
+        base_unit = self._base_units.get(dimension)
+        conversion_factor = self._conversion_factors.get(unit, 1.0)
+        corresponding = self._corresponding_units.get(unit)
+
+        return {
+            "unit": unit,
+            "dimension": dimension,
+            "base_unit": base_unit,
+            "conversion_factor": conversion_factor,
+            "corresponding_unit": corresponding,
+            "is_base_unit": base_unit == unit,
+        }
+
+    def validate_registry(self) -> Dict[str, list]:
+        """
+        Validate the registry for consistency and return any issues found.
+
+        Returns:
+            Dictionary with lists of validation issues by category
+        """
+        issues = {
+            "missing_conversion_factors": [],
+            "orphaned_correspondences": [],
+            "missing_base_units": [],
+            "circular_correspondences": [],
+        }
+
+        # Check for missing conversion factors
+        for unit, dimension in self._dimensions.items():
+            base_unit = self._base_units.get(dimension)
+            if unit != base_unit and unit not in self._conversion_factors:
+                issues["missing_conversion_factors"].append(unit)
+
+        # Check for orphaned correspondences
+        for unit in self._corresponding_units:
+            if unit not in self._dimensions:
+                issues["orphaned_correspondences"].append(unit)
+
+        # Check for missing base units
+        for dimension, base_unit in self._base_units.items():
+            if base_unit not in self._dimensions:
+                issues["missing_base_units"].append((dimension, base_unit))
+
+        # Check for circular correspondences (optional - may be desired)
+        checked = set()
+        for unit, corresponding in self._corresponding_units.items():
+            if unit in checked:
+                continue
+            if corresponding in self._corresponding_units:
+                if self._corresponding_units[corresponding] == unit:
+                    checked.add(unit)
+                    checked.add(corresponding)
+                else:
+                    issues["circular_correspondences"].append(unit)
+
+        return issues
 
 
 # Create a global registry instance
