@@ -157,9 +157,14 @@ class UnitRegistry:
         # Handle compound units
         if "/" in unit:
             numerator, denominator = unit.split("/", 1)
-            return (
-                f"{self.get_dimension(numerator)}_PER_{self.get_dimension(denominator)}"
-            )
+            num_dim = self.get_dimension(numerator)
+            den_dim = self.get_dimension(denominator)
+            
+            # Normalize compound dimensions to fundamental equivalents
+            if num_dim == "ENERGY" and den_dim == "TIME":
+                return "POWER"
+            
+            return f"{num_dim}_PER_{den_dim}"
 
         if unit in self._dimensions:
             return self._dimensions[unit]
@@ -438,6 +443,10 @@ class UnitRegistry:
 
             return num_factor / den_factor
 
+        # Handle compound unit to simple unit (or vice versa)
+        if "/" in from_unit or "/" in to_unit:
+            return self._convert_compound_to_simple(from_unit, to_unit, from_dim)
+
         # Simple units
         from_factor = self._conversion_factors.get(from_unit)
         to_factor = self._conversion_factors.get(to_unit)
@@ -463,6 +472,45 @@ class UnitRegistry:
             return standard_to
 
         raise ValueError(f"No corresponding {target_dimension} unit for {unit}")
+
+    def _convert_compound_to_simple(self, from_unit: str, to_unit: str, dimension: str) -> float:
+        """Convert between compound and simple units of the same fundamental dimension."""
+        # Determine which is compound and which is simple
+        if "/" in from_unit:
+            compound_unit = from_unit
+            simple_unit = to_unit
+            is_from_compound = True
+        else:
+            compound_unit = to_unit
+            simple_unit = from_unit
+            is_from_compound = False
+
+        # Calculate the value of the compound unit in base units
+        if dimension == "POWER":
+            # For ENERGY/TIME -> POWER conversions
+            num_unit, den_unit = compound_unit.split("/", 1)
+            
+            # Convert numerator to base energy unit (MWh)
+            energy_factor = self.get_conversion_factor(num_unit, "MWh")
+            
+            # Convert denominator to base time unit (h)
+            time_factor = self.get_conversion_factor(den_unit, "h")
+            
+            # Calculate compound unit value: energy_factor / time_factor gives MW
+            compound_value_in_mw = energy_factor / time_factor
+            
+            # Convert from MW to target simple unit
+            mw_to_simple_factor = self.get_conversion_factor("MW", simple_unit)
+            compound_to_simple_factor = compound_value_in_mw * mw_to_simple_factor
+            
+        else:
+            raise ValueError(f"Compound to simple conversion not implemented for dimension: {dimension}")
+
+        # Return the conversion factor in the correct direction
+        if is_from_compound:
+            return compound_to_simple_factor
+        else:
+            return 1.0 / compound_to_simple_factor
 
 
 # Create a global registry instance
