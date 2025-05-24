@@ -9,8 +9,6 @@ All values are stored in standard units:
 - Content fractions: dimensionless (0-1)
 """
 
-import numpy as np
-
 
 class SubstanceRegistry:
     """Registry of substances and their properties."""
@@ -276,7 +274,9 @@ class SubstanceRegistry:
         substance = self[substance_id]
         hhv = substance["hhv"]
         if hhv is None:
-            raise ValueError(f"Substance '{substance_id}' has no heating value (not a combustible fuel)")
+            raise ValueError(
+                f"Substance '{substance_id}' has no heating value (not a combustible fuel)"
+            )
         return hhv
 
     def lhv(self, substance_id):
@@ -284,7 +284,9 @@ class SubstanceRegistry:
         substance = self[substance_id]
         lhv = substance["lhv"]
         if lhv is None:
-            raise ValueError(f"Substance '{substance_id}' has no heating value (not a combustible fuel)")
+            raise ValueError(
+                f"Substance '{substance_id}' has no heating value (not a combustible fuel)"
+            )
         return lhv
 
     def density(self, substance_id):
@@ -306,7 +308,9 @@ class SubstanceRegistry:
         from .quantity import Quantity
 
         if fuel_quantity.substance is None:
-            raise ValueError("Fuel substance must be specified for combustion product calculation")
+            raise ValueError(
+                "Fuel substance must be specified for combustion product calculation"
+            )
 
         # Convert to tonnes (base mass unit)
         fuel_t = fuel_quantity.to("t")
@@ -333,6 +337,248 @@ class SubstanceRegistry:
 
         else:
             raise ValueError(f"Unknown combustion product: {target_substance}")
+
+    def add_substance(self, name: str, properties: dict) -> None:
+        """
+        Add a new substance to the registry at runtime.
+
+        Args:
+            name: Substance identifier (e.g., "my_coal", "custom_gas")
+            properties: Dictionary of substance properties
+
+        Required properties:
+            - hhv: Higher heating value (MJ/kg)
+            - lhv: Lower heating value (MJ/kg)
+            - density: Density (kg/m3)
+            - carbon_intensity: Carbon intensity (kg CO2/MWh)
+            - carbon_content: Carbon content fraction (0-1)
+
+        Optional properties:
+            - name: Display name (defaults to name parameter)
+            - hydrogen_content: Hydrogen content fraction (0-1)
+            - ash_content: Ash content fraction (0-1)
+            - description: Text description
+
+        Examples:
+            >>> substance_registry.add_substance("my_coal", {
+            ...     "name": "My Custom Coal",
+            ...     "hhv": 30.0,
+            ...     "lhv": 28.5,
+            ...     "density": 800,
+            ...     "carbon_intensity": 350,
+            ...     "carbon_content": 0.80,
+            ...     "ash_content": 0.08
+            ... })
+        """
+        required_props = ["hhv", "lhv", "density", "carbon_intensity", "carbon_content"]
+
+        # Validate required properties
+        for prop in required_props:
+            if prop not in properties:
+                raise ValueError(
+                    f"Missing required property '{prop}' for substance '{name}'"
+                )
+
+        # Set default name if not provided
+        if "name" not in properties:
+            properties["name"] = name
+
+        # Set defaults for optional properties
+        properties.setdefault("hydrogen_content", 0.0)
+        properties.setdefault("ash_content", 0.0)
+        properties.setdefault("description", f"User-defined substance: {name}")
+
+        # Add to registry
+        self._substances[name] = properties.copy()
+
+    def update_substance(self, name: str, properties: dict) -> None:
+        """
+        Update properties of an existing substance.
+
+        Args:
+            name: Substance identifier
+            properties: Dictionary of properties to update
+
+        Raises:
+            ValueError: If substance doesn't exist
+        """
+        if name not in self._substances:
+            raise ValueError(f"Substance '{name}' not found in registry")
+
+        # Update existing substance
+        self._substances[name].update(properties)
+
+    def remove_substance(self, name: str) -> None:
+        """
+        Remove a substance from the registry.
+
+        Args:
+            name: Substance identifier to remove
+
+        Raises:
+            ValueError: If substance doesn't exist
+        """
+        if name not in self._substances:
+            raise ValueError(f"Substance '{name}' not found in registry")
+
+        del self._substances[name]
+
+    def list_substances(self) -> list:
+        """
+        List all substances in the registry.
+
+        Returns:
+            List of substance identifiers
+        """
+        return list(self._substances.keys())
+
+    def get_substance_info(self, name: str) -> dict:
+        """
+        Get complete information about a substance.
+
+        Args:
+            name: Substance identifier
+
+        Returns:
+            Dictionary with all substance properties
+
+        Raises:
+            ValueError: If substance doesn't exist
+        """
+        if name not in self._substances:
+            raise ValueError(f"Substance '{name}' not found in registry")
+
+        return self._substances[name].copy()
+
+    def search_substances(self, **criteria) -> list:
+        """
+        Search for substances matching given criteria.
+
+        Args:
+            **criteria: Property criteria to match
+                       (e.g., carbon_content__gt=0.7, hhv__range=(25, 35))
+
+        Returns:
+            List of substance names matching criteria
+
+        Examples:
+            >>> # Find high-carbon substances
+            >>> high_carbon = substance_registry.search_substances(carbon_content__gt=0.7)
+            >>>
+            >>> # Find substances with HHV in range
+            >>> mid_hhv = substance_registry.search_substances(hhv__range=(20, 40))
+        """
+        matches = []
+
+        for name, substance in self._substances.items():
+            match = True
+
+            for criterion, value in criteria.items():
+                if "__" in criterion:
+                    prop, operator = criterion.split("__", 1)
+                else:
+                    prop, operator = criterion, "eq"
+
+                if prop not in substance:
+                    match = False
+                    break
+
+                substance_value = substance[prop]
+
+                # Skip None values for comparison operators
+                if substance_value is None and operator in [
+                    "gt",
+                    "lt",
+                    "gte",
+                    "lte",
+                    "range",
+                ]:
+                    match = False
+                    break
+
+                if operator == "eq":
+                    if substance_value != value:
+                        match = False
+                        break
+                elif operator == "gt":
+                    if substance_value <= value:
+                        match = False
+                        break
+                elif operator == "lt":
+                    if substance_value >= value:
+                        match = False
+                        break
+                elif operator == "gte":
+                    if substance_value < value:
+                        match = False
+                        break
+                elif operator == "lte":
+                    if substance_value > value:
+                        match = False
+                        break
+                elif operator == "range":
+                    if not (value[0] <= substance_value <= value[1]):
+                        match = False
+                        break
+                elif operator == "in":
+                    if substance_value not in value:
+                        match = False
+                        break
+                else:
+                    raise ValueError(f"Unknown operator: {operator}")
+
+            if match:
+                matches.append(name)
+
+        return matches
+
+    def validate_substance(self, name: str) -> dict:
+        """
+        Validate a substance's properties for consistency.
+
+        Args:
+            name: Substance identifier
+
+        Returns:
+            Dictionary with validation results and any issues found
+
+        Raises:
+            ValueError: If substance doesn't exist
+        """
+        if name not in self._substances:
+            raise ValueError(f"Substance '{name}' not found in registry")
+
+        substance = self._substances[name]
+        issues = []
+        warnings = []
+
+        # Check LHV vs HHV relationship
+        if substance["lhv"] > substance["hhv"]:
+            issues.append("LHV cannot be greater than HHV")
+
+        # Check content fractions
+        total_content = (
+            substance.get("carbon_content", 0)
+            + substance.get("hydrogen_content", 0)
+            + substance.get("ash_content", 0)
+        )
+
+        if total_content > 1.0:
+            issues.append(f"Total content fractions exceed 1.0 ({total_content:.3f})")
+        elif total_content < 0.8:
+            warnings.append(
+                f"Total content fractions unusually low ({total_content:.3f})"
+            )
+
+        # Check reasonable value ranges
+        if substance["density"] <= 0:
+            issues.append("Density must be positive")
+        if substance["hhv"] <= 0:
+            issues.append("HHV must be positive")
+        if substance["carbon_intensity"] < 0:
+            issues.append("Carbon intensity cannot be negative")
+
+        return {"valid": len(issues) == 0, "issues": issues, "warnings": warnings}
 
 
 # Global instance

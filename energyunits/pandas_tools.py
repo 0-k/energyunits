@@ -22,11 +22,6 @@ Example:
     ```
 """
 
-import numpy as np
-import pandas as pd
-
-from .quantity import Quantity
-
 
 def add_units(df, column, unit):
     """Add unit information to a dataframe column.
@@ -39,12 +34,9 @@ def add_units(df, column, unit):
     Returns:
         DataFrame with unit information in metadata
     """
-    # Make a copy to avoid modifying the original
     df_copy = df.copy()
-
     # Store unit information in DataFrame attributes
     df_copy.attrs[f"{column}_unit"] = unit
-
     return df_copy
 
 
@@ -61,11 +53,8 @@ def convert_units(df, column, target_unit):
     """
     # Get current unit from metadata
     current_unit = df.attrs.get(f"{column}_unit")
-
     if current_unit is None:
         raise ValueError(f"No unit information found for column '{column}'")
-
-    # Make a copy to avoid modifying the original
     df_copy = df.copy()
 
     # Get conversion factor using registry
@@ -78,6 +67,4 @@ def convert_units(df, column, target_unit):
 
     # Update unit information
     df_copy.attrs[f"{column}_unit"] = target_unit
-
     return df_copy
-

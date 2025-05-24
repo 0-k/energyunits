@@ -5,7 +5,6 @@ These tests focus on realistic scenarios that combine multiple features
 to model energy systems and complex workflows.
 """
 
-import numpy as np
 import pytest
 
 from energyunits import Quantity
@@ -133,11 +132,11 @@ class TestEnergySystemModels:
         price_2020 = Quantity(50, "USD/MWh", reference_year=2020)
 
         # Adjust for inflation
-        price_2025 = price_2020.adjust_inflation(target_year=2025)
+        price_2025 = price_2020.to(reference_year=2025)
 
-        # With 2% annual inflation
-        inflation_factor = (1.02) ** 5  # 5 years
-        assert price_2025.value == pytest.approx(50 * inflation_factor)
+        # With historical inflation rates (2021-2025)
+        historical_factor = 1.047 * 1.08 * 1.0412 * 1.0315 * 1.025
+        assert price_2025.value == pytest.approx(50 * historical_factor, rel=1e-3)
         assert price_2025.unit == "USD/MWh"
         assert price_2025.reference_year == 2025
 
@@ -148,7 +147,7 @@ class TestEnergySystemModels:
         # Create proper cost quantity
         cost_quantity = Quantity(cost, "USD", reference_year=2025)
 
-        assert cost_quantity.value == pytest.approx(10000 * 50 * inflation_factor)
+        assert cost_quantity.value == pytest.approx(10000 * 50 * historical_factor)
 
         # Convert to another currency
         cost_eur = cost_quantity.to("EUR")
