@@ -8,6 +8,7 @@ This document demonstrates the intended public API for the EnergyUnits library t
 ## Basic Unit Conversions
 
 from energyunits import Quantity
+print(Quantity(100, "GWh/min").to("MW"))
 
 # Energy conversions
 energy = Quantity(100, "MWh")  # returns a Quantity object, prints as "100 MWh"
@@ -160,4 +161,5 @@ gas_volume = gas.to("m3")
 print(gas_volume)
 emissions = gas.to(substance="CO2")
 print(emissions.to("t"))
+
 

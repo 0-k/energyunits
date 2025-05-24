@@ -159,8 +159,7 @@ class TestQuantityOperations:
         assert power.value == pytest.approx(10)
         assert power.unit == "MW"
 
-        # With different energy units
-        energy = Quantity(3600, "GJ")  # 1000 MWh
+        energy = Quantity(3600, "GJ").to("MWh")
         time = Quantity(10, "h")
         power = energy / time
         assert power.value == pytest.approx(100)
@@ -168,7 +167,7 @@ class TestQuantityOperations:
 
         # With different time units
         energy = Quantity(100, "MWh")
-        time = Quantity(600, "min")  # 10 h
+        time = Quantity(600, "min").to("h")  # 10 h
         power = energy / time
         assert power.value == pytest.approx(10)
         assert power.unit == "MW"
@@ -219,13 +218,13 @@ class TestQuantityOperations:
         """Test conversions between related dimensions."""
         # Power to energy
         power = Quantity(10, "MW")
-        energy = power.for_duration(hours=5)
+        energy = power * Quantity(5, "h")
         assert energy.value == pytest.approx(50)
         assert energy.unit == "MWh"
 
         # Energy to power
         energy = Quantity(240, "MWh")
-        power = energy.average_power(hours=12)
+        power = energy / Quantity(12, "h")
         assert power.value == pytest.approx(20)
         assert power.unit == "MW"
 

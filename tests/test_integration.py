@@ -23,12 +23,12 @@ class TestEnergySystemModels:
 
         # FIXED: Use for_duration to properly convert MW to MWh, then convert to GWh
         annual_generation_mwh = (
-            plant_capacity.for_duration(hours=hours_per_year) * capacity_factor
+            plant_capacity * Quantity(hours_per_year, "h") * capacity_factor
         )
         annual_generation = annual_generation_mwh.to("GWh")
 
         # Alternative calculation using for_duration
-        daily_generation = plant_capacity.for_duration(hours=24) * capacity_factor
+        daily_generation = plant_capacity * Quantity(24, "h") * capacity_factor
         annual_generation_alt_mwh = daily_generation * 365
         annual_generation_alt = annual_generation_alt_mwh.to("GWh")
 
@@ -55,7 +55,7 @@ class TestEnergySystemModels:
         assert coal_quantity.unit == "t"
 
         # CO2 emissions
-        emissions = annual_generation_mwh.to(substance="CO2").to("t")
+        emissions = annual_generation_mwh.to(substance="CO2")
 
         assert emissions.unit == "t"
         assert emissions.substance == "CO2"
@@ -78,8 +78,8 @@ class TestEnergySystemModels:
         solar_cf = 0.25  # 25% capacity factor
 
         # Annual generation
-        wind_generation = wind_capacity.for_duration(hours=8760) * wind_cf
-        solar_generation = solar_capacity.for_duration(hours=8760) * solar_cf
+        wind_generation = wind_capacity * Quantity(8760, "h") * wind_cf
+        solar_generation = solar_capacity * Quantity(8760, "h") * solar_cf
 
         # Total generation
         total_generation = wind_generation + solar_generation
@@ -111,7 +111,7 @@ class TestEnergySystemModels:
         assert hours_to_charge == pytest.approx(4)  # 100 MWh / 25 MW = 4 h
 
         # Energy charged in 2 hours
-        energy_2h = charging_power.for_duration(hours=2)
+        energy_2h = charging_power * Quantity(2, "h")
         assert energy_2h.value == pytest.approx(50)  # 25 MW * 2 h = 50 MWh
 
         # Battery state of charge (50%)

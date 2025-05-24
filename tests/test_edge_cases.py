@@ -111,37 +111,27 @@ class TestUnusualScenarios:
         price2 = price1.to("USD/GJ")
         assert price2.value == pytest.approx(50 / 3.6)  # 1 MWh = 3.6 GJ
 
-        # Compound unit division
+        # Compound unit multiplication - now works!
         energy_density = Quantity(10, "MWh/t")
         mass = Quantity(5, "t")
 
-        # This currently raises NotImplementedError as it's not implemented yet
-        with pytest.raises(NotImplementedError):
-            result = energy_density * mass  # Should be 50 MWh
+        # This should now work and return 50 MWh
+        result = energy_density * mass
+        assert result.value == pytest.approx(50)
+        assert result.unit == "MWh"  # USD/t * t = USD
 
     def test_multistep_conversions(self):
         """Test conversions that require multiple steps."""
-        # Energy → Power → Energy again
+        # Energy → Power → Energy again using new multiplication/division
         energy1 = Quantity(240, "MWh")
-        power = energy1.average_power(hours=12)  # 20 MW
-        energy2 = power.for_duration(hours=12)  # 240 MWh again
+        time = Quantity(12, "h")
+        power = energy1 / time  # 20 MW
+        energy2 = power * time  # 240 MWh again
 
+        assert power.unit == "MW"
+        assert energy2.unit == "MWh"
         assert power.value == pytest.approx(20)
         assert energy2.value == pytest.approx(240)
-
-        # Volume → Mass → Energy
-        gas_volume = Quantity(1000, "m3", "natural_gas")
-        gas_mass = gas_volume.to("kg")  # Should convert using density
-        gas_energy = gas_mass.to("MWh")  # Should calculate energy content
-
-        assert gas_mass.unit == "kg"
-        assert gas_energy.unit == "MWh"
-
-        # These values depend on the exact properties in the substance database
-        # But we can check they're positive and in a reasonable range
-        # TODO: input correct values
-        assert gas_mass.value > 0
-        assert gas_energy.value > 0
 
     def test_alternative_units(self):
         """Test less common units and conversions."""

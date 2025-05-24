@@ -55,6 +55,12 @@ class Quantity:
             >>> coal.to("kg", substance="CO2")            # Combustion product
             >>> coal.to("t", basis="LHV", substance="CO2") # Combined conversions
             >>> coal.to("t", substance="CO2")             # Calculate CO2 emissions
+
+            # Instead of wrapper methods, use multiplication/division:
+            >>> power = Quantity(100, "MW")
+            >>> time = Quantity(24, "h")
+            >>> energy = power * time                     # 2400 MWh
+            >>> avg_power = energy / time                 # 100 MW
         """
         result = self
 
@@ -73,42 +79,6 @@ class Quantity:
             )
 
         return result
-
-    def for_duration(self, hours: float) -> "Quantity":
-        """Convert power to energy for a specified duration."""
-        if self.dimension != "POWER":
-            raise ValueError(f"for_duration only applies to power units, not {self.unit}")
-
-        try:
-            energy_unit = registry.get_corresponding_unit(self.unit, "ENERGY")
-        except ValueError:
-            energy_unit = "MWh"
-
-        energy_value = registry.convert_between_dimensions(
-            self.value, self.unit, energy_unit, self.substance, hours=hours
-        )
-
-        return Quantity(
-            energy_value, energy_unit, self.substance, self.basis, self.reference_year
-        )
-
-    def average_power(self, hours: float) -> "Quantity":
-        """Calculate average power from energy over a specified duration."""
-        if self.dimension != "ENERGY":
-            raise ValueError(f"average_power only applies to energy units, not {self.unit}")
-
-        try:
-            power_unit = registry.get_corresponding_unit(self.unit, "POWER")
-        except ValueError:
-            power_unit = "MW"
-
-        power_value = registry.convert_between_dimensions(
-            self.value, self.unit, power_unit, self.substance, hours=hours
-        )
-
-        return Quantity(
-            power_value, power_unit, self.substance, self.basis, self.reference_year
-        )
 
     def adjust_inflation(self, target_year: int) -> "Quantity":
         """Adjust a cost quantity for inflation."""
@@ -152,14 +122,57 @@ class Quantity:
 
         return Quantity(result_value, self.unit, substance, basis, self.reference_year)
 
-    def __mul__(self, other: Union[int, float]) -> "Quantity":
-        """Multiply quantity by a scalar."""
-        if isinstance(other, Quantity):
-            raise NotImplementedError("Multiplication between quantities not implemented yet")
+    def __mul__(self, other: Union[int, float, "Quantity"]) -> "Quantity":
+        """Multiply quantity by a scalar or another quantity."""
+        if isinstance(other, (int, float)):
+            # Scalar multiplication
+            return Quantity(
+                self.value * other, self.unit, self.substance, self.basis, self.reference_year
+            )
+        elif isinstance(other, Quantity):
+            # Quantity multiplication
+            result_value = self.value * other.value
 
-        return Quantity(
-            self.value * other, self.unit, self.substance, self.basis, self.reference_year
-        )
+            # Determine result unit through dimensional analysis
+            result_unit = self._multiply_units(self.unit, other.unit, self.dimension, other.dimension)
+
+            # Handle substance - clear if different, keep if same
+            result_substance = self.substance if self.substance == other.substance else None
+
+            # Handle basis - clear if different, keep if same
+            result_basis = self.basis if self.basis == other.basis else None
+
+            # Handle reference year - clear if different, keep if same
+            result_ref_year = self.reference_year if self.reference_year == other.reference_year else None
+
+            return Quantity(result_value, result_unit, result_substance, result_basis, result_ref_year)
+        else:
+            raise TypeError(f"Cannot multiply Quantity and {type(other)}")
+
+    def _multiply_units(self, unit1: str, unit2: str, dim1: str, dim2: str) -> str:
+        """Determine the result unit when multiplying two units."""
+        # Special case: power * time = energy
+        if (dim1 == "POWER" and dim2 == "TIME") or (dim1 == "TIME" and dim2 == "POWER"):
+            power_unit = unit1 if dim1 == "POWER" else unit2
+            try:
+                # Get corresponding energy unit for the power unit
+                return registry.get_corresponding_unit(power_unit, "ENERGY")
+            except ValueError:
+                return "MWh"  # fallback
+
+        # Special case: mass * price_per_mass = currency
+        # Handle compound units like USD/t * t = USD
+        if "/" in unit1 and unit2 in unit1:
+            # Extract numerator from compound unit
+            numerator = unit1.split("/")[0]
+            return numerator
+        elif "/" in unit2 and unit1 in unit2:
+            # Extract numerator from compound unit
+            numerator = unit2.split("/")[0]
+            return numerator
+
+        # General case: create compound unit
+        return f"{unit1}·{unit2}"
 
     def __rmul__(self, other: Union[int, float]) -> "Quantity":
         """Right multiplication by scalar."""
@@ -167,33 +180,46 @@ class Quantity:
 
     def __truediv__(self, other: Union["Quantity", int, float]) -> "Quantity":
         """Division operator."""
-        if isinstance(other, Quantity):
-            if self.dimension == "ENERGY" and other.dimension == "TIME":
-                try:
-                    power_unit = registry.get_corresponding_unit(self.unit, "POWER")
-                except ValueError:
-                    power_unit = "MW"
-
-                energy_mwh = self.to("MWh")
-                time_h = other.to("h")
-                power_value = energy_mwh.value / time_h.value
-
-                if power_unit != "MW":
-                    factor = registry.get_conversion_factor("MW", power_unit)
-                    power_value = power_value * factor
-
-                return Quantity(
-                    power_value, power_unit, self.substance, self.basis, self.reference_year
-                )
-
-            return Quantity(
-                self.value / other.value, f"{self.unit}/{other.unit}",
-                self.substance, self.basis, self.reference_year
-            )
-        else:
+        if isinstance(other, (int, float)):
+            # Scalar division
             return Quantity(
                 self.value / other, self.unit, self.substance, self.basis, self.reference_year
             )
+        elif isinstance(other, Quantity):
+            # Quantity division
+            result_value = self.value / other.value
+
+            # Determine result unit through dimensional analysis
+            result_unit = self._divide_units(self.unit, other.unit, self.dimension, other.dimension)
+
+            # Handle substance - clear if different, keep if same
+            result_substance = self.substance if self.substance == other.substance else None
+
+            # Handle basis - clear if different, keep if same
+            result_basis = self.basis if self.basis == other.basis else None
+
+            # Handle reference year - clear if different, keep if same
+            result_ref_year = self.reference_year if self.reference_year == other.reference_year else None
+
+            return Quantity(result_value, result_unit, result_substance, result_basis, result_ref_year)
+        else:
+            raise TypeError(f"Cannot divide Quantity by {type(other)}")
+
+    def _divide_units(self, unit1: str, unit2: str, dim1: str, dim2: str) -> str:
+        """Determine the result unit when dividing two units."""
+        # Special case: energy / time = power
+        if dim1 == "ENERGY" and dim2 == "TIME":
+            try:
+                return registry.get_corresponding_unit(unit1, "POWER")
+            except ValueError:
+                return "MW"  # fallback
+
+        # Special case: same units = dimensionless (ratio)
+        if unit1 == unit2:
+            return ""  # dimensionless
+
+        # General case: create compound unit
+        return f"{unit1}/{unit2}"
 
     def __lt__(self, other: "Quantity") -> bool:
         """Less than comparison."""

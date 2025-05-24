@@ -54,14 +54,18 @@ class TestBasicUnitConversions:
 
 class TestPowerEnergyConversions:
     def test_power_to_energy(self):
-        """Test converting power to energy."""
+        """Test converting power to energy using multiplication."""
         from energyunits import Quantity
 
-        # Power to energy
+        # Power to energy using multiplication
         power = Quantity(100, "MW")
-        energy_1h = power.for_duration(hours=1)
-        energy_24h = power.for_duration(hours=24)
-        energy_1yr = power.for_duration(hours=8760)
+        time_1h = Quantity(1, "h")
+        time_24h = Quantity(24, "h")
+        time_1yr = Quantity(8760, "h")
+
+        energy_1h = power * time_1h
+        energy_24h = power * time_24h
+        energy_1yr = power * time_1yr
 
         assert energy_1h.value == pytest.approx(100)
         assert energy_1h.unit == "MWh"
@@ -71,15 +75,16 @@ class TestPowerEnergyConversions:
         assert energy_1yr.unit == "MWh"
 
     def test_energy_to_average_power(self):
-        """Test calculating average power from energy."""
-        from energyunits import Quantity
+            """Test calculating average power using division."""
+            from energyunits import Quantity
 
-        # Energy to power
-        energy = Quantity(240, "MWh")
-        avg_power = energy.average_power(hours=12)
+            # Energy to power using division
+            energy = Quantity(240, "MWh")
+            time = Quantity(12, "h")
+            avg_power = energy / time
 
-        assert avg_power.value == pytest.approx(20)
-        assert avg_power.unit == "MW"
+            assert avg_power.value == pytest.approx(20)
+            assert avg_power.unit == "MW"
 
 
 class TestSubstances:

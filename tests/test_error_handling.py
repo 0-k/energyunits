@@ -105,20 +105,6 @@ class TestQuantityErrors:
             excinfo.value
         )
 
-    def test_duration_errors(self):
-        """Test errors in for_duration and average_power methods."""
-        # for_duration only applies to power
-        energy = Quantity(100, "MWh")
-        with pytest.raises(ValueError) as excinfo:
-            energy.for_duration(hours=1)
-        assert "for_duration only applies to power units" in str(excinfo.value)
-
-        # average_power only applies to energy
-        power = Quantity(100, "MW")
-        with pytest.raises(ValueError) as excinfo:
-            power.average_power(hours=1)
-        assert "average_power only applies to energy units" in str(excinfo.value)
-
     def test_substance_errors(self):
         # Heating value conversion requires substance
         energy = Quantity(100, "MWh")  # No substance
@@ -133,13 +119,6 @@ class TestQuantityErrors:
         with pytest.raises(TypeError) as excinfo:
             energy + 50  # Not a Quantity
         assert "Cannot add Quantity and" in str(excinfo.value)
-
-        # Multiplication between quantities not implemented
-        energy1 = Quantity(100, "MWh")
-        energy2 = Quantity(50, "MWh")
-        with pytest.raises(NotImplementedError) as excinfo:
-            energy1 * energy2
-        assert "Multiplication between quantities not implemented" in str(excinfo.value)
 
     def test_emissions_calculation_errors(self):
         """Test errors in emissions calculations."""
