@@ -136,8 +136,15 @@ class Quantity:
             # Determine result unit through dimensional analysis
             result_unit = self._multiply_units(self.unit, other.unit, self.dimension, other.dimension)
 
-            # Handle substance - clear if different, keep if same
-            result_substance = self.substance if self.substance == other.substance else None
+            # Handle substance - preserve non-None substance if one is None, clear if both differ
+            if self.substance == other.substance:
+                result_substance = self.substance
+            elif self.substance is None:
+                result_substance = other.substance
+            elif other.substance is None:
+                result_substance = self.substance
+            else:
+                result_substance = None  # Both have different non-None substances
 
             # Handle basis - clear if different, keep if same
             result_basis = self.basis if self.basis == other.basis else None
@@ -192,8 +199,15 @@ class Quantity:
             # Determine result unit through dimensional analysis
             result_unit = self._divide_units(self.unit, other.unit, self.dimension, other.dimension)
 
-            # Handle substance - clear if different, keep if same
-            result_substance = self.substance if self.substance == other.substance else None
+            # Handle substance - preserve non-None substance if one is None, clear if both differ
+            if self.substance == other.substance:
+                result_substance = self.substance
+            elif self.substance is None:
+                result_substance = other.substance
+            elif other.substance is None:
+                result_substance = self.substance
+            else:
+                result_substance = None  # Both have different non-None substances
 
             # Handle basis - clear if different, keep if same
             result_basis = self.basis if self.basis == other.basis else None
