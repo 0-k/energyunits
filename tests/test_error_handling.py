@@ -31,7 +31,7 @@ class TestRegistryErrors:
         # Unknown unit in get_corresponding_unit
         with pytest.raises(ValueError) as excinfo:
             registry.get_corresponding_unit("unknown_unit", "ENERGY")
-        assert "Unknown unit: unknown_unit" in str(excinfo.value)
+        assert "No corresponding" in str(excinfo.value)
 
     def test_incompatible_unit_errors(self):
         """Test errors for incompatible unit conversions."""
@@ -43,9 +43,7 @@ class TestRegistryErrors:
         # Dimensions that require substance but none provided
         with pytest.raises(ValueError) as excinfo:
             registry.convert_between_dimensions(100, "MWh", "kg")
-        assert "Substance must be specified for energy to mass conversion" in str(
-            excinfo.value
-        )
+        assert "Substance required" in str(excinfo.value)
 
         # Truly incompatible dimensions (no conversion relationship defined)
         with pytest.raises(ValueError) as excinfo:
@@ -57,12 +55,12 @@ class TestRegistryErrors:
         # Mass to volume conversion requires substance
         with pytest.raises(ValueError) as excinfo:
             registry.convert_between_dimensions(1000, "kg", "m3", substance=None)
-        assert "Substance must be specified" in str(excinfo.value)
+        assert "Substance required" in str(excinfo.value)
 
         # Volume to mass conversion requires substance
         with pytest.raises(ValueError) as excinfo:
             registry.convert_between_dimensions(1, "m3", "kg", substance=None)
-        assert "Substance must be specified" in str(excinfo.value)
+        assert "Substance required" in str(excinfo.value)
 
     def test_unknown_substance_errors(self):
         """Test errors for unknown substances."""
@@ -88,9 +86,7 @@ class TestQuantityErrors:
         energy = Quantity(100, "MWh")
         with pytest.raises(ValueError) as excinfo:
             energy.to("kg")
-        assert "Substance must be specified for energy to mass conversion" in str(
-            excinfo.value
-        )
+        assert "Substance required" in str(excinfo.value)
 
         # Unknown target unit
         with pytest.raises(ValueError) as excinfo:

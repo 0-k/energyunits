@@ -1,0 +1,232 @@
+{
+  "coal": {
+    "name": "Coal (generic)",
+    "hhv": 29.3,
+    "lhv": 27.8,
+    "density": 833,
+    "carbon_intensity": 340,
+    "carbon_content": 0.75,
+    "hydrogen_content": 0.05,
+    "ash_content": 0.10
+  },
+  "lignite": {
+    "name": "Lignite Coal",
+    "hhv": 15.0,
+    "lhv": 14.0,
+    "density": 700,
+    "carbon_intensity": 400,
+    "carbon_content": 0.65,
+    "hydrogen_content": 0.04,
+    "ash_content": 0.15
+  },
+  "bituminous": {
+    "name": "Bituminous Coal",
+    "hhv": 30.0,
+    "lhv": 28.5,
+    "density": 833,
+    "carbon_intensity": 330,
+    "carbon_content": 0.80,
+    "hydrogen_content": 0.05,
+    "ash_content": 0.08
+  },
+  "anthracite": {
+    "name": "Anthracite Coal",
+    "hhv": 32.5,
+    "lhv": 31.5,
+    "density": 1000,
+    "carbon_intensity": 320,
+    "carbon_content": 0.85,
+    "hydrogen_content": 0.04,
+    "ash_content": 0.05
+  },
+  "natural_gas": {
+    "name": "Natural Gas",
+    "hhv": 55.0,
+    "lhv": 49.5,
+    "density": 0.75,
+    "carbon_intensity": 200,
+    "carbon_content": 0.75,
+    "hydrogen_content": 0.25,
+    "ash_content": 0.0
+  },
+  "lng": {
+    "name": "Liquefied Natural Gas",
+    "hhv": 55.0,
+    "lhv": 49.5,
+    "density": 450,
+    "carbon_intensity": 210,
+    "carbon_content": 0.75,
+    "hydrogen_content": 0.25,
+    "ash_content": 0.0
+  },
+  "methane": {
+    "name": "Methane",
+    "hhv": 55.5,
+    "lhv": 50.0,
+    "density": 0.68,
+    "carbon_intensity": 200,
+    "carbon_content": 0.75,
+    "hydrogen_content": 0.25,
+    "ash_content": 0.0
+  },
+  "crude_oil": {
+    "name": "Crude Oil",
+    "hhv": 45.0,
+    "lhv": 42.5,
+    "density": 870,
+    "carbon_intensity": 270,
+    "carbon_content": 0.85,
+    "hydrogen_content": 0.13,
+    "ash_content": 0.001
+  },
+  "oil": {
+    "name": "Oil (generic)",
+    "hhv": 45.0,
+    "lhv": 42.5,
+    "density": 870,
+    "carbon_intensity": 270,
+    "carbon_content": 0.85,
+    "hydrogen_content": 0.13,
+    "ash_content": 0.001
+  },
+  "fuel_oil": {
+    "name": "Heavy Fuel Oil",
+    "hhv": 43.0,
+    "lhv": 40.5,
+    "density": 950,
+    "carbon_intensity": 285,
+    "carbon_content": 0.87,
+    "hydrogen_content": 0.11,
+    "ash_content": 0.005
+  },
+  "diesel": {
+    "name": "Diesel",
+    "hhv": 45.7,
+    "lhv": 42.8,
+    "density": 840,
+    "carbon_intensity": 265,
+    "carbon_content": 0.86,
+    "hydrogen_content": 0.14,
+    "ash_content": 0.0
+  },
+  "gasoline": {
+    "name": "Gasoline",
+    "hhv": 47.3,
+    "lhv": 44.0,
+    "density": 750,
+    "carbon_intensity": 255,
+    "carbon_content": 0.85,
+    "hydrogen_content": 0.15,
+    "ash_content": 0.0
+  },
+  "wood_pellets": {
+    "name": "Wood Pellets",
+    "hhv": 20.0,
+    "lhv": 18.5,
+    "density": 650,
+    "carbon_intensity": 20,
+    "carbon_content": 0.50,
+    "hydrogen_content": 0.06,
+    "ash_content": 0.01
+  },
+  "wood_chips": {
+    "name": "Wood Chips",
+    "hhv": 19.0,
+    "lhv": 16.0,
+    "density": 350,
+    "carbon_intensity": 25,
+    "carbon_content": 0.48,
+    "hydrogen_content": 0.06,
+    "ash_content": 0.02
+  },
+  "wind": {
+    "name": "Wind Energy",
+    "hhv": null,
+    "lhv": null,
+    "density": null,
+    "carbon_intensity": 0,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.0,
+    "ash_content": 0.0
+  },
+  "solar": {
+    "name": "Solar Energy",
+    "hhv": null,
+    "lhv": null,
+    "density": null,
+    "carbon_intensity": 0,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.0,
+    "ash_content": 0.0
+  },
+  "hydro": {
+    "name": "Hydro Energy",
+    "hhv": null,
+    "lhv": null,
+    "density": null,
+    "carbon_intensity": 0,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.0,
+    "ash_content": 0.0
+  },
+  "nuclear": {
+    "name": "Nuclear Energy",
+    "hhv": null,
+    "lhv": null,
+    "density": null,
+    "carbon_intensity": 0,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.0,
+    "ash_content": 0.0
+  },
+  "hydrogen": {
+    "name": "Hydrogen",
+    "hhv": 142.0,
+    "lhv": 120.0,
+    "density": 0.09,
+    "carbon_intensity": 0,
+    "carbon_content": 0.0,
+    "hydrogen_content": 1.0,
+    "ash_content": 0.0
+  },
+  "methanol": {
+    "name": "Methanol",
+    "hhv": 22.7,
+    "lhv": 19.9,
+    "density": 795,
+    "carbon_intensity": 240,
+    "carbon_content": 0.375,
+    "hydrogen_content": 0.125,
+    "ash_content": 0.0
+  },
+  "CO2": {
+    "name": "Carbon Dioxide",
+    "hhv": null,
+    "lhv": null,
+    "density": 1.98,
+    "carbon_intensity": 0.0,
+    "carbon_content": 0.273,
+    "hydrogen_content": 0.0,
+    "ash_content": 0.0
+  },
+  "H2O": {
+    "name": "Water",
+    "hhv": null,
+    "lhv": null,
+    "density": 1000,
+    "carbon_intensity": 0.0,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.111,
+    "ash_content": 0.0
+  },
+  "ash": {
+    "name": "Ash",
+    "hhv": null,
+    "lhv": null,
+    "density": 1500,
+    "carbon_intensity": 0.0,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.0,
+    "ash_content": 1.0
+  }
+}
