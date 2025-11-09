@@ -119,9 +119,28 @@ class Quantity:
                 self.reference_year,
             )
         elif isinstance(other, Quantity):
-            result_value = self.value * other.value
+            # Smart compound unit cancellation: convert units to match denominators
+            self_converted = self
+            other_converted = other
+
+            # Check if self has compound unit (e.g., USD/kW) and other matches denominator dimension
+            if "/" in self.unit:
+                denominator = self.unit.split("/", 1)[1]
+                denominator_dim = registry.get_dimension(denominator)
+                if other.dimension == denominator_dim and other.unit != denominator:
+                    other_converted = other.to(denominator)
+
+            # Check if other has compound unit and self matches denominator dimension
+            elif "/" in other.unit:
+                denominator = other.unit.split("/", 1)[1]
+                denominator_dim = registry.get_dimension(denominator)
+                if self.dimension == denominator_dim and self.unit != denominator:
+                    self_converted = self.to(denominator)
+
+            result_value = self_converted.value * other_converted.value
             result_unit = self._multiply_units(
-                self.unit, other.unit, self.dimension, other.dimension
+                self_converted.unit, other_converted.unit,
+                self_converted.dimension, other_converted.dimension
             )
 
             if self.substance == other.substance:
