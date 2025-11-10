@@ -13,6 +13,7 @@ class UnitRegistry:
         self._conversion_factors = {}
         self._base_units = {}
         self._corresponding_units = {}
+        self._dimensional_multiplication_rules = []
         self._load_defaults()
 
     def _load_defaults(self):
@@ -25,6 +26,7 @@ class UnitRegistry:
         self._conversion_factors = data["conversion_factors"]
         self._base_units = data["base_units"]
         self._corresponding_units = data["corresponding_units"]
+        self._dimensional_multiplication_rules = data.get("dimensional_multiplication_rules", [])
 
     def load_units(self, file_path: str):
         """Load custom units from JSON file."""
@@ -35,6 +37,7 @@ class UnitRegistry:
         self._conversion_factors.update(data.get("conversion_factors", {}))
         self._base_units.update(data.get("base_units", {}))
         self._corresponding_units.update(data.get("corresponding_units", {}))
+        self._dimensional_multiplication_rules.extend(data.get("dimensional_multiplication_rules", []))
 
     def get_dimension(self, unit: str) -> str:
         """Get dimension of a unit."""
@@ -194,6 +197,14 @@ class UnitRegistry:
                 return corresponding
 
         raise ValueError(f"No corresponding {target_dimension} unit for {unit}")
+
+    def get_multiplication_result_dimension(self, dim1: str, dim2: str) -> Optional[str]:
+        """Get result dimension from multiplying two dimensions (e.g., POWER × TIME → ENERGY)."""
+        for rule in self._dimensional_multiplication_rules:
+            rule_dims = set(rule["dimensions"])
+            if rule_dims == {dim1, dim2}:
+                return rule["result_dimension"]
+        return None
 
     def _convert_compound_to_simple(self, from_unit: str, to_unit: str, dimension: str) -> float:
         """Convert between compound and simple units."""

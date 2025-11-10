@@ -174,10 +174,14 @@ class Quantity:
         elif "/" in unit2 and unit1 in unit2:
             return unit2.split("/")[0]
 
-        # Power * Time = Energy
-        if (dim1 == "POWER" and dim2 == "TIME") or (dim1 == "TIME" and dim2 == "POWER"):
-            power_unit = unit1 if dim1 == "POWER" else unit2
-            return registry.get_corresponding_unit(power_unit, "ENERGY")
+        # Check dimensional multiplication rules (e.g., POWER × TIME → ENERGY)
+        result_dimension = registry.get_multiplication_result_dimension(dim1, dim2)
+        if result_dimension:
+            # Find which unit should be mapped to the result dimension
+            source_unit = unit1 if dim1 in ["POWER", "TIME"] else unit2
+            if dim1 == "TIME" or dim2 == "TIME":
+                source_unit = unit1 if dim1 == "POWER" else unit2
+            return registry.get_corresponding_unit(source_unit, result_dimension)
 
         return f"{unit1}·{unit2}"
 

@@ -94,5 +94,11 @@
     "MWh": "MW",
     "GWh": "GW",
     "TWh": "TW"
-  }
+  },
+  "dimensional_multiplication_rules": [
+    {
+      "dimensions": ["POWER", "TIME"],
+      "result_dimension": "ENERGY"
+    }
+  ]
 }
