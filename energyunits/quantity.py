@@ -79,13 +79,18 @@ class Quantity:
 
     def __str__(self) -> str:
         if np.isscalar(self.value) or self.value.size == 1:
-            scalar_val = self.value.item() if hasattr(self.value, "item") else self.value
+            scalar_val = (
+                self.value.item() if hasattr(self.value, "item") else self.value
+            )
             value_str = f"{scalar_val:.2f}"
         else:
             if self.value.size <= 5:
                 value_str = f"[{', '.join(f'{v:.2f}' for v in self.value.flat)}]"
             else:
-                value_str = f"[{self.value.flat[0]:.2f}, ..., {self.value.flat[-1]:.2f}] ({self.value.size} values)"
+                first = self.value.flat[0]
+                last = self.value.flat[-1]
+                size = self.value.size
+                value_str = f"[{first:.2f}, ..., {last:.2f}] ({size} values)"
 
         if self.substance:
             return f"{value_str} {self.unit} of {self.substance}"
@@ -94,7 +99,9 @@ class Quantity:
     def __repr__(self) -> str:
         substance_str = f", '{self.substance}'" if self.substance else ""
         basis_str = f", basis='{self.basis}'" if self.basis else ""
-        ref_year_str = f", reference_year={self.reference_year}" if self.reference_year else ""
+        ref_year_str = (
+            f", reference_year={self.reference_year}" if self.reference_year else ""
+        )
         return f"Quantity({self.value}, '{self.unit}'{substance_str}{basis_str}{ref_year_str})"
 
     def __add__(self, other: "Quantity") -> "Quantity":
@@ -139,8 +146,10 @@ class Quantity:
 
             result_value = self_converted.value * other_converted.value
             result_unit = self._multiply_units(
-                self_converted.unit, other_converted.unit,
-                self_converted.dimension, other_converted.dimension
+                self_converted.unit,
+                other_converted.unit,
+                self_converted.dimension,
+                other_converted.dimension,
             )
 
             if self.substance == other.substance:
@@ -154,7 +163,9 @@ class Quantity:
 
             result_basis = self.basis if self.basis == other.basis else None
             result_ref_year = (
-                self.reference_year if self.reference_year == other.reference_year else None
+                self.reference_year
+                if self.reference_year == other.reference_year
+                else None
             )
 
             return Quantity(
@@ -212,7 +223,9 @@ class Quantity:
 
             result_basis = self.basis if self.basis == other.basis else None
             result_ref_year = (
-                self.reference_year if self.reference_year == other.reference_year else None
+                self.reference_year
+                if self.reference_year == other.reference_year
+                else None
             )
 
             return Quantity(
@@ -313,7 +326,9 @@ class Quantity:
         elif current_basis.upper() == "LHV" and target_basis == "HHV":
             new_value = self.value / lhv_hhv_ratio
         else:
-            raise ValueError(f"Invalid basis conversion: {current_basis} to {target_basis}")
+            raise ValueError(
+                f"Invalid basis conversion: {current_basis} to {target_basis}"
+            )
 
         return Quantity(
             new_value, self.unit, self.substance, target_basis, self.reference_year
@@ -321,11 +336,15 @@ class Quantity:
 
     def _convert_substance(self, target_substance: str) -> "Quantity":
         if self.substance is None:
-            raise ValueError("Source substance must be specified for substance conversion")
+            raise ValueError(
+                "Source substance must be specified for substance conversion"
+            )
 
         valid_products = ["CO2", "H2O", "ash"]
         if target_substance not in valid_products:
-            raise ValueError(f"Substance conversion only supported for: {valid_products}")
+            raise ValueError(
+                f"Substance conversion only supported for: {valid_products}"
+            )
 
         # Renewables have zero combustion products
         if self.substance in ["wind", "solar", "hydro", "nuclear"]:

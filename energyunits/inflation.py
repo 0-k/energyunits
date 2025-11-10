@@ -18,10 +18,11 @@ class InflationRegistry:
         with open(data_path) as f:
             data = json.load(f)
 
-        # Convert string years to integers
+        # Convert string years to integers, skip metadata fields
         self._inflation_data = {
             currency: {int(year): rate for year, rate in years.items()}
             for currency, years in data.items()
+            if not currency.startswith("_")
         }
 
     def load_inflation(self, file_path: str):
@@ -30,6 +31,10 @@ class InflationRegistry:
             data = json.load(f)
 
         for currency, year_data in data.items():
+            # Skip metadata fields
+            if currency.startswith("_"):
+                continue
+
             if currency not in self._inflation_data:
                 self._inflation_data[currency] = {}
 
@@ -38,7 +43,9 @@ class InflationRegistry:
                 {int(year): rate for year, rate in year_data.items()}
             )
 
-    def get_cumulative_inflation_factor(self, currency: str, from_year: int, to_year: int) -> float:
+    def get_cumulative_inflation_factor(
+        self, currency: str, from_year: int, to_year: int
+    ) -> float:
         """Calculate cumulative inflation factor between two years."""
         if currency not in self._inflation_data:
             raise ValueError(f"Currency '{currency}' not supported")

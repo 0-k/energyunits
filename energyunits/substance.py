@@ -15,13 +15,16 @@ class SubstanceRegistry:
         """Load default substance data from JSON."""
         data_path = Path(__file__).parent / "data" / "substances.json"
         with open(data_path) as f:
-            self._substances = json.load(f)
+            data = json.load(f)
+        # Filter out metadata fields
+        self._substances = {k: v for k, v in data.items() if not k.startswith("_")}
 
     def load_substances(self, file_path: str):
         """Load custom substances from JSON file."""
         with open(file_path) as f:
             data = json.load(f)
-        self._substances.update(data)
+        # Filter out metadata fields
+        self._substances.update({k: v for k, v in data.items() if not k.startswith("_")})
 
     def __getitem__(self, substance_id):
         """Dict-like access to substance data."""

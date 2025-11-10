@@ -27,7 +27,9 @@ class UnitRegistry:
         self._conversion_factors = data["conversion_factors"]
         self._base_units = data["base_units"]
         self._corresponding_units = data["corresponding_units"]
-        self._dimensional_multiplication_rules = data.get("dimensional_multiplication_rules", [])
+        self._dimensional_multiplication_rules = data.get(
+            "dimensional_multiplication_rules", []
+        )
         self._dimensional_division_rules = data.get("dimensional_division_rules", [])
 
     def load_units(self, file_path: str):
@@ -39,8 +41,12 @@ class UnitRegistry:
         self._conversion_factors.update(data.get("conversion_factors", {}))
         self._base_units.update(data.get("base_units", {}))
         self._corresponding_units.update(data.get("corresponding_units", {}))
-        self._dimensional_multiplication_rules.extend(data.get("dimensional_multiplication_rules", []))
-        self._dimensional_division_rules.extend(data.get("dimensional_division_rules", []))
+        self._dimensional_multiplication_rules.extend(
+            data.get("dimensional_multiplication_rules", [])
+        )
+        self._dimensional_division_rules.extend(
+            data.get("dimensional_division_rules", [])
+        )
 
     def get_dimension(self, unit: str) -> str:
         """Get dimension of a unit."""
@@ -84,7 +90,9 @@ class UnitRegistry:
         to_factor = self._conversion_factors.get(to_unit)
 
         if from_factor is None or to_factor is None:
-            raise ValueError(f"Conversion factor not defined for {from_unit} or {to_unit}")
+            raise ValueError(
+                f"Conversion factor not defined for {from_unit} or {to_unit}"
+            )
 
         return from_factor / to_factor
 
@@ -94,16 +102,26 @@ class UnitRegistry:
             return True
 
         conversions = {
-            ("ENERGY", "POWER"), ("POWER", "ENERGY"),
-            ("MASS", "VOLUME"), ("VOLUME", "MASS"),
-            ("MASS", "ENERGY"), ("ENERGY", "MASS"),
-            ("ENERGY", "VOLUME"), ("VOLUME", "ENERGY"),
+            ("ENERGY", "POWER"),
+            ("POWER", "ENERGY"),
+            ("MASS", "VOLUME"),
+            ("VOLUME", "MASS"),
+            ("MASS", "ENERGY"),
+            ("ENERGY", "MASS"),
+            ("ENERGY", "VOLUME"),
+            ("VOLUME", "ENERGY"),
         }
 
         return (from_dim, to_dim) in conversions
 
-    def convert_between_dimensions(self, value: float, from_unit: str, to_unit: str,
-                                   substance: Optional[str] = None, **kwargs) -> float:
+    def convert_between_dimensions(
+        self,
+        value: float,
+        from_unit: str,
+        to_unit: str,
+        substance: Optional[str] = None,
+        **kwargs,
+    ) -> float:
         """Convert between related dimensions."""
         from .substance import substance_registry
 
@@ -119,8 +137,11 @@ class UnitRegistry:
             mass_t = mass_kg / 1000
 
             basis = kwargs.get("basis", "LHV")
-            heating_value_mj_kg = (substance_registry.hhv(substance) if basis.upper() == "HHV"
-                                  else substance_registry.lhv(substance))
+            heating_value_mj_kg = (
+                substance_registry.hhv(substance)
+                if basis.upper() == "HHV"
+                else substance_registry.lhv(substance)
+            )
             heating_value_mwh_t = heating_value_mj_kg * 0.2778
             energy_mwh = mass_t * heating_value_mwh_t
 
@@ -133,8 +154,11 @@ class UnitRegistry:
             energy_mwh = value * self.get_conversion_factor(from_unit, "MWh")
 
             basis = kwargs.get("basis", "LHV")
-            heating_value_mj_kg = (substance_registry.hhv(substance) if basis.upper() == "HHV"
-                                  else substance_registry.lhv(substance))
+            heating_value_mj_kg = (
+                substance_registry.hhv(substance)
+                if basis.upper() == "HHV"
+                else substance_registry.lhv(substance)
+            )
             heating_value_mwh_t = heating_value_mj_kg * 0.2778
             mass_t = energy_mwh / heating_value_mwh_t
             mass_kg = mass_t * 1000
@@ -167,15 +191,23 @@ class UnitRegistry:
             if not substance:
                 raise ValueError("Substance required for energy to volume conversion")
 
-            mass_kg = self.convert_between_dimensions(value, from_unit, "kg", substance, **kwargs)
-            return self.convert_between_dimensions(mass_kg, "kg", to_unit, substance, **kwargs)
+            mass_kg = self.convert_between_dimensions(
+                value, from_unit, "kg", substance, **kwargs
+            )
+            return self.convert_between_dimensions(
+                mass_kg, "kg", to_unit, substance, **kwargs
+            )
 
         elif from_dim == "VOLUME" and to_dim == "ENERGY":
             if not substance:
                 raise ValueError("Substance required for volume to energy conversion")
 
-            mass_kg = self.convert_between_dimensions(value, from_unit, "kg", substance, **kwargs)
-            return self.convert_between_dimensions(mass_kg, "kg", to_unit, substance, **kwargs)
+            mass_kg = self.convert_between_dimensions(
+                value, from_unit, "kg", substance, **kwargs
+            )
+            return self.convert_between_dimensions(
+                mass_kg, "kg", to_unit, substance, **kwargs
+            )
 
         # Power ↔ Energy conversions
         elif from_dim == "POWER" and to_dim == "ENERGY":
@@ -213,19 +245,25 @@ class UnitRegistry:
                 return (rule["result_dimension"], rule["source_dimension"])
         return None
 
-    def get_division_result(self, numerator_dim: str, denominator_dim: str) -> Optional[str]:
+    def get_division_result(
+        self, numerator_dim: str, denominator_dim: str
+    ) -> Optional[str]:
         """Get result dimension from dividing two dimensions.
 
         Returns: result_dimension or None
         Example: (ENERGY, TIME) -> "POWER"
         """
         for rule in self._dimensional_division_rules:
-            if (rule["numerator_dimension"] == numerator_dim and
-                rule["denominator_dimension"] == denominator_dim):
+            if (
+                rule["numerator_dimension"] == numerator_dim
+                and rule["denominator_dimension"] == denominator_dim
+            ):
                 return rule["result_dimension"]
         return None
 
-    def _convert_compound_to_simple(self, from_unit: str, to_unit: str, dimension: str) -> float:
+    def _convert_compound_to_simple(
+        self, from_unit: str, to_unit: str, dimension: str
+    ) -> float:
         """Convert between compound and simple units."""
         if "/" in from_unit:
             compound_unit = from_unit
@@ -244,9 +282,15 @@ class UnitRegistry:
             mw_to_simple_factor = self.get_conversion_factor("MW", simple_unit)
             compound_to_simple_factor = compound_value_in_mw * mw_to_simple_factor
         else:
-            raise ValueError(f"Compound to simple conversion not implemented for: {dimension}")
+            raise ValueError(
+                f"Compound to simple conversion not implemented for: {dimension}"
+            )
 
-        return compound_to_simple_factor if is_from_compound else 1.0 / compound_to_simple_factor
+        return (
+            compound_to_simple_factor
+            if is_from_compound
+            else 1.0 / compound_to_simple_factor
+        )
 
 
 registry = UnitRegistry()

@@ -6,6 +6,8 @@
 
 A Python library for handling units, conversions, and calculations in energy system modeling. Designed for techno-economic analysis, energy planning, and quantitative energy research.
 
+**Status:** Under active development. API may change between versions.
+
 ##  Key Features
 
 - **Universal Conversions**: Energy, power, mass, volume, and cost units with intelligent dimensional analysis
@@ -21,8 +23,18 @@ A Python library for handling units, conversions, and calculations in energy sys
 ### Installation
 
 ```bash
-pip install energyunits
+# Clone the repository
+git clone https://github.com/0-k/energyunits.git
+cd energyunits
+
+# Install in development mode
+pip install -e .
+
+# Or install with development dependencies
+pip install -e .[dev]
 ```
+
+Note: Not yet published to PyPI.
 
 ### Basic Usage
 
