@@ -11,7 +11,8 @@ A Python library for handling units, conversions, and calculations in energy sys
 - **Universal Conversions**: Energy, power, mass, volume, and cost units with intelligent dimensional analysis
 - **Substance-Aware**: Built-in fuel properties database with heating values, densities, and emission factors
 - **Economic Modeling**: Inflation adjustment with historical rates for USD/EUR (2010-2030)
-- **Smart Arithmetic**: Natural mathematical operations with automatic unit handling
+- **Smart Arithmetic**: Natural mathematical operations with automatic unit handling and compound unit cancellation
+- **Data-Driven Architecture**: All configuration in JSON - extend with custom units, fuels, and dimensional rules
 - **Pandas Ready**: Optional DataFrame integration for bulk operations
 - **Energy-Focused**: Purpose-built for energy system modeling and analysis
 
@@ -43,8 +44,13 @@ capex_2025 = capex_2020.to(reference_year=2025)  # Auto-adjusts for inflation
 
 # Natural arithmetic operations
 power = Quantity(100, "MW")
-time = Quantity(24, "h") 
-energy = power * time  # → 2400 MWh
+time = Quantity(24, "h")
+energy = power * time  # → 2400 MWh (POWER × TIME → ENERGY via data-driven rules)
+
+# Smart compound unit cancellation
+capex = Quantity(1500, "USD/kW")
+capacity = Quantity(500, "MW")
+payment = capex * capacity  # → 750,000,000 USD (auto-converts MW→kW, then cancels)
 ```
 
 ## Use Cases
@@ -127,6 +133,52 @@ costs_2024 = costs_2010.to(reference_year=2024)
 
 print(f"2010 costs: {costs_2010.value}")
 print(f"2024 costs: {costs_2024.value}")  # Inflation-adjusted
+```
+
+## Extensibility
+
+The library uses a data-driven architecture. All unit definitions, substance properties, and dimensional operation rules are stored in JSON configuration files under `energyunits/data/`.
+
+### Custom Units and Rules
+
+```python
+from energyunits.registry import registry
+
+# Load custom unit definitions, conversion factors, and dimensional rules
+registry.load_units("custom_units.json")
+
+# Example custom_units.json structure:
+{
+  "dimensions": {"BTU": "ENERGY"},
+  "conversion_factors": {"BTU": 0.000293071},
+  "dimensional_multiplication_rules": [
+    {
+      "dimensions": ["FORCE", "LENGTH"],
+      "result_dimension": "ENERGY",
+      "source_dimension": "FORCE"
+    }
+  ]
+}
+```
+
+### Custom Substances
+
+```python
+from energyunits.substance import substance_registry
+
+# Load custom fuel properties
+substance_registry.load_substances("custom_fuels.json")
+
+# Example custom_fuels.json structure:
+{
+  "custom_coal": {
+    "name": "Regional Coal Blend",
+    "hhv": 28.5,
+    "lhv": 27.2,
+    "density": 850,
+    "carbon_intensity": 350
+  }
+}
 ```
 
 ## Supported Units
