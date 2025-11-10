@@ -28,7 +28,7 @@ from .quantity import Quantity
 
 # Import pandas integration if pandas is available
 try:
-    import pandas as pd
+    import pandas as pd  # noqa: F401
 
     from . import pandas_tools
 

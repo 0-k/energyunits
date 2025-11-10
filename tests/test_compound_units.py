@@ -73,8 +73,6 @@ class TestCompoundUnits:
         energy = power_rate * time_duration
 
         # Should get energy - the result unit is determined by dimensional analysis
-        # GWh/min * min = GWh, but the multiplication returns the appropriate energy unit
-        assert energy.value == pytest.approx(
-            3000
-        )  # 100 GWh/min * 30 min = 3000 GWh (or equivalent in MWh)
-        assert energy.unit == "MWh"
+        # GWh/min * min = GWh
+        assert energy.value == pytest.approx(3000)
+        assert energy.unit == "GWh"

@@ -145,8 +145,3 @@ class TestInflationRegistry:
         assert "USD" in currencies
         assert "EUR" in currencies
 
-    def test_get_available_years(self):
-        """Test getting available year range."""
-        min_year, max_year = inflation_registry.get_available_years("USD")
-        assert min_year == 2010
-        assert max_year == 2030

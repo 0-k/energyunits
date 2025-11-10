@@ -30,10 +30,19 @@ def test_basic_usage():
 
     # Natural arithmetic operations
     power = Quantity(100, "MW")
-    time = Quantity(24, "h") 
-    energy = power * time  # → 2400 MWh
+    time = Quantity(24, "h")
+    energy = power * time  # → 2400 MWh (POWER × TIME → ENERGY via data-driven rules)
     print(f"{power} * {time} = {energy}")
     assert "MWh" in str(energy), f"Expected MWh unit, got {energy}"
+    assert abs(energy.value - 2400) < 0.1, f"Expected 2400, got {energy.value}"
+
+    # Smart compound unit cancellation
+    capex = Quantity(1500, "USD/kW")
+    capacity = Quantity(500, "MW")
+    payment = capex * capacity  # → 750,000,000 USD (auto-converts MW→kW, then cancels)
+    print(f"{capex} * {capacity} = {payment}")
+    assert abs(payment.value - 750000000) < 1, f"Expected 750000000, got {payment.value}"
+    assert payment.unit == "USD", f"Expected USD, got {payment.unit}"
 
 
 def test_energy_system_analysis():
@@ -144,10 +153,78 @@ def test_economic_time_series():
     print(f"2024 costs: {costs_2024.value}")  # Inflation-adjusted
 
 
+def test_custom_units_extensibility():
+    """Test Custom Units extensibility examples"""
+    print("\nTesting Custom Units extensibility examples...")
+
+    from energyunits.registry import registry
+    import json
+    import tempfile
+
+    # Create custom units file
+    custom_units = {
+        'dimensions': {'BTU': 'ENERGY'},
+        'conversion_factors': {'BTU': 0.000293071},
+        'dimensional_multiplication_rules': [
+            {
+                'dimensions': ['FORCE', 'LENGTH'],
+                'result_dimension': 'ENERGY',
+                'source_dimension': 'FORCE'
+            }
+        ]
+    }
+
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        json.dump(custom_units, f)
+        temp_file = f.name
+
+    # Load custom unit definitions
+    registry.load_units(temp_file)
+
+    print(f"Custom BTU dimension: {registry.get_dimension('BTU')}")
+    assert registry.get_dimension('BTU') == 'ENERGY'
+    print(f"Total multiplication rules: {len(registry._dimensional_multiplication_rules)}")
+    assert len(registry._dimensional_multiplication_rules) >= 2
+
+
+def test_custom_substances_extensibility():
+    """Test Custom Substances extensibility examples"""
+    print("\nTesting Custom Substances extensibility examples...")
+
+    from energyunits.substance import substance_registry
+    import json
+    import tempfile
+
+    # Create custom substances file
+    custom_fuels = {
+        'custom_coal': {
+            'name': 'Regional Coal Blend',
+            'hhv': 28.5,
+            'lhv': 27.2,
+            'density': 850,
+            'carbon_intensity': 350
+        }
+    }
+
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        json.dump(custom_fuels, f)
+        temp_file = f.name
+
+    # Load custom fuel properties
+    substance_registry.load_substances(temp_file)
+
+    print(f"Custom coal HHV: {substance_registry.hhv('custom_coal')} MJ/kg")
+    assert substance_registry.hhv('custom_coal') == 28.5
+    print(f"Custom coal LHV: {substance_registry.lhv('custom_coal')} MJ/kg")
+    assert substance_registry.lhv('custom_coal') == 27.2
+    print(f"Custom coal density: {substance_registry.density('custom_coal')} kg/m3")
+    assert substance_registry.density('custom_coal') == 850
+
+
 def test_pandas_integration():
     """Test Pandas Integration examples"""
     print("\nTesting Pandas Integration examples...")
-    
+
     try:
         import pandas as pd
         from energyunits.pandas_tools import convert_units
@@ -156,23 +233,23 @@ def test_pandas_integration():
         # DataFrame operations
         df = pd.DataFrame({
             'power': [100, 200, 300],
-            'hours': [24, 12, 8] 
+            'hours': [24, 12, 8]
         })
 
         # Calculate energy in MWh (manually since DataFrame columns are just numbers)
         df['energy_MWh'] = df['power'] * df['hours'] / 1000  # Convert MW*h to MWh
         df['energy_GJ'] = df['energy_MWh'].apply(lambda x: Quantity(x, 'MWh').to('GJ').value)
-        
+
         print("Pandas integration test:")
         print(df)
-        
+
     except ImportError:
         print("Pandas not available, skipping pandas integration test")
 
 
 if __name__ == "__main__":
     print("Testing all README examples...\n")
-    
+
     try:
         test_basic_usage()
         test_energy_system_analysis()
@@ -181,10 +258,12 @@ if __name__ == "__main__":
         test_compound_units()
         test_multi_step_conversions()
         test_economic_time_series()
+        test_custom_units_extensibility()
+        test_custom_substances_extensibility()
         test_pandas_integration()
-        
+
         print("\n✅ All README examples work correctly!")
-        
+
     except Exception as e:
         print(f"\n❌ Error testing README examples: {e}")
         import traceback

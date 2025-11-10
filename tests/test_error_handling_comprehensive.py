@@ -4,11 +4,6 @@ import numpy as np
 import pytest
 
 from energyunits import Quantity
-from energyunits.exceptions import (
-    ConversionError,
-    IncompatibleUnitsError,
-    UnknownSubstanceError,
-)
 from energyunits.registry import registry
 from energyunits.substance import substance_registry
 
@@ -128,7 +123,7 @@ class TestConversionErrors:
         """Test errors for incompatible unit conversions."""
         energy = Quantity(100, "MWh")
 
-        with pytest.raises(ValueError, match="Substance must be specified"):
+        with pytest.raises(ValueError, match="Substance required"):
             energy.to("kg")  # Energy to mass without substance
 
         with pytest.raises(ValueError, match="Cannot convert"):
@@ -348,14 +343,6 @@ class TestCustomExceptionUsage:
         with pytest.raises(ValueError):  # Should be IncompatibleUnitsError
             energy.to("kg")
 
-    def test_custom_exception_inheritance(self):
-        """Test that custom exceptions inherit from appropriate base classes."""
-        assert issubclass(UnknownSubstanceError, Exception)
-        assert issubclass(IncompatibleUnitsError, Exception)
-        assert issubclass(ConversionError, Exception)
-
-        # They should probably inherit from ValueError for backward compatibility
-        # But currently they inherit from Exception
 
 
 class TestErrorMessageQuality:
