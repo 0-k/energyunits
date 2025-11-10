@@ -174,13 +174,11 @@ class Quantity:
         elif "/" in unit2 and unit1 in unit2:
             return unit2.split("/")[0]
 
-        # Check dimensional multiplication rules (e.g., POWER × TIME → ENERGY)
-        result_dimension = registry.get_multiplication_result_dimension(dim1, dim2)
-        if result_dimension:
-            # Find which unit should be mapped to the result dimension
-            source_unit = unit1 if dim1 in ["POWER", "TIME"] else unit2
-            if dim1 == "TIME" or dim2 == "TIME":
-                source_unit = unit1 if dim1 == "POWER" else unit2
+        # Check dimensional multiplication rules from data
+        result = registry.get_multiplication_result(dim1, dim2)
+        if result:
+            result_dimension, source_dimension = result
+            source_unit = unit1 if dim1 == source_dimension else unit2
             return registry.get_corresponding_unit(source_unit, result_dimension)
 
         return f"{unit1}·{unit2}"
@@ -228,9 +226,10 @@ class Quantity:
             raise TypeError(f"Cannot divide Quantity by {type(other)}")
 
     def _divide_units(self, unit1: str, unit2: str, dim1: str, dim2: str) -> str:
-        # Energy / Time = Power
-        if dim1 == "ENERGY" and dim2 == "TIME":
-            return registry.get_corresponding_unit(unit1, "POWER")
+        # Check dimensional division rules from data
+        result_dimension = registry.get_division_result(dim1, dim2)
+        if result_dimension:
+            return registry.get_corresponding_unit(unit1, result_dimension)
 
         # Same units = dimensionless
         if unit1 == unit2:

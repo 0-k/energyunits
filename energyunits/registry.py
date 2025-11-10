@@ -14,6 +14,7 @@ class UnitRegistry:
         self._base_units = {}
         self._corresponding_units = {}
         self._dimensional_multiplication_rules = []
+        self._dimensional_division_rules = []
         self._load_defaults()
 
     def _load_defaults(self):
@@ -27,6 +28,7 @@ class UnitRegistry:
         self._base_units = data["base_units"]
         self._corresponding_units = data["corresponding_units"]
         self._dimensional_multiplication_rules = data.get("dimensional_multiplication_rules", [])
+        self._dimensional_division_rules = data.get("dimensional_division_rules", [])
 
     def load_units(self, file_path: str):
         """Load custom units from JSON file."""
@@ -38,6 +40,7 @@ class UnitRegistry:
         self._base_units.update(data.get("base_units", {}))
         self._corresponding_units.update(data.get("corresponding_units", {}))
         self._dimensional_multiplication_rules.extend(data.get("dimensional_multiplication_rules", []))
+        self._dimensional_division_rules.extend(data.get("dimensional_division_rules", []))
 
     def get_dimension(self, unit: str) -> str:
         """Get dimension of a unit."""
@@ -198,11 +201,27 @@ class UnitRegistry:
 
         raise ValueError(f"No corresponding {target_dimension} unit for {unit}")
 
-    def get_multiplication_result_dimension(self, dim1: str, dim2: str) -> Optional[str]:
-        """Get result dimension from multiplying two dimensions (e.g., POWER × TIME → ENERGY)."""
+    def get_multiplication_result(self, dim1: str, dim2: str) -> Optional[tuple]:
+        """Get result dimension and source dimension from multiplying two dimensions.
+
+        Returns: (result_dimension, source_dimension) or None
+        Example: (POWER, TIME) -> ("ENERGY", "POWER")
+        """
         for rule in self._dimensional_multiplication_rules:
             rule_dims = set(rule["dimensions"])
             if rule_dims == {dim1, dim2}:
+                return (rule["result_dimension"], rule["source_dimension"])
+        return None
+
+    def get_division_result(self, numerator_dim: str, denominator_dim: str) -> Optional[str]:
+        """Get result dimension from dividing two dimensions.
+
+        Returns: result_dimension or None
+        Example: (ENERGY, TIME) -> "POWER"
+        """
+        for rule in self._dimensional_division_rules:
+            if (rule["numerator_dimension"] == numerator_dim and
+                rule["denominator_dimension"] == denominator_dim):
                 return rule["result_dimension"]
         return None
 

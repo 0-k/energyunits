@@ -98,7 +98,15 @@
   "dimensional_multiplication_rules": [
     {
       "dimensions": ["POWER", "TIME"],
-      "result_dimension": "ENERGY"
+      "result_dimension": "ENERGY",
+      "source_dimension": "POWER"
+    }
+  ],
+  "dimensional_division_rules": [
+    {
+      "numerator_dimension": "ENERGY",
+      "denominator_dimension": "TIME",
+      "result_dimension": "POWER"
     }
   ]
 }
