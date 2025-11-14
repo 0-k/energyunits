@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "energyunits"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
   { name="Martin Klein", email="hi@martinklein.co" },
 ]
@@ -17,8 +17,20 @@ dependencies = [
     "numpy>=1.26.0",
 ]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
+    "Typing :: Typed",
 ]
 
 [project.optional-dependencies]
@@ -38,3 +50,12 @@ dev = [
 "Homepage" = "https://github.com/0-k/energyunits"
 "Documentation" = "https://energyunits.readthedocs.io/en/latest/"
 "Bug Tracker" = "https://github.com/0-k/energyunits/issues"
+"Source Code" = "https://github.com/0-k/energyunits"
+"Changelog" = "https://github.com/0-k/energyunits/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["energyunits*"]
+
+[tool.setuptools.package-data]
+energyunits = ["data/*.json"]
