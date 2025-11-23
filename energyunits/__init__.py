@@ -38,7 +38,7 @@ except ImportError:
     _has_pandas = False
     pandas_tools = None
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 # Define public API
 __all__ = ["Quantity"]
