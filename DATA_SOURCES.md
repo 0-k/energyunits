@@ -317,10 +317,96 @@ Data will be periodically reviewed and updated based on:
 - [H2tools - Hydrogen Properties](https://h2tools.org/)
 - [AFDC - Alternative Fuels Data Center](https://afdc.energy.gov/)
 
+## Inflation Data
+
+### USD Inflation Rates (2010-2024)
+
+Historical inflation rates sourced from U.S. Bureau of Labor Statistics (BLS) Consumer Price Index (CPI) data, available through FRED (Federal Reserve Economic Data).
+
+**Historical Values (2010-2024):**
+The library uses annual CPI percentage changes published by BLS. Key verified values:
+- 2020: 1.23%
+- 2021: 4.70%
+- 2022: 8.00%
+- 2023: 4.12%
+- 2024: ~2.9-3.15% (preliminary/estimated)
+
+**Future Projections (2025-2030):**
+Values for 2025-2030 are estimates based on Federal Reserve targets and economic projections. These should be treated as approximate and updated as actual data becomes available.
+
+**References:**
+- [FRED - Inflation, Consumer Prices for United States](https://fred.stlouisfed.org/series/FPCPITOTLZGUSA)
+- [BLS - Consumer Price Index](https://www.bls.gov/cpi/)
+- [US Inflation Calculator - Current Rates](https://www.usinflationcalculator.com/inflation/current-inflation-rates/)
+
+### EUR Inflation Rates (2010-2024)
+
+Historical inflation rates sourced from Eurostat's Harmonised Index of Consumer Prices (HICP) for the Euro area.
+
+**Historical Values (2010-2024):**
+- 2020: 0.3%
+- 2021: 2.6%
+- 2022: 8.4%
+- 2023: ~5.4%
+- 2024: ~2.8% (preliminary/estimated)
+
+**Future Projections (2025-2030):**
+Values for 2025-2030 are estimates based on ECB inflation targets. These should be treated as approximate.
+
+**References:**
+- [Eurostat - HICP Inflation Rate](https://ec.europa.eu/eurostat/databrowser/view/tec00118/default/table?lang=en)
+- [Eurostat - Inflation in the Euro Area](https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Inflation_in_the_euro_area)
+- [Trading Economics - Euro Area Inflation](https://tradingeconomics.com/euro-area/inflation-cpi)
+
+### Methodology
+
+The library uses these inflation rates to adjust currency values between reference years using cumulative inflation:
+
+```python
+adjusted_value = original_value × Π(1 + inflation_rate_i)
+```
+
+where the product is taken over all years between the original and target reference year.
+
+**Important Notes:**
+1. Inflation adjustments are approximate and suitable for planning purposes
+2. Future year projections are estimates and should be updated regularly
+3. Different price indices exist (CPI, PPI, GDP deflator) - this library uses consumer price indices
+4. Real-world inflation varies by sector and geography
+
+## Currency Conversion Values
+
+### Static Exchange Rates
+
+The library includes static currency conversion factors in `units.json`:
+- USD: 1.00 (base currency)
+- EUR: 1.08
+- GBP: 1.27
+- JPY: 0.0067
+- CNY: 0.14
+
+**Important Limitations:**
+1. These are **approximate reference values**, not real-time exchange rates
+2. Exchange rates fluctuate continuously in forex markets
+3. For financial applications requiring precision, use a dedicated currency API
+4. Values suitable for energy system modeling where currency is secondary
+
+**Purpose:**
+These static rates enable basic cross-currency comparisons in energy cost calculations without requiring external API dependencies. They represent approximate rates from 2024-2025.
+
+**For precise currency conversions:**
+- Use current spot rates from forex sources
+- Consider using dedicated financial libraries (e.g., forex-python, CurrencyConverter)
+- The library focuses on energy units; currency is a convenience feature
+
 ## Version History
 
 - **2025-11-23:** Initial comprehensive data verification and documentation
-- Values updated from preliminary estimates to peer-reviewed authoritative sources
+  - Fuel properties updated from preliminary estimates to IPCC/IEA standards
+  - CO2 emission factors verified against IPCC 2006 Guidelines
+  - Heating values cross-referenced with multiple authoritative sources
+  - Added inflation data sources and methodology documentation
+  - Documented currency conversion limitations
 
 ## Contact
 
