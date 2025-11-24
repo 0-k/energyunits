@@ -376,30 +376,96 @@ where the product is taken over all years between the original and target refere
 
 ## Currency Conversion Values
 
-### Static Exchange Rates
+### Year-Dependent Exchange Rates
 
-The library includes static currency conversion factors in `units.json`:
-- USD: 1.00 (base currency)
-- EUR: 1.08
+**New in v0.2.0**: The library now includes year-dependent exchange rates for historical economic analysis.
+
+Exchange rate data is stored in `exchange_rates.json` with annual average rates from 2010-2025 for:
+- **EUR** (Euro)
+- **GBP** (British Pound)
+- **JPY** (Japanese Yen)
+- **CNY** (Chinese Yuan)
+- **USD** (US Dollar - base currency, always 1.0)
+
+**Data Sources:**
+- European Central Bank (ECB) - EUR/USD reference rates
+- Bank of England - GBP/USD official rates
+- Bank of Japan - JPY/USD rates
+- People's Bank of China - CNY/USD reference rates
+- Cross-validated with IMF, US Treasury, and FRED data
+
+**Methodology:**
+Annual averages computed from daily reference rates published by central banks. This provides representative rates for year-over-year economic analysis while avoiding daily volatility.
+
+### Currency + Inflation Convention: "Inflate First, Then Convert"
+
+When combining currency conversion with inflation adjustment, the library uses a **deterministic convention**:
+
+```python
+cost_eur_2015 = Quantity(50, "EUR/MWh", reference_year=2015)
+cost_usd_2024 = cost_eur_2015.to("USD/MWh", reference_year=2024)
+
+# Execution order:
+# 1. Inflate EUR from 2015 to 2024 using EUR inflation rates
+# 2. Convert EUR to USD using 2024 exchange rate
+```
+
+**Why This Matters:**
+
+The order matters because exchange rates and inflation rates are not perfectly synchronized:
+- **Path 1** (Inflate then Convert): 50 EUR × 1.20 EUR-inflation × 1.085 EUR/USD = ~65 USD
+- **Path 2** (Convert then Inflate): 50 EUR × 1.11 EUR/USD(2015) × 1.30 USD-inflation = ~72 USD
+
+These give **different results** (~10% difference) because EUR and USD had different inflation rates over this period.
+
+**Convention Used:** Path 1 (Inflate First, Then Convert)
+- More closely approximates purchasing power parity
+- Answers: "What would this cost in today's dollars?"
+- Library issues a warning when this combination is detected
+
+**Important Limitations:**
+
+1. **Economic Assumptions**: This convention makes economic assumptions that may not suit all analyses
+2. **Not Financial Returns**: Does not model actual financial returns from currency holdings
+3. **Approximate**: Annual averages smooth over intra-year volatility
+4. **No Transaction Costs**: Rates don't include spreads, fees, or transaction costs
+5. **For Financial Precision**: Use dedicated forex/economic analysis tools
+
+**Supported Use Cases:**
+- Historical energy cost comparisons across countries
+- Long-term infrastructure project cost analysis
+- Academic/research economic modeling
+- Rough currency conversions for context
+
+**Example: Brexit Impact Visible in Data**
+
+```python
+# GBP exchange rate before/after Brexit referendum (June 2016)
+gbp_2015 = Quantity(100, "GBP", reference_year=2015).to("USD")
+# → ~153 USD (strong pound)
+
+gbp_2017 = Quantity(100, "GBP", reference_year=2017).to("USD")
+# → ~129 USD (post-Brexit depreciation)
+```
+
+### Static Fallback Rates (units.json)
+
+For backwards compatibility, `units.json` retains static exchange rate factors:
+- USD: 1.00
+- EUR: 1.08 (approximate 2024-2025 average)
 - GBP: 1.27
 - JPY: 0.0067
 - CNY: 0.14
 
-**Important Limitations:**
-1. These are **approximate reference values**, not real-time exchange rates
-2. Exchange rates fluctuate continuously in forex markets
-3. For financial applications requiring precision, use a dedicated currency API
-4. Values suitable for energy system modeling where currency is secondary
-
-**Purpose:**
-These static rates enable basic cross-currency comparisons in energy cost calculations without requiring external API dependencies. They represent approximate rates from 2024-2025.
-
-**For precise currency conversions:**
-- Use current spot rates from forex sources
-- Consider using dedicated financial libraries (e.g., forex-python, CurrencyConverter)
-- The library focuses on energy units; currency is a convenience feature
+These are used only when `reference_year` is not specified. **Recommendation**: Always specify `reference_year` for currency conversions to use accurate historical rates.
 
 ## Version History
+
+- **2025-11-24:** Year-dependent currency conversions
+  - Added historical exchange rate data (2010-2025) for EUR, GBP, JPY, CNY
+  - Implemented "inflate first, then convert" convention for currency + inflation
+  - Exchange rates sourced from ECB, Bank of England, Bank of Japan, PBOC
+  - Added comprehensive documentation of path dependency and economic assumptions
 
 - **2025-11-23:** Initial comprehensive data verification and documentation
   - Fuel properties updated from preliminary estimates to IPCC/IEA standards
