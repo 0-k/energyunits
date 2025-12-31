@@ -1,11 +1,11 @@
 {
-  "_note": "Preliminary data - values are representative generic estimates for each substance category",
+  "_note": "Data sourced from IPCC 2006 Guidelines, IEA, EPA, and peer-reviewed literature. See DATA_SOURCES.md for full citations.",
   "coal": {
     "name": "Coal (generic)",
-    "hhv": 29.3,
-    "lhv": 27.8,
+    "hhv": 26.0,
+    "lhv": 25.0,
     "density": 833,
-    "carbon_intensity": 340,
+    "carbon_intensity": 95.0,
     "carbon_content": 0.75,
     "hydrogen_content": 0.05,
     "ash_content": 0.10
@@ -15,7 +15,7 @@
     "hhv": 15.0,
     "lhv": 14.0,
     "density": 700,
-    "carbon_intensity": 400,
+    "carbon_intensity": 101.0,
     "carbon_content": 0.65,
     "hydrogen_content": 0.04,
     "ash_content": 0.15
@@ -25,7 +25,7 @@
     "hhv": 30.0,
     "lhv": 28.5,
     "density": 833,
-    "carbon_intensity": 330,
+    "carbon_intensity": 94.6,
     "carbon_content": 0.80,
     "hydrogen_content": 0.05,
     "ash_content": 0.08
@@ -35,7 +35,7 @@
     "hhv": 32.5,
     "lhv": 31.5,
     "density": 1000,
-    "carbon_intensity": 320,
+    "carbon_intensity": 98.3,
     "carbon_content": 0.85,
     "hydrogen_content": 0.04,
     "ash_content": 0.05
@@ -45,7 +45,7 @@
     "hhv": 55.0,
     "lhv": 49.5,
     "density": 0.75,
-    "carbon_intensity": 200,
+    "carbon_intensity": 56.1,
     "carbon_content": 0.75,
     "hydrogen_content": 0.25,
     "ash_content": 0.0
@@ -55,7 +55,7 @@
     "hhv": 55.0,
     "lhv": 49.5,
     "density": 450,
-    "carbon_intensity": 210,
+    "carbon_intensity": 56.1,
     "carbon_content": 0.75,
     "hydrogen_content": 0.25,
     "ash_content": 0.0
@@ -65,7 +65,7 @@
     "hhv": 55.5,
     "lhv": 50.0,
     "density": 0.68,
-    "carbon_intensity": 200,
+    "carbon_intensity": 56.1,
     "carbon_content": 0.75,
     "hydrogen_content": 0.25,
     "ash_content": 0.0
@@ -75,7 +75,7 @@
     "hhv": 45.0,
     "lhv": 42.5,
     "density": 870,
-    "carbon_intensity": 270,
+    "carbon_intensity": 73.3,
     "carbon_content": 0.85,
     "hydrogen_content": 0.13,
     "ash_content": 0.001
@@ -85,7 +85,7 @@
     "hhv": 45.0,
     "lhv": 42.5,
     "density": 870,
-    "carbon_intensity": 270,
+    "carbon_intensity": 73.3,
     "carbon_content": 0.85,
     "hydrogen_content": 0.13,
     "ash_content": 0.001
@@ -95,7 +95,7 @@
     "hhv": 43.0,
     "lhv": 40.5,
     "density": 950,
-    "carbon_intensity": 285,
+    "carbon_intensity": 77.4,
     "carbon_content": 0.87,
     "hydrogen_content": 0.11,
     "ash_content": 0.005
@@ -105,7 +105,7 @@
     "hhv": 45.7,
     "lhv": 42.8,
     "density": 840,
-    "carbon_intensity": 265,
+    "carbon_intensity": 74.1,
     "carbon_content": 0.86,
     "hydrogen_content": 0.14,
     "ash_content": 0.0
@@ -115,7 +115,7 @@
     "hhv": 47.3,
     "lhv": 44.0,
     "density": 750,
-    "carbon_intensity": 255,
+    "carbon_intensity": 69.3,
     "carbon_content": 0.85,
     "hydrogen_content": 0.15,
     "ash_content": 0.0
@@ -123,9 +123,9 @@
   "wood_pellets": {
     "name": "Wood Pellets",
     "hhv": 20.0,
-    "lhv": 18.5,
+    "lhv": 17.0,
     "density": 650,
-    "carbon_intensity": 20,
+    "carbon_intensity": 0,
     "carbon_content": 0.50,
     "hydrogen_content": 0.06,
     "ash_content": 0.01
@@ -135,7 +135,7 @@
     "hhv": 19.0,
     "lhv": 16.0,
     "density": 350,
-    "carbon_intensity": 25,
+    "carbon_intensity": 0,
     "carbon_content": 0.48,
     "hydrogen_content": 0.06,
     "ash_content": 0.02
@@ -195,7 +195,7 @@
     "hhv": 22.7,
     "lhv": 19.9,
     "density": 795,
-    "carbon_intensity": 240,
+    "carbon_intensity": 69.0,
     "carbon_content": 0.375,
     "hydrogen_content": 0.125,
     "ash_content": 0.0

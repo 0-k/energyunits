@@ -316,13 +316,13 @@ class TestSubstanceRegistryDirectly:
         lhv_coal = substance_registry.lhv("coal")
 
         assert hhv_coal > lhv_coal  # HHV should always be higher
-        assert hhv_coal == 29.3
-        assert lhv_coal == 27.8
+        assert hhv_coal == 26.0
+        assert lhv_coal == 25.0
 
     def test_lhv_hhv_ratio(self):
         """Test LHV/HHV ratio calculation."""
         ratio = substance_registry.lhv_hhv_ratio("coal")
-        expected_ratio = 27.8 / 29.3
+        expected_ratio = 25.0 / 26.0
         assert ratio == pytest.approx(expected_ratio)
 
     def test_density_method(self):

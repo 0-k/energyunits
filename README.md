@@ -270,9 +270,11 @@ isort energyunits/            # Sort imports
 
 ## Documentation
 
-- **API Reference**: [Read the Docs](https://energyunits.readthedocs.io)
-- **Examples**: See `examples/` directory
-- **Architecture**: See `CLAUDE.md` for design principles
+- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Complete architecture documentation, design decisions, and extensibility guide
+- **[DATA_SOURCES.md](DATA_SOURCES.md)**: Citations and references for all energy conversion values and emission factors
+- **[RELEASE.md](RELEASE.md)**: Release process and PyPI publishing guide
+- **Examples**: See `examples/` directory for usage demonstrations
+- **API Reference**: Full API documentation (coming soon)
 
 ## Contributing
 

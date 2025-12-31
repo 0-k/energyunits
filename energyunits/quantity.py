@@ -45,6 +45,11 @@ class Quantity:
         This is the unified conversion method. Conversions are applied in sequence:
         substance → basis → unit → inflation.
 
+        **Special case**: When combining currency conversion with year change:
+        - Order becomes: substance → basis → inflation → unit
+        - Uses "inflate first, then convert" convention
+        - Issues warning about economic assumptions
+
         Examples:
             energy = Quantity(100, "MWh")
             energy.to("GJ")  # → 360 GJ
@@ -55,20 +60,60 @@ class Quantity:
 
             capex_2020 = Quantity(1000, "USD/kW", reference_year=2020)
             capex_2025 = capex_2020.to(reference_year=2025)
+
+            cost_eur_2015 = Quantity(50, "EUR/MWh", reference_year=2015)
+            cost_usd_2024 = cost_eur_2015.to("USD/MWh", reference_year=2024)
+            # Inflates EUR 2015→2024, then converts using 2024 exchange rate
         """
         result = self
 
+        # Detect currency conversion + year change combination
+        from .exchange_rate import exchange_rate_registry
+
+        is_currency_conversion = False
+        if target_unit is not None:
+            source_currency = exchange_rate_registry.detect_currency_from_unit(self.unit)
+            target_currency = exchange_rate_registry.detect_currency_from_unit(target_unit)
+            is_currency_conversion = (
+                source_currency is not None
+                and target_currency is not None
+                and source_currency != target_currency
+            )
+
+        is_year_change = (
+            reference_year is not None
+            and self.reference_year is not None
+            and reference_year != self.reference_year
+        )
+
+        needs_reordering = is_currency_conversion and is_year_change
+
+        # Standard conversions
         if substance is not None and self.substance != substance:
             result = result._convert_substance(substance)
 
         if basis is not None and result.basis != basis:
             result = result._convert_basis(basis)
 
-        if target_unit is not None:
-            result = result._convert_unit(target_unit)
+        # Special case: inflate before converting currency
+        if needs_reordering:
+            # Warn user about economic assumptions
+            exchange_rate_registry.warn_currency_inflation_combination()
 
-        if reference_year is not None:
-            result = result._convert_reference_year(reference_year)
+            # Do inflation first
+            if reference_year is not None:
+                result = result._convert_reference_year(reference_year)
+
+            # Then do currency conversion using target year's exchange rate
+            if target_unit is not None:
+                result = result._convert_unit(target_unit, year_for_exchange_rate=reference_year)
+        else:
+            # Normal order: unit conversion, then inflation
+            if target_unit is not None:
+                result = result._convert_unit(target_unit)
+
+            if reference_year is not None:
+                result = result._convert_reference_year(reference_year)
 
         if all(x is None for x in [target_unit, basis, substance, reference_year]):
             return Quantity(
@@ -278,12 +323,26 @@ class Quantity:
         other_converted = other.to(self.unit)
         return np.any(self.value != other_converted.value)
 
-    def _convert_unit(self, target_unit: str) -> "Quantity":
+    def _convert_unit(self, target_unit: str, year_for_exchange_rate: Optional[int] = None) -> "Quantity":
         from_dim = self.dimension
         to_dim = registry.get_dimension(target_unit)
 
         if from_dim == to_dim:
-            factor = registry.get_conversion_factor(self.unit, target_unit)
+            # Check if this is a currency conversion
+            from .exchange_rate import exchange_rate_registry
+            source_currency = exchange_rate_registry.detect_currency_from_unit(self.unit)
+            target_currency = exchange_rate_registry.detect_currency_from_unit(target_unit)
+
+            if source_currency and target_currency and source_currency != target_currency:
+                # This is a currency conversion - use year-dependent exchange rate
+                year = year_for_exchange_rate or self.reference_year
+                factor = exchange_rate_registry.get_conversion_factor(
+                    source_currency, target_currency, year
+                )
+            else:
+                # Standard unit conversion
+                factor = registry.get_conversion_factor(self.unit, target_unit)
+
             new_value = self.value * factor
         elif registry.are_dimensions_compatible(from_dim, to_dim):
             kwargs = {}
