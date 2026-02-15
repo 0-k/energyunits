@@ -49,7 +49,7 @@ dev = [
 
 [project.urls]
 "Homepage" = "https://github.com/0-k/energyunits"
-"Documentation" = "https://github.com/0-k/energyunits/blob/main/ARCHITECTURE.md"
+"Documentation" = "https://energyunits.readthedocs.io/"
 "Bug Tracker" = "https://github.com/0-k/energyunits/issues"
 "Source Code" = "https://github.com/0-k/energyunits"
 "Changelog" = "https://github.com/0-k/energyunits/blob/main/CHANGELOG.md"

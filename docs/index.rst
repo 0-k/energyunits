@@ -1,8 +1,7 @@
+EnergyUnits
+===========
 
-
-Welcome to pytemplate's documentation!
-=================================
-
+A Python library for handling units, conversions, and calculations in energy system modeling.
 
 .. include:: ../README.md
    :parser: myst_parser.sphinx_
@@ -11,6 +10,9 @@ Welcome to pytemplate's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   api
+   architecture
+   changelog
 
 
 Indices and tables
@@ -19,5 +21,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
