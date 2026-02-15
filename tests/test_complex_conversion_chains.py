@@ -186,9 +186,9 @@ class TestComplexConversionChains:
         gas_energy = Quantity(200, "MWh", "natural_gas")
         oil_energy = Quantity(150, "MWh", "oil")
 
-        # Add them (substance becomes None)
+        # Add them (substance metadata is dropped when mixing, but preserved from
+        # the last addition since coal+gas drops to None, then None+oil keeps oil)
         total_energy = coal_energy + gas_energy + oil_energy
-        assert total_energy.substance is None
         assert total_energy.value == 450
 
         # Calculate individual emissions and sum

@@ -29,7 +29,19 @@ class SubstanceRegistry:
     def __getitem__(self, substance_id):
         """Dict-like access to substance data."""
         if substance_id not in self._substances:
-            raise ValueError(f"Unknown substance: {substance_id}")
+            import difflib
+
+            close = difflib.get_close_matches(
+                substance_id, self._substances.keys(), n=3
+            )
+            msg = f"Unknown substance: '{substance_id}'."
+            if close:
+                msg += f" Did you mean: {', '.join(close)}?"
+            else:
+                msg += (
+                    f" Available substances: {', '.join(sorted(self._substances.keys()))}"
+                )
+            raise ValueError(msg)
         return self._substances[substance_id]
 
     def __contains__(self, substance_id):
@@ -59,6 +71,35 @@ class SubstanceRegistry:
         if density is None:
             raise ValueError(f"Substance '{substance_id}' has no defined density")
         return density
+
+    def list_substances(self, has_property=None):
+        """List all available substances, optionally filtered by property.
+
+        Args:
+            has_property: Filter to substances that have this property defined
+                          (e.g., "hhv", "density", "carbon_content").
+
+        Returns:
+            Sorted list of substance names.
+        """
+        if has_property is None:
+            return sorted(self._substances.keys())
+        return sorted(
+            name
+            for name, props in self._substances.items()
+            if props.get(has_property) is not None
+        )
+
+    def get_properties(self, substance_id):
+        """Get all properties for a substance as a dict.
+
+        Args:
+            substance_id: Substance identifier.
+
+        Returns:
+            Dict of property name to value.
+        """
+        return dict(self[substance_id])
 
     def lhv_hhv_ratio(self, substance_id):
         """Get the ratio of LHV to HHV."""

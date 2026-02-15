@@ -1,5 +1,7 @@
 """Quantity class for energy system modeling with unified .to() conversion."""
 
+import html
+import warnings
 from typing import List, Optional, Union
 
 import numpy as np
@@ -32,6 +34,60 @@ class Quantity:
         self.basis: Optional[str] = basis
         self.reference_year: Optional[int] = reference_year
         self.dimension: str = registry.get_dimension(unit)
+
+    @classmethod
+    def list_units(cls, dimension=None):
+        """List all available units, optionally filtered by dimension.
+
+        Args:
+            dimension: Filter by dimension (e.g., "ENERGY", "POWER", "MASS").
+
+        Returns:
+            Sorted list of unit strings.
+
+        Examples:
+            Quantity.list_units()            # All units
+            Quantity.list_units("ENERGY")    # Energy units only
+        """
+        return registry.list_units(dimension)
+
+    @classmethod
+    def list_dimensions(cls):
+        """List all available dimensions.
+
+        Returns:
+            Sorted list of dimension strings.
+        """
+        return registry.list_dimensions()
+
+    @classmethod
+    def list_substances(cls, has_property=None):
+        """List all available substances.
+
+        Args:
+            has_property: Filter to substances with this property (e.g., "hhv").
+
+        Returns:
+            Sorted list of substance names.
+
+        Examples:
+            Quantity.list_substances()                # All substances
+            Quantity.list_substances("density")       # Substances with density
+        """
+        from .substance import substance_registry
+
+        return substance_registry.list_substances(has_property)
+
+    @classmethod
+    def list_currencies(cls):
+        """List all available currencies.
+
+        Returns:
+            List of currency codes.
+        """
+        from .exchange_rate import exchange_rate_registry
+
+        return exchange_rate_registry.get_supported_currencies()
 
     def to(
         self,
@@ -149,6 +205,52 @@ class Quantity:
         )
         return f"Quantity({self.value}, '{self.unit}'{substance_str}{basis_str}{ref_year_str})"
 
+    def _repr_html_(self) -> str:
+        """Rich HTML representation for Jupyter notebooks."""
+        if np.isscalar(self.value) or self.value.size == 1:
+            scalar_val = (
+                self.value.item() if hasattr(self.value, "item") else self.value
+            )
+            value_str = f"{scalar_val:,.4g}"
+        else:
+            if self.value.size <= 5:
+                value_str = (
+                    "[" + ", ".join(f"{v:,.4g}" for v in self.value.flat) + "]"
+                )
+            else:
+                first = self.value.flat[0]
+                last = self.value.flat[-1]
+                size = self.value.size
+                value_str = f"[{first:,.4g}, ..., {last:,.4g}] ({size} values)"
+
+        unit_escaped = html.escape(str(self.unit))
+        parts = [
+            f'<span style="font-weight:bold;font-size:1.1em">{value_str}</span>',
+            f'<span style="color:#2563eb;font-weight:bold"> {unit_escaped}</span>',
+        ]
+        if self.substance:
+            substance_escaped = html.escape(str(self.substance))
+            parts.append(
+                f'<span style="background:#e0f2fe;color:#0369a1;'
+                f'border-radius:4px;padding:1px 6px;margin-left:4px;'
+                f'font-size:0.9em">{substance_escaped}</span>'
+            )
+        if self.basis:
+            basis_escaped = html.escape(str(self.basis))
+            parts.append(
+                f'<span style="background:#fef3c7;color:#92400e;'
+                f'border-radius:4px;padding:1px 6px;margin-left:4px;'
+                f'font-size:0.9em">{basis_escaped}</span>'
+            )
+        if self.reference_year:
+            parts.append(
+                f'<span style="background:#f3e8ff;color:#6b21a8;'
+                f'border-radius:4px;padding:1px 6px;margin-left:4px;'
+                f'font-size:0.9em">{self.reference_year}</span>'
+            )
+
+        return "".join(parts)
+
     def __add__(self, other: "Quantity") -> "Quantity":
         if not isinstance(other, Quantity):
             raise TypeError(f"Cannot add Quantity and {type(other)}")
@@ -156,7 +258,49 @@ class Quantity:
         other_converted = other.to(self.unit)
         result_value = self.value + other_converted.value
 
-        substance = self.substance if self.substance == other.substance else None
+        if self.substance == other.substance:
+            substance = self.substance
+        elif self.substance is None:
+            substance = other.substance
+        elif other.substance is None:
+            substance = self.substance
+        else:
+            substance = None
+            warnings.warn(
+                f"Adding quantities with different substances "
+                f"('{self.substance}' and '{other.substance}'): "
+                f"substance metadata will be dropped from the result.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        basis = self.basis if self.basis == other.basis else None
+
+        return Quantity(result_value, self.unit, substance, basis, self.reference_year)
+
+    def __sub__(self, other: "Quantity") -> "Quantity":
+        if not isinstance(other, Quantity):
+            raise TypeError(f"Cannot subtract {type(other)} from Quantity")
+
+        other_converted = other.to(self.unit)
+        result_value = self.value - other_converted.value
+
+        if self.substance == other.substance:
+            substance = self.substance
+        elif self.substance is None:
+            substance = other.substance
+        elif other.substance is None:
+            substance = self.substance
+        else:
+            substance = None
+            warnings.warn(
+                f"Subtracting quantities with different substances "
+                f"('{self.substance}' and '{other.substance}'): "
+                f"substance metadata will be dropped from the result.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         basis = self.basis if self.basis == other.basis else None
 
         return Quantity(result_value, self.unit, substance, basis, self.reference_year)
@@ -353,8 +497,15 @@ class Quantity:
                 self.value, self.unit, target_unit, self.substance, **kwargs
             )
         else:
+            hint = ""
+            if (from_dim in ("MASS", "VOLUME") and to_dim == "ENERGY") or (
+                from_dim == "ENERGY" and to_dim in ("MASS", "VOLUME")
+            ):
+                hint = " Hint: specify a substance (e.g., substance='coal') to enable this conversion."
+            elif from_dim in ("MASS", "VOLUME") and to_dim in ("MASS", "VOLUME"):
+                hint = " Hint: specify a substance with a known density to enable this conversion."
             raise ValueError(
-                f"Cannot convert from {self.unit} ({from_dim}) to {target_unit} ({to_dim})"
+                f"Cannot convert from {self.unit} ({from_dim}) to {target_unit} ({to_dim}).{hint}"
             )
 
         return Quantity(
@@ -396,18 +547,22 @@ class Quantity:
     def _convert_substance(self, target_substance: str) -> "Quantity":
         if self.substance is None:
             raise ValueError(
-                "Source substance must be specified for substance conversion"
+                "Source substance must be specified for substance conversion. "
+                "Example: Quantity(1000, 'kg', substance='coal').to('kg', substance='CO2')"
             )
 
         valid_products = ["CO2", "H2O", "ash"]
         if target_substance not in valid_products:
             raise ValueError(
-                f"Substance conversion only supported for: {valid_products}"
+                f"Substance conversion only supported for combustion products: "
+                f"{', '.join(valid_products)}. Got: '{target_substance}'"
             )
 
         # Renewables have zero combustion products
         if self.substance in ["wind", "solar", "hydro", "nuclear"]:
-            return Quantity(0.0, "t", target_substance)
+            # Preserve source mass unit if applicable, otherwise default to "t"
+            result_unit = self.unit if registry.get_dimension(self.unit) == "MASS" else "t"
+            return Quantity(0.0, result_unit, target_substance)
 
         from .substance import substance_registry
 

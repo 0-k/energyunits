@@ -8,22 +8,23 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
+from energyunits import __version__
+
 # -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "energyunits"
 copyright = "2025, Martin Klein"
 author = "Martin Klein"
-release = "0.0.1"
+release = __version__
 
 # -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "sphinx.ext.intersphinx",
     "myst_parser",
 ]
 
@@ -32,12 +33,25 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 source_suffix = {
     ".rst": "restructuredtext",
-    ".txt": "markdown",
     ".md": "markdown",
 }
 
 # -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "alabaster"
-html_static_path = ["_static"]
+html_theme = "furo"
+
+# -- autodoc configuration ---------------------------------------------------
+
+autodoc_member_order = "bysource"
+autodoc_typehints = "description"
+
+# -- intersphinx configuration -----------------------------------------------
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+}
+
+# -- myst configuration ------------------------------------------------------
+
+myst_heading_anchors = 3

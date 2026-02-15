@@ -17,16 +17,16 @@ class TestRegistryErrors:
         # Unknown unit in get_dimension
         with pytest.raises(ValueError) as excinfo:
             registry.get_dimension("unknown_unit")
-        assert "Unknown unit: unknown_unit" in str(excinfo.value)
+        assert "Unknown unit: 'unknown_unit'" in str(excinfo.value)
 
         # Unknown unit in get_conversion_factor
         with pytest.raises(ValueError) as excinfo:
             registry.get_conversion_factor("unknown_unit", "MWh")
-        assert "Unknown unit: unknown_unit" in str(excinfo.value)
+        assert "Unknown unit: 'unknown_unit'" in str(excinfo.value)
 
         with pytest.raises(ValueError) as excinfo:
             registry.get_conversion_factor("MWh", "unknown_unit")
-        assert "Unknown unit: unknown_unit" in str(excinfo.value)
+        assert "Unknown unit: 'unknown_unit'" in str(excinfo.value)
 
         # Unknown unit in get_corresponding_unit
         with pytest.raises(ValueError) as excinfo:
@@ -69,7 +69,7 @@ class TestRegistryErrors:
             registry.convert_between_dimensions(
                 1000, "kg", "m3", substance="unknown_substance"
             )
-        assert "Unknown substance: unknown_substance" in str(excinfo.value)
+        assert "Unknown substance: 'unknown_substance'" in str(excinfo.value)
 
 
 class TestQuantityErrors:
@@ -78,7 +78,7 @@ class TestQuantityErrors:
         # Unknown unit
         with pytest.raises(ValueError) as excinfo:
             Quantity(100, "unknown_unit")
-        assert "Unknown unit: unknown_unit" in str(excinfo.value)
+        assert "Unknown unit: 'unknown_unit'" in str(excinfo.value)
 
     def test_conversion_errors(self):
         """Test errors in Quantity.to() method."""
@@ -91,7 +91,7 @@ class TestQuantityErrors:
         # Unknown target unit
         with pytest.raises(ValueError) as excinfo:
             energy.to("unknown_unit")
-        assert "Unknown unit: unknown_unit" in str(excinfo.value)
+        assert "Unknown unit: 'unknown_unit'" in str(excinfo.value)
 
         # Truly incompatible units (no conversion path exists)
         with pytest.raises(ValueError) as excinfo:

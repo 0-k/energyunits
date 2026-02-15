@@ -25,6 +25,7 @@ Example:
 """
 
 from .quantity import Quantity
+from . import units
 
 # Import pandas integration if pandas is available
 try:
@@ -38,9 +39,9 @@ except ImportError:
     _has_pandas = False
     pandas_tools = None
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Define public API
-__all__ = ["Quantity"]
+__all__ = ["Quantity", "units"]
 if _has_pandas:
     __all__.append("pandas_tools")
