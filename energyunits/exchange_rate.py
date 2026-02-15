@@ -130,7 +130,9 @@ class ExchangeRateRegistry:
 
     def get_supported_currencies(self):
         """Get list of supported currencies."""
-        return ["USD"] + list(self._exchange_rate_data.keys())
+        currencies = set(self._exchange_rate_data.keys())
+        currencies.add("USD")
+        return sorted(currencies)
 
     def detect_currency_from_unit(self, unit: str) -> Optional[str]:
         """Detect currency from unit string.

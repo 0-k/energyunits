@@ -8,6 +8,7 @@ through practical examples for energy system modeling and analysis.
 import numpy as np
 
 from energyunits import Quantity
+from energyunits.units import EUR, GJ, GW, MW, MWh, USD, h, kg, kW, t
 
 
 def basic_conversions():
@@ -228,7 +229,6 @@ def complex_conversions():
     # Step 2: Apply power plant efficiency
     plant_efficiency = 0.45
     electricity_output = gas_energy * plant_efficiency
-    electricity_output.unit = "MWh"  # Maintain unit after scalar multiplication
     print(f"  → Electricity output (45% eff): {electricity_output}")
 
     # Step 3: Calculate emissions per electricity unit
@@ -242,6 +242,87 @@ def complex_conversions():
     # The step-by-step approach above is the recommended method.
 
 
+def discovery_api():
+    """Demonstrate the discovery API (v0.2.0)."""
+    print("\n=== Discovery API ===")
+
+    # List all energy units
+    energy_units = Quantity.list_units("ENERGY")
+    print(f"Energy units: {energy_units}")
+
+    # List all dimensions
+    dims = Quantity.list_dimensions()
+    print(f"Dimensions: {dims}")
+
+    # List fuels with heating values
+    fuels = Quantity.list_substances("hhv")
+    print(f"Fuels with HHV: {fuels}")
+
+    # List all currencies
+    currencies = Quantity.list_currencies()
+    print(f"Currencies: {currencies}")
+
+    # Get all properties of a substance
+    from energyunits.substance import substance_registry
+
+    props = substance_registry.get_properties("natural_gas")
+    print(f"\nNatural gas properties:")
+    for key, val in props.items():
+        print(f"  {key}: {val}")
+
+
+def unit_constants_example():
+    """Demonstrate IDE-friendly unit constants (v0.2.0)."""
+    print("\n=== Unit Constants ===")
+
+    # Using constants instead of strings
+    energy = Quantity(500, MWh)
+    power = Quantity(100, MW)
+    time_period = Quantity(8760, h)
+    mass = Quantity(1000, t)
+
+    print(f"Energy: {energy}")
+    print(f"  → GJ: {energy.to(GJ)}")
+    print(f"Power: {power}")
+    print(f"Time: {time_period}")
+
+    # Arithmetic with constants
+    annual_gen = power * time_period
+    print(f"Annual generation: {annual_gen}")
+
+
+def subtraction_example():
+    """Demonstrate subtraction (v0.2.0)."""
+    print("\n=== Subtraction ===")
+
+    budget = Quantity(1000, MWh)
+    consumed = Quantity(600, MWh)
+    remaining = budget - consumed
+    print(f"Budget: {budget}")
+    print(f"Consumed: {consumed}")
+    print(f"Remaining: {remaining}")
+
+    # Works across units
+    total = Quantity(1, GJ)
+    used = Quantity(100, MWh)
+    # Note: converts to the left operand's unit
+    diff = total - used
+    print(f"\n{total} - {used} = {diff}")
+
+
+def currency_conversion_example():
+    """Demonstrate year-dependent currency conversions."""
+    print("\n=== Currency Conversions ===")
+
+    # EUR to USD with year-dependent rates
+    cost_eur_2015 = Quantity(50, "EUR/MWh", reference_year=2015)
+    cost_usd_2024 = cost_eur_2015.to("USD/MWh", reference_year=2024)
+
+    print(f"Original: {cost_eur_2015} (2015)")
+    print(f"Converted: {cost_usd_2024} (2024)")
+    print("  (inflated EUR 2015→2024, then converted at 2024 exchange rate)")
+
+
 if __name__ == "__main__":
     """Run all examples."""
     basic_conversions()
@@ -253,5 +334,9 @@ if __name__ == "__main__":
     fuel_comparison()
     array_operations()
     complex_conversions()
+    discovery_api()
+    unit_constants_example()
+    subtraction_example()
+    currency_conversion_example()
 
     print("\n=== Examples Complete ===")

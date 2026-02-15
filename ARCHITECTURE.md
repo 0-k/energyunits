@@ -1,7 +1,7 @@
 # EnergyUnits Architecture
 
-**Version:** 0.1.0
-**Last Updated:** 2025-11-24
+**Version:** 0.2.0
+**Last Updated:** 2026-02-15
 
 This document describes the architecture, design decisions, and extensibility mechanisms of the EnergyUnits library.
 
@@ -55,43 +55,46 @@ This document describes the architecture, design decisions, and extensibility me
 │  • .to() - unified conversion method                        │
 │  • Arithmetic operators (+, -, *, /)                        │
 │  • Comparison operators (<, >, ==, ...)                     │
-└──────────────────┬──────────────────────────────────────────┘
-                   │
-         ┌─────────┴─────────────────────────┐
-         │                                   │
-┌────────▼──────────┐              ┌────────▼────────────┐
-│  UnitRegistry     │              │ SubstanceRegistry   │
-│  (registry.py)    │              │  (substance.py)     │
-│                   │              │                     │
-│  • Dimensions     │              │  • Heating values   │
-│  • Conversions    │              │  • Densities        │
-│  • Dimensional    │              │  • Carbon content   │
-│    rules          │              │  • Combustion       │
-└────────┬──────────┘              └─────────────────────┘
-         │
-┌────────▼──────────┐
-│ InflationRegistry │
-│  (inflation.py)   │
-│                   │
-│  • Rates by year  │
-│  • Currency detect│
-│  • Cumulative calc│
-└────────┬──────────┘
-         │
-┌────────▼──────────────────────────────────────────┐
-│                 Data Layer (JSON)                 │
-│  • units.json       - Unit definitions & rules    │
-│  • substances.json  - Fuel properties             │
-│  • inflation.json   - Economic data               │
-└───────────────────────────────────────────────────┘
+│  • Discovery: list_units(), list_substances(), etc.         │
+│  • _repr_html_() for Jupyter notebooks                     │
+└──────────────┬──────────────────────────────────────────────┘
+               │
+     ┌─────────┼─────────────────────────┐
+     │         │                         │
+┌────▼─────────┐  ┌─────────────────┐  ┌─▼───────────────────┐
+│ UnitRegistry │  │  Unit Constants │  │ SubstanceRegistry   │
+│ (registry.py)│  │  (units.py)     │  │  (substance.py)     │
+│              │  │                 │  │                     │
+│ • Dimensions │  │ • MWh, GJ, MW  │  │ • Heating values    │
+│ • Conversions│  │ • USD, EUR     │  │ • Densities         │
+│ • Dim. rules │  │ • IDE-friendly │  │ • Carbon content    │
+│ • @lru_cache │  │   constants    │  │ • Combustion calcs  │
+└──────┬───────┘  └─────────────────┘  └─────────────────────┘
+       │
+┌──────▼────────────┐  ┌────────────────────────┐
+│ InflationRegistry │  │ ExchangeRateRegistry   │
+│  (inflation.py)   │  │  (exchange_rate.py)    │
+│                   │  │                        │
+│ • Rates by year   │  │ • Year-dependent rates │
+│ • Currency detect │  │ • USD/EUR/GBP/JPY/CNY │
+│ • Cumulative calc │  │ • Cross-currency conv  │
+└──────┬────────────┘  └───────────┬────────────┘
+       │                           │
+┌──────▼───────────────────────────▼──────────────┐
+│                 Data Layer (JSON)                │
+│  • units.json           - Unit definitions      │
+│  • substances.json      - Fuel properties       │
+│  • inflation.json       - Inflation rates       │
+│  • exchange_rates.json  - Exchange rates        │
+└─────────────────────────────────────────────────┘
 ```
 
 ### Code Statistics
 
-- **Total Python code**: ~1,000 lines
-- **Core modules**: 4 (quantity, registry, substance, inflation)
-- **Test files**: 15 with 208+ tests
-- **Data files**: 3 JSON configuration files
+- **Total Python code**: ~1,500 lines
+- **Core modules**: 6 (quantity, registry, substance, inflation, exchange_rate, units)
+- **Test files**: 16 with 291+ tests
+- **Data files**: 4 JSON configuration files
 
 ---
 
@@ -558,7 +561,7 @@ registry.register_plugin(GeoThermalPlugin())
 
 ### Test Structure
 
-**15 Test Files, 208+ Tests:**
+**16 Test Files, 291+ Tests:**
 
 ```
 tests/
@@ -571,6 +574,8 @@ tests/
 ├── test_integration.py            # Real-world scenarios
 ├── test_readme_examples.py        # Doc validation
 ├── test_error_handling*.py        # Error cases
+├── test_year_dependent_currency.py # Exchange rate conversions
+├── test_v020_features.py          # Discovery, caching, warnings, repr
 └── ...
 ```
 
@@ -666,20 +671,21 @@ def test_readme_basic_usage():
 2. NumPy array creation (necessary)
 3. String parsing for compound units (minor)
 
-### Optimization Opportunities
+### Implemented Optimizations (v0.2.0)
 
-**1. Conversion Factor Caching**
+**1. Conversion Factor Caching (implemented)**
 ```python
-# Current: Compute every time
-factor = registry.get_conversion_factor("kWh", "MJ")
-
-# Potential: Cache after first lookup
-@lru_cache(maxsize=128)
-def get_conversion_factor(from_unit, to_unit):
+# @lru_cache on get_dimension() and get_conversion_factor()
+# Cache automatically invalidated when custom units are loaded
+@lru_cache(maxsize=256)
+def get_conversion_factor(self, from_unit, to_unit):
     ...
 ```
+Up to 10x speedup for repeated lookups in hot loops.
 
-**2. Compound Unit Parsing**
+### Future Optimization Opportunities
+
+**1. Compound Unit Parsing**
 ```python
 # Current: Split string every time
 if "/" in unit:
@@ -691,7 +697,7 @@ def parsed_unit(self):
     return parse_unit_string(self.unit)
 ```
 
-**3. Array Operations**
+**2. Array Operations**
 ```python
 # Current: NumPy (already fast)
 result = self.value * factor
@@ -822,41 +828,40 @@ quantity.to_unit("MJ").to_basis("HHV").inflate_to(2025)
 
 ## Future Enhancements
 
-### Short-Term (v0.2.0)
+### Completed in v0.2.0
+
+- **Conversion factor caching** (`@lru_cache`) — up to 10x speedup
+- **Improved error messages** with close-match suggestions and conversion hints
+- **Unit discovery API** (`list_units()`, `list_substances()`, `list_currencies()`, `list_dimensions()`)
+- **Unit constants module** (`energyunits.units`) for IDE autocompletion
+- **Subtraction operator** (`__sub__`)
+- **Jupyter rich HTML repr** (`_repr_html_()`)
+- **Substance mismatch warnings** on arithmetic operations
+
+### Short-Term (v0.3.0)
 
 **1. Additional Dimensions**
 - Temperature (K, C, F) with conversion logic
 - Pressure (bar, PSI, Pa)
-- Flow rates (m³/s, L/min)
-- Area (m², km², ha)
+- Flow rates (m3/s, L/min)
+- Area (m2, km2, ha)
 
 **2. Extended Substance Database**
 - More biomass types (switchgrass, miscanthus)
 - Synthetic fuels (e-fuels, hydrogen derivatives)
 - Industrial gases (nitrogen, oxygen, argon)
-- More coal grades (regional variations)
+- Regional coal variants (US, Chinese, Indonesian)
 
-**3. Improved Error Messages**
-```python
-# Current
-ValueError: Cannot convert from MWh to kg
-
-# Future
-ConversionError: Cannot convert 100 MWh to kg.
-  Hint: Did you mean to specify a substance?
-  Example: Quantity(100, "MWh", substance="coal").to("kg")
-```
-
-**4. Validation Tools**
+**3. Validation Tools**
 ```python
 # Validate custom data files
 from energyunits import validate_units_file
 
 validate_units_file("custom.json")
-# → Reports: missing fields, invalid values, circular dependencies
+# -> Reports: missing fields, invalid values, circular dependencies
 ```
 
-### Medium-Term (v0.3.0)
+### Medium-Term (v0.4.0)
 
 **1. Plugin Architecture**
 - Base class for conversion plugins
@@ -865,7 +870,6 @@ validate_units_file("custom.json")
 - Industry-specific extensions
 
 **2. Performance Optimizations**
-- Conversion factor caching
 - Numba JIT for hot paths
 - Lazy NumPy wrapping for scalars
 - Compiled regex for unit parsing
@@ -1015,18 +1019,19 @@ EnergyUnits is designed as a **domain-specific, data-driven, production-ready** 
 5. **Maintainability**: Clean separation of concerns
 
 The design has been validated through:
-- 208+ comprehensive tests
+- 291+ comprehensive tests
 - Real-world energy modeling scenarios
 - Multiple user feedback cycles
 - Performance profiling
 
-**This architecture is stable and ready for v0.1.0 release.**
+**This architecture is stable and production-ready (v0.2.0).**
 
 Future enhancements will maintain backward compatibility while expanding capabilities through the proven data-driven approach.
 
 ---
 
 **Document Version History:**
+- 2026-02-15: Updated for v0.2.0 (caching, discovery API, exchange rates, units module)
 - 2025-11-24: Initial comprehensive architecture documentation (v0.1.0)
 
 **Maintainers:**

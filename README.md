@@ -8,15 +8,16 @@ A Python library for handling units, conversions, and calculations in energy sys
 
 **Status:** Under active development. API may change between versions.
 
-##  Key Features
+## Key Features
 
-- **Universal Conversions**: Energy, power, mass, volume, and cost units with intelligent dimensional analysis
-- **Substance-Aware**: Built-in fuel properties database with heating values, densities, and emission factors
-- **Economic Modeling**: Inflation adjustment with historical rates for USD/EUR (2010-2030)
+- **Universal Conversions**: Energy, power, mass, volume, time, and cost units with intelligent dimensional analysis
+- **Substance-Aware**: Built-in fuel properties database (IPCC-verified) with heating values, densities, and emission factors
+- **Economic Modeling**: Inflation adjustment (USD/EUR, 2010-2030) and year-dependent currency exchange rates (GBP, JPY, CNY)
 - **Smart Arithmetic**: Natural mathematical operations with automatic unit handling and compound unit cancellation
+- **Discovery API**: Explore available units, substances, and currencies programmatically
 - **Data-Driven Architecture**: All configuration in JSON - extend with custom units, fuels, and dimensional rules
 - **Pandas Ready**: Optional DataFrame integration for bulk operations
-- **Energy-Focused**: Purpose-built for energy system modeling and analysis
+- **Jupyter Ready**: Rich HTML display in notebooks with color-coded badges
 
 ## Quick Start
 
@@ -34,8 +35,6 @@ pip install -e .
 pip install -e .[dev]
 ```
 
-Note: Not yet published to PyPI.
-
 ### Basic Usage
 
 ```python
@@ -43,9 +42,9 @@ from energyunits import Quantity
 
 # Simple unit conversions
 energy = Quantity(100, "MWh")
-print(energy.to("GJ"))  # → 360.0 GJ
+print(energy.to("GJ"))  # -> 360.0 GJ
 
-# Substance-based calculations  
+# Substance-based calculations
 coal = Quantity(1000, "t", substance="coal")
 energy_content = coal.to("MWh")  # Uses heating value
 co2_emissions = coal.to("t", substance="CO2")  # Combustion emissions
@@ -54,15 +53,40 @@ co2_emissions = coal.to("t", substance="CO2")  # Combustion emissions
 capex_2020 = Quantity(1000, "USD/kW", reference_year=2020)
 capex_2025 = capex_2020.to(reference_year=2025)  # Auto-adjusts for inflation
 
+# Currency conversion with year-dependent exchange rates
+cost_eur = Quantity(50, "EUR/MWh", reference_year=2015)
+cost_usd = cost_eur.to("USD/MWh", reference_year=2024)  # Inflates, then converts
+
 # Natural arithmetic operations
 power = Quantity(100, "MW")
 time = Quantity(24, "h")
-energy = power * time  # → 2400 MWh (POWER × TIME → ENERGY via data-driven rules)
+energy = power * time  # -> 2400 MWh (POWER x TIME -> ENERGY via data-driven rules)
 
 # Smart compound unit cancellation
 capex = Quantity(1500, "USD/kW")
 capacity = Quantity(500, "MW")
-payment = capex * capacity  # → 750,000,000 USD (auto-converts MW→kW, then cancels)
+payment = capex * capacity  # -> 750,000,000 USD (auto-converts MW->kW, then cancels)
+```
+
+### IDE-Friendly Unit Constants
+
+```python
+from energyunits import Quantity
+from energyunits.units import MWh, GJ, MW, USD, EUR, t, h
+
+energy = Quantity(100, MWh)
+result = energy.to(GJ)  # Autocompletion, no typos
+```
+
+### Discover What's Available
+
+```python
+from energyunits import Quantity
+
+Quantity.list_units("ENERGY")     # ['EJ', 'GJ', 'GWh', 'J', 'MJ', 'MMBTU', 'MWh', ...]
+Quantity.list_dimensions()        # ['CURRENCY', 'ENERGY', 'MASS', 'POWER', 'TIME', 'VOLUME']
+Quantity.list_substances("hhv")   # Fuels with heating values
+Quantity.list_currencies()        # ['USD', 'EUR', 'GBP', 'JPY', 'CNY']
 ```
 
 ## Use Cases
@@ -77,7 +101,7 @@ electricity_output = Quantity(400, "MWh")
 efficiency = electricity_output / fuel_input.to("MWh")
 print(f"Plant efficiency: {efficiency.value:.1%}")
 
-# Emission intensity  
+# Emission intensity
 co2_rate = fuel_input.to("t", substance="CO2") / electricity_output
 print(f"CO2 intensity: {co2_rate.value:.2f} t CO2/MWh")
 ```
@@ -100,11 +124,11 @@ print(f"CAPEX component: {lcoe_capex.value:.2f} USD/MWh")
 ```python
 # Compare fuel heating values
 coal_hhv = Quantity(1, "t", "coal").to("MWh", basis="HHV")
-coal_lhv = Quantity(1, "t", "coal").to("MWh", basis="LHV") 
+coal_lhv = Quantity(1, "t", "coal").to("MWh", basis="LHV")
 wood_lhv = Quantity(1, "t", "wood_pellets").to("MWh", basis="LHV")
 
 print(f"Coal HHV: {coal_hhv.value:.1f}")
-print(f"Coal LHV: {coal_lhv.value:.1f}")  
+print(f"Coal LHV: {coal_lhv.value:.1f}")
 print(f"Wood LHV: {wood_lhv.value:.1f}")
 ```
 
@@ -113,14 +137,14 @@ print(f"Wood LHV: {wood_lhv.value:.1f}")
 ### Compound Units
 ```python
 # Energy intensity analysis
-steel_production = Quantity(1000, "t")  
+steel_production = Quantity(1000, "t")
 energy_use = Quantity(20, "GWh")
-intensity = energy_use / steel_production  # → 20 GWh/kt
+intensity = energy_use / steel_production  # -> 20 GWh/kt
 
 # Cost analysis
 fuel_cost = Quantity(50, "USD/t", "coal")
-fuel_mass = Quantity(100, "t", "coal")  
-total_cost = fuel_cost * fuel_mass  # → 5000 USD
+fuel_mass = Quantity(100, "t", "coal")
+total_cost = fuel_cost * fuel_mass  # -> 5000 USD
 ```
 
 ### Multi-Step Conversions
@@ -128,13 +152,13 @@ total_cost = fuel_cost * fuel_mass  # → 5000 USD
 # Complex conversion chains
 coal_mass = Quantity(1000, "kg", "coal")
 
-# Convert mass → energy → emissions in one call
+# Convert mass -> energy -> emissions in one call
 result = coal_mass.to("t", basis="LHV", substance="CO2")
-print(f"Coal: {coal_mass} → CO2: {result}")
+print(f"Coal: {coal_mass} -> CO2: {result}")
 
 # Equivalent step-by-step
 energy = coal_mass.to("MWh", basis="LHV")
-co2 = energy.to("t", substance="CO2")  
+co2 = energy.to("t", substance="CO2")
 ```
 
 ### Economic Time Series
@@ -146,6 +170,53 @@ costs_2024 = costs_2010.to(reference_year=2024)
 print(f"2010 costs: {costs_2010.value}")
 print(f"2024 costs: {costs_2024.value}")  # Inflation-adjusted
 ```
+
+### Subtraction
+```python
+budget = Quantity(500, "MWh")
+consumed = Quantity(120000, "kWh")  # Different unit, auto-converted
+remaining = budget - consumed  # -> 380 MWh
+```
+
+## Supported Units
+
+### Energy
+- `Wh`, `kWh`, `MWh`, `GWh`, `TWh`, `PWh`
+- `J`, `kJ`, `MJ`, `GJ`, `TJ`, `PJ`, `EJ`
+- `MMBTU` (Million British Thermal Units)
+
+### Power
+- `W`, `kW`, `MW`, `GW`, `TW`
+
+### Mass
+- `g`, `kg`, `t` (metric tons), `Mt`, `Gt`
+
+### Volume
+- `L`, `m3`, `barrel`
+
+### Time
+- `s`, `min`, `h`, `a` (years)
+
+### Currency
+- `USD`, `EUR`, `GBP`, `JPY`, `CNY` with inflation adjustment and year-dependent exchange rates
+- Compound units: `USD/kW`, `EUR/MWh`, etc.
+
+## Built-in Substances
+
+The library includes a database of fuel and material properties, verified against IPCC 2006 Guidelines and IEA data (see [DATA_SOURCES.md](DATA_SOURCES.md)):
+
+- **Coal types**: `coal` (generic), `anthracite`, `bituminous`, `lignite`
+- **Gas**: `natural_gas`, `methane`, `lng`
+- **Petroleum**: `crude_oil`, `oil`, `diesel`, `gasoline`, `fuel_oil`
+- **Biomass**: `wood_pellets`, `wood_chips`
+- **Other fuels**: `hydrogen`, `methanol`
+- **Zero-carbon**: `wind`, `solar`, `hydro`, `nuclear`
+- **Combustion products**: `CO2`, `H2O`, `ash`
+
+Each substance includes:
+- Higher/Lower Heating Values (HHV/LHV) in MJ/kg
+- Density (kg/m3) for volume conversions
+- Carbon, hydrogen, and ash content for emission calculations
 
 ## Extensibility
 
@@ -188,61 +259,25 @@ substance_registry.load_substances("custom_fuels.json")
     "hhv": 28.5,
     "lhv": 27.2,
     "density": 850,
-    "carbon_intensity": 350
+    "carbon_content": 0.72,
+    "hydrogen_content": 0.05,
+    "ash_content": 0.12
   }
 }
 ```
-
-## Supported Units
-
-### Energy
-- `Wh`, `kWh`, `MWh`, `GWh`, `TWh`, `PWh`
-- `J`, `kJ`, `MJ`, `GJ`, `TJ`, `PJ`, `EJ`
-- `MMBTU` (Million British Thermal Units)
-
-### Power  
-- `W`, `kW`, `MW`, `GW`, `TW`
-
-### Mass
-- `g`, `kg`, `t` (metric tons), `Mt`, `Gt`
-
-### Volume
-- `L`, `m3`
-
-### Currency
-- `USD`, `EUR` with automatic inflation adjustment
-- Compound units: `USD/kW`, `EUR/MWh`, etc.
-
-## Built-in Substances
-
-The library includes a comprehensive database of fuel and material properties:
-
-- **Fossil Fuels**: coal, natural_gas, oil, diesel, gasoline
-- **Renewables**: wood, biomass, biogas, ethanol
-- **Zero-Carbon**: wind, solar, hydro, nuclear
-- **Industrial**: steel, cement, aluminum
-
-Each substance includes:
-- Higher/Lower Heating Values (HHV/LHV)
-- Density values for volume conversions
-- Carbon content for emission calculations
-- Chemical composition data
 
 ## Pandas Integration
 
 ```python
 import pandas as pd
-from energyunits.pandas_tools import convert_units
+from energyunits.pandas_tools import add_units, convert_units
 
-# DataFrame operations
-df = pd.DataFrame({
-    'power': [100, 200, 300],
-    'hours': [24, 12, 8] 
-})
+# Add unit metadata to a DataFrame column
+df = pd.DataFrame({'generation': [100, 200, 300]})
+df = add_units(df, 'generation', 'MWh')
 
-# Calculate energy in MWh (convert MW*h to MWh)
-df['energy_MWh'] = df['power'] * df['hours'] / 1000
-df['energy_GJ'] = df['energy_MWh'].apply(lambda x: Quantity(x, 'MWh').to('GJ').value)
+# Bulk-convert entire columns
+df_gj = convert_units(df, 'generation', 'GJ')
 ```
 
 ## Development
@@ -272,18 +307,18 @@ isort energyunits/            # Sort imports
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)**: Complete architecture documentation, design decisions, and extensibility guide
 - **[DATA_SOURCES.md](DATA_SOURCES.md)**: Citations and references for all energy conversion values and emission factors
+- **[CHANGELOG.md](CHANGELOG.md)**: Version history and release notes
 - **[RELEASE.md](RELEASE.md)**: Release process and PyPI publishing guide
 - **Examples**: See `examples/` directory for usage demonstrations
-- **API Reference**: Full API documentation (coming soon)
 
 ## Contributing
 
 Contributions are welcome! Please see our contributing guidelines and submit pull requests for any improvements.
 
-##License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Credits
 
-Martin Klein, 2025
+Martin Klein, 2024-2026
