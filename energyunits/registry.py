@@ -157,7 +157,7 @@ class UnitRegistry:
                 if basis.upper() == "HHV"
                 else substance_registry.lhv(substance)
             )
-            heating_value_mwh_t = heating_value_mj_kg * 0.2778
+            heating_value_mwh_t = heating_value_mj_kg / 3.6
             energy_mwh = mass_t * heating_value_mwh_t
 
             return energy_mwh * self.get_conversion_factor("MWh", to_unit)
@@ -174,7 +174,7 @@ class UnitRegistry:
                 if basis.upper() == "HHV"
                 else substance_registry.lhv(substance)
             )
-            heating_value_mwh_t = heating_value_mj_kg * 0.2778
+            heating_value_mwh_t = heating_value_mj_kg / 3.6
             mass_t = energy_mwh / heating_value_mwh_t
             mass_kg = mass_t * 1000
 

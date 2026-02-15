@@ -123,7 +123,7 @@
   "wood_pellets": {
     "name": "Wood Pellets",
     "hhv": 20.0,
-    "lhv": 17.0,
+    "lhv": 18.5,
     "density": 650,
     "carbon_intensity": 0,
     "carbon_content": 0.50,

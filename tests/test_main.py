@@ -137,7 +137,7 @@ class TestHeatingValues:
         assert energy_hhv.value > energy_lhv.value
         assert energy_hhv.unit == "MWh"
         assert energy_lhv.unit == "MWh"
-        assert energy_lhv.value == energy_to_lhv.value
+        assert energy_lhv.value == pytest.approx(energy_to_lhv.value)
 
         # Typical value for coal is ~8.1 MWh/ton (HHV)
         assert energy_hhv.value == pytest.approx(8140, rel=0.2)

@@ -1,5 +1,6 @@
 """Quantity class for energy system modeling with unified .to() conversion."""
 
+import html
 import warnings
 from typing import List, Optional, Union
 
@@ -222,21 +223,24 @@ class Quantity:
                 size = self.value.size
                 value_str = f"[{first:,.4g}, ..., {last:,.4g}] ({size} values)"
 
+        unit_escaped = html.escape(str(self.unit))
         parts = [
             f'<span style="font-weight:bold;font-size:1.1em">{value_str}</span>',
-            f'<span style="color:#2563eb;font-weight:bold"> {self.unit}</span>',
+            f'<span style="color:#2563eb;font-weight:bold"> {unit_escaped}</span>',
         ]
         if self.substance:
+            substance_escaped = html.escape(str(self.substance))
             parts.append(
                 f'<span style="background:#e0f2fe;color:#0369a1;'
                 f'border-radius:4px;padding:1px 6px;margin-left:4px;'
-                f'font-size:0.9em">{self.substance}</span>'
+                f'font-size:0.9em">{substance_escaped}</span>'
             )
         if self.basis:
+            basis_escaped = html.escape(str(self.basis))
             parts.append(
                 f'<span style="background:#fef3c7;color:#92400e;'
                 f'border-radius:4px;padding:1px 6px;margin-left:4px;'
-                f'font-size:0.9em">{self.basis}</span>'
+                f'font-size:0.9em">{basis_escaped}</span>'
             )
         if self.reference_year:
             parts.append(
@@ -254,14 +258,14 @@ class Quantity:
         other_converted = other.to(self.unit)
         result_value = self.value + other_converted.value
 
-        substance = self.substance if self.substance == other.substance else None
-        basis = self.basis if self.basis == other.basis else None
-
-        if (
-            self.substance is not None
-            and other.substance is not None
-            and self.substance != other.substance
-        ):
+        if self.substance == other.substance:
+            substance = self.substance
+        elif self.substance is None:
+            substance = other.substance
+        elif other.substance is None:
+            substance = self.substance
+        else:
+            substance = None
             warnings.warn(
                 f"Adding quantities with different substances "
                 f"('{self.substance}' and '{other.substance}'): "
@@ -269,6 +273,8 @@ class Quantity:
                 UserWarning,
                 stacklevel=2,
             )
+
+        basis = self.basis if self.basis == other.basis else None
 
         return Quantity(result_value, self.unit, substance, basis, self.reference_year)
 
@@ -279,14 +285,14 @@ class Quantity:
         other_converted = other.to(self.unit)
         result_value = self.value - other_converted.value
 
-        substance = self.substance if self.substance == other.substance else None
-        basis = self.basis if self.basis == other.basis else None
-
-        if (
-            self.substance is not None
-            and other.substance is not None
-            and self.substance != other.substance
-        ):
+        if self.substance == other.substance:
+            substance = self.substance
+        elif self.substance is None:
+            substance = other.substance
+        elif other.substance is None:
+            substance = self.substance
+        else:
+            substance = None
             warnings.warn(
                 f"Subtracting quantities with different substances "
                 f"('{self.substance}' and '{other.substance}'): "
@@ -294,6 +300,8 @@ class Quantity:
                 UserWarning,
                 stacklevel=2,
             )
+
+        basis = self.basis if self.basis == other.basis else None
 
         return Quantity(result_value, self.unit, substance, basis, self.reference_year)
 
@@ -552,7 +560,9 @@ class Quantity:
 
         # Renewables have zero combustion products
         if self.substance in ["wind", "solar", "hydro", "nuclear"]:
-            return Quantity(0.0, "t", target_substance)
+            # Preserve source mass unit if applicable, otherwise default to "t"
+            result_unit = self.unit if registry.get_dimension(self.unit) == "MASS" else "t"
+            return Quantity(0.0, result_unit, target_substance)
 
         from .substance import substance_registry
 

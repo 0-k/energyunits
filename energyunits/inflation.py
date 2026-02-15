@@ -80,13 +80,14 @@ class InflationRegistry:
 
     def detect_currency_from_unit(self, unit: str) -> Optional[str]:
         """Detect currency from unit string."""
-        unit_upper = unit.upper()
+        # Split compound units into components for exact matching
+        components = unit.upper().replace("/", " ").split()
 
         for currency in self._inflation_data:
-            if currency in unit_upper:
+            if currency in components:
                 return currency
 
-        if "$" in unit or "DOLLAR" in unit_upper:
+        if "$" in unit or "DOLLAR" in unit.upper():
             return "USD"
 
         return None

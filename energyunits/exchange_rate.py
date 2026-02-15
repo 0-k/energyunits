@@ -143,15 +143,15 @@ class ExchangeRateRegistry:
         Returns:
             Currency code if detected, None otherwise
         """
-        unit_upper = unit.upper()
+        # Split compound units into components for exact matching
+        components = unit.upper().replace("/", " ").split()
 
-        # Check for explicit currency codes
         for currency in self.get_supported_currencies():
-            if currency in unit_upper:
+            if currency in components:
                 return currency
 
         # Check for $ symbol
-        if "$" in unit or "DOLLAR" in unit_upper:
+        if "$" in unit or "DOLLAR" in unit.upper():
             return "USD"
 
         return None
