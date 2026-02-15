@@ -12,7 +12,7 @@ description = "A Python library for handling units, conversions, and calculation
 readme = "README.md"
 requires-python = ">=3.9"
 keywords = ["energy", "units", "conversion", "modeling"]
-license = "MIT"
+license = {text = "MIT"}
 dependencies = [
     "numpy>=1.26.0",
 ]
@@ -31,6 +31,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Typing :: Typed",
+    "License :: OSI Approved :: MIT License",
 ]
 
 [project.optional-dependencies]
@@ -48,7 +49,7 @@ dev = [
 
 [project.urls]
 "Homepage" = "https://github.com/0-k/energyunits"
-"Documentation" = "https://energyunits.readthedocs.io/en/latest/"
+"Documentation" = "https://github.com/0-k/energyunits/blob/main/ARCHITECTURE.md"
 "Bug Tracker" = "https://github.com/0-k/energyunits/issues"
 "Source Code" = "https://github.com/0-k/energyunits"
 "Changelog" = "https://github.com/0-k/energyunits/blob/main/CHANGELOG.md"

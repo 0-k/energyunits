@@ -44,6 +44,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Adding or subtracting quantities with different substances now emits a `UserWarning`
   - Prevents silent metadata loss
 
+- **Substance metadata consistency in add/sub**
+  - `__add__`/`__sub__` now preserve substance when one operand has `None`, matching `__mul__`/`__truediv__` behavior
+
+### Fixed
+- **Heating value precision**: replaced hardcoded `0.2778` with `1/3.6` in all MJ/kg to MWh/t conversions, eliminating ~0.008% systematic error
+- **Wood pellets LHV data**: corrected from 17.0 to 18.5 MJ/kg to match DATA_SOURCES.md and physical expectations (HHV/LHV ratio 0.925)
+- **HTML injection in `_repr_html_()`**: user-provided strings (substance, basis, unit) now escaped via `html.escape()`
+- **Renewable CO2 conversion unit**: no longer hardcodes `"t"` — preserves source mass unit (e.g., `"kg"` stays `"kg"`)
+- **Currency detection false positives**: switched from substring matching to component-based matching (e.g., `"EUR"` no longer matches inside `"NEURON"`)
+- **Duplicate USD in `list_currencies()`**: `ExchangeRateRegistry.get_supported_currencies()` now returns deduplicated sorted list
+
 ## [0.1.0] - 2025-11-14
 
 ### Added
