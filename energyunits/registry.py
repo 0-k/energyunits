@@ -1,6 +1,7 @@
 """Unit registry with conversion logic."""
 
 import json
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -47,9 +48,13 @@ class UnitRegistry:
         self._dimensional_division_rules.extend(
             data.get("dimensional_division_rules", [])
         )
+        # Invalidate caches after loading new data
+        self.get_dimension.cache_clear()
+        self.get_conversion_factor.cache_clear()
 
+    @lru_cache(maxsize=256)
     def get_dimension(self, unit: str) -> str:
-        """Get dimension of a unit."""
+        """Get dimension of a unit (cached for performance)."""
         if unit == "":
             return "DIMENSIONLESS"
 
@@ -64,12 +69,22 @@ class UnitRegistry:
             return f"{num_dim}_PER_{den_dim}"
 
         if unit not in self._dimensions:
-            raise ValueError(f"Unknown unit: {unit}")
+            # Suggest close matches
+            import difflib
+
+            close = difflib.get_close_matches(unit, self._dimensions.keys(), n=3)
+            msg = f"Unknown unit: '{unit}'."
+            if close:
+                msg += f" Did you mean: {', '.join(close)}?"
+            else:
+                msg += f" Available units: {', '.join(sorted(self._dimensions.keys()))}"
+            raise ValueError(msg)
 
         return self._dimensions[unit]
 
+    @lru_cache(maxsize=256)
     def get_conversion_factor(self, from_unit: str, to_unit: str) -> float:
-        """Get conversion factor between compatible units."""
+        """Get conversion factor between compatible units (cached for performance)."""
         from_dim = self.get_dimension(from_unit)
         to_dim = self.get_dimension(to_unit)
 
@@ -260,6 +275,29 @@ class UnitRegistry:
             ):
                 return rule["result_dimension"]
         return None
+
+    def list_units(self, dimension: Optional[str] = None) -> list:
+        """List all available units, optionally filtered by dimension.
+
+        Args:
+            dimension: Filter by dimension (e.g., "ENERGY", "POWER", "MASS").
+                       If None, returns all units.
+
+        Returns:
+            Sorted list of unit strings.
+        """
+        if dimension is None:
+            return sorted(self._dimensions.keys())
+        dimension = dimension.upper()
+        return sorted(u for u, d in self._dimensions.items() if d == dimension)
+
+    def list_dimensions(self) -> list:
+        """List all available dimensions.
+
+        Returns:
+            Sorted list of unique dimension strings.
+        """
+        return sorted(set(self._dimensions.values()))
 
     def _convert_compound_to_simple(
         self, from_unit: str, to_unit: str, dimension: str

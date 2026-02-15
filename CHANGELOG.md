@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-15
+
+### Added
+- **Performance: Conversion factor caching**
+  - `@lru_cache` on `get_dimension()` and `get_conversion_factor()` in `UnitRegistry`
+  - Cache automatically invalidated when custom units are loaded
+  - Up to 10x speedup for repeated conversions in hot loops
+
+- **Unit & substance discovery methods**
+  - `Quantity.list_units(dimension=None)` — list available units, optionally filtered by dimension
+  - `Quantity.list_dimensions()` — list all dimensions (ENERGY, POWER, MASS, etc.)
+  - `Quantity.list_substances(has_property=None)` — list substances with optional property filter
+  - `Quantity.list_currencies()` — list supported currencies
+  - `SubstanceRegistry.get_properties(substance_id)` — get all properties for a substance
+  - `UnitRegistry.list_units(dimension=None)` and `UnitRegistry.list_dimensions()`
+
+- **Unit constants module (`energyunits.units`)**
+  - IDE-friendly string constants: `from energyunits.units import MWh, GJ, USD`
+  - Enables autocompletion and typo prevention while remaining simple strings
+
+- **Subtraction operator (`__sub__`)**
+  - `Quantity(100, "MWh") - Quantity(30, "MWh")` now works
+  - Includes automatic unit conversion like `__add__`
+
+- **Jupyter/IPython rich HTML repr**
+  - `_repr_html_()` method on `Quantity` for rich display in notebooks
+  - Color-coded badges for substance, basis, and reference year
+
+### Improved
+- **Better error messages with suggestions**
+  - Unknown unit names now suggest close matches via `difflib.get_close_matches`
+  - Unknown substance names suggest close matches
+  - Cross-dimensional conversion errors hint about specifying a substance
+  - Substance conversion errors include usage examples
+
+- **Substance metadata warnings on arithmetic**
+  - Adding or subtracting quantities with different substances now emits a `UserWarning`
+  - Prevents silent metadata loss
+
 ## [0.1.0] - 2025-11-14
 
 ### Added
@@ -89,5 +128,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.2.0]: https://github.com/0-k/energyunits/releases/tag/v0.2.0
 [0.1.0]: https://github.com/0-k/energyunits/releases/tag/v0.1.0
 [0.0.1]: https://github.com/0-k/energyunits/releases/tag/v0.0.1
