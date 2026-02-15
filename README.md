@@ -86,7 +86,7 @@ from energyunits import Quantity
 Quantity.list_units("ENERGY")     # ['EJ', 'GJ', 'GWh', 'J', 'MJ', 'MMBTU', 'MWh', ...]
 Quantity.list_dimensions()        # ['CURRENCY', 'ENERGY', 'MASS', 'POWER', 'TIME', 'VOLUME']
 Quantity.list_substances("hhv")   # Fuels with heating values
-Quantity.list_currencies()        # ['USD', 'EUR', 'GBP', 'JPY', 'CNY']
+Quantity.list_currencies()        # ['CNY', 'EUR', 'GBP', 'JPY', 'USD']
 ```
 
 ## Use Cases

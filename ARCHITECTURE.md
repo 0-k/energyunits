@@ -93,7 +93,7 @@ This document describes the architecture, design decisions, and extensibility me
 
 - **Total Python code**: ~1,500 lines
 - **Core modules**: 6 (quantity, registry, substance, inflation, exchange_rate, units)
-- **Test files**: 16 with 291+ tests
+- **Test files**: 17 with 270+ tests
 - **Data files**: 4 JSON configuration files
 
 ---
@@ -561,22 +561,27 @@ registry.register_plugin(GeoThermalPlugin())
 
 ### Test Structure
 
-**16 Test Files, 291+ Tests:**
+**17 Test Files, 270+ Tests:**
 
 ```
 tests/
-├── test_quantity.py               # Core Quantity class
-├── test_registry.py               # Unit registry
-├── test_substance_conversions.py  # Substance logic
-├── test_inflation_*.py            # Economic features
-├── test_compound_units.py         # Complex units
-├── test_smart_unit_cancellation.py
-├── test_integration.py            # Real-world scenarios
-├── test_readme_examples.py        # Doc validation
-├── test_error_handling*.py        # Error cases
-├── test_year_dependent_currency.py # Exchange rate conversions
-├── test_v020_features.py          # Discovery, caching, warnings, repr
-└── ...
+├── test_quantity.py                    # Core Quantity class
+├── test_registry.py                    # Unit registry
+├── test_substance_conversions.py       # Substance logic
+├── test_inflation_adjustment.py        # Inflation adjustment
+├── test_inflation_integration.py       # Inflation integration
+├── test_compound_units.py              # Complex units
+├── test_smart_unit_cancellation.py     # Unit cancellation
+├── test_complex_conversion_chains.py   # Multi-step conversions
+├── test_integration.py                 # Real-world scenarios
+├── test_readme_examples.py             # Doc validation
+├── test_error_handling.py              # Error cases
+├── test_error_handling_comprehensive.py # Comprehensive error cases
+├── test_edge_cases.py                  # Edge cases
+├── test_main.py                        # Main module tests
+├── test_pandas_integration_expanded.py # Pandas integration
+├── test_year_dependent_currency.py     # Exchange rate conversions
+└── test_v020_features.py               # Discovery, caching, warnings, repr
 ```
 
 ### Testing Philosophy
@@ -1019,7 +1024,7 @@ EnergyUnits is designed as a **domain-specific, data-driven, production-ready** 
 5. **Maintainability**: Clean separation of concerns
 
 The design has been validated through:
-- 291+ comprehensive tests
+- 270+ comprehensive tests
 - Real-world energy modeling scenarios
 - Multiple user feedback cycles
 - Performance profiling
