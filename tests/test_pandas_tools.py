@@ -34,7 +34,7 @@ def test_metadata_roundtrip():
 def test_substance_aware_column_conversion():
     df = add_units(pd.DataFrame({"fuel": [1.0, 2.0]}), "fuel", "t", substance="coal")
     converted = convert_units(df, "fuel", "MWh")
-    assert converted["fuel"].tolist() == pytest.approx([25 / 3.6, 50 / 3.6])
+    assert converted["fuel"].tolist() == pytest.approx([25.8 / 3.6, 51.6 / 3.6])
     assert converted.attrs["fuel_unit"] == "MWh"
     assert converted.attrs["fuel_substance"] == "coal"
 

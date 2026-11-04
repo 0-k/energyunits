@@ -25,7 +25,30 @@ _NUMERIC_FIELDS = (
     "carbon_content",
     "hydrogen_content",
     "ash_content",
+    "moisture_content",
 )
+_RANGE_FIELDS = ("lhv_range", "carbon_intensity_range")
+
+
+def _is_number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _complete_carbon(props: dict) -> dict:
+    """Derive carbon_content from carbon_intensity and lhv (or vice versa) if only one is given.
+
+    Emission factors are usually published per unit of energy (kg CO2/GJ), so a
+    custom fuel with ``lhv`` and ``carbon_intensity`` is enough for all CO2
+    conversions: ``carbon_content = carbon_intensity * lhv / 1000 * 12/44``.
+    """
+    lhv = props.get("lhv")
+    if not lhv:
+        return props
+    if props.get("carbon_content") is None and props.get("carbon_intensity") is not None:
+        props["carbon_content"] = props["carbon_intensity"] * lhv / 1000 * 12 / 44
+    elif props.get("carbon_intensity") is None and props.get("carbon_content") is not None:
+        props["carbon_intensity"] = props["carbon_content"] * 44 / 12 / lhv * 1000
+    return props
 
 
 class SubstanceRegistry:
@@ -34,9 +57,11 @@ class SubstanceRegistry:
     Properties per substance (all optional, ``None`` if unknown):
 
     * ``hhv`` / ``lhv``: higher / lower heating value in MJ/kg
-    * ``density``: kg/m3
+    * ``lhv_range`` / ``carbon_intensity_range``: IPCC lower and upper limits
+    * ``density``: kg/m3 (gases at 15 °C and 101.325 kPa, see ``density_basis``)
     * ``carbon_intensity``: kg CO2 per GJ (LHV basis)
     * ``carbon_content`` / ``hydrogen_content`` / ``ash_content``: mass fractions
+    * ``ipcc_category`` / ``source``: provenance of the values
 
     A module-level instance is available as
     :data:`energyunits.substance.substance_registry`.
@@ -70,9 +95,18 @@ class SubstanceRegistry:
                 raise ValueError(f"Properties of substance '{name}' must be a JSON object")
             for field in _NUMERIC_FIELDS:
                 value = props.get(field)
-                if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
+                if value is not None and not _is_number(value):
                     raise ValueError(f"Property '{field}' of substance '{name}' must be a number or null")
-            self._substances[name] = dict(props)
+            for field in _RANGE_FIELDS:
+                value = props.get(field)
+                if value is None:
+                    continue
+                where = f"Property '{field}' of substance '{name}'"
+                if not (isinstance(value, list) and len(value) == 2 and all(_is_number(v) for v in value)):
+                    raise ValueError(f"{where} must be [lower, upper] or null")
+                if value[0] > value[1]:
+                    raise ValueError(f"{where}: lower limit exceeds upper limit")
+            self._substances[name] = _complete_carbon(dict(props))
 
     def __getitem__(self, substance_id: str) -> dict:
         """Dict-like access to substance data."""

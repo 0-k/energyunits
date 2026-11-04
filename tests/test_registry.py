@@ -110,10 +110,9 @@ class TestUnitRegistry:
         assert result == pytest.approx(2000.0, rel=1e-2)
 
         # Test with natural gas
-        # Natural gas density ≈ 0.75 kg/m3
-        # 750 kg of natural gas ≈ 1000 m3
-        result = registry.convert_between_dimensions(750, "kg", "m3", substance="natural_gas")
-        assert result == pytest.approx(1000.0, rel=0.1)
+        # Natural gas density 0.74 kg/m3 at 15 °C: 740 kg of natural gas = 1000 m3
+        result = registry.convert_between_dimensions(740, "kg", "m3", substance="natural_gas")
+        assert result == pytest.approx(1000.0)
 
         # Test with different units
         # 1 t of LNG ≈ 2.22 m3 (using density of 450 kg/m3)

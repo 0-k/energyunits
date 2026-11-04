@@ -4,330 +4,198 @@ This document provides citations and references for all energy conversion values
 
 ## Overview
 
-The fuel properties in `energyunits/data/substances.json` are based on authoritative sources including:
-- IPCC (Intergovernmental Panel on Climate Change) Guidelines
-- IEA (International Energy Agency) databases
-- EPA (US Environmental Protection Agency) emission factors
-- EIA (US Energy Information Administration) data
-- Peer-reviewed scientific literature
-
-## Heating Value References
-
-### Higher Heating Value (HHV) vs Lower Heating Value (LHV)
-
-**Definition:**
-- **HHV (Higher Heating Value)**: Also called Gross Calorific Value (GCV). Assumes the water of combustion is entirely condensed and the heat contained in the water vapor is recovered.
-- **LHV (Lower Heating Value)**: Also called Net Calorific Value (NCV). Assumes the products of combustion contain water vapor and the heat in the water vapor is not recovered.
-
-**Typical HHV/LHV Relationships:**
-- Coal and oil: LHV is approximately 5% lower than HHV
-- Natural gas: LHV is approximately 10% lower than HHV
-- Hydrogen: LHV is approximately 18% lower than HHV (142 MJ/kg vs 120 MJ/kg)
-
-**Reference:** [H2tools - Lower and Higher Heating Values](https://h2tools.org/hyarc/calculator-tools/lower-and-higher-heating-values-fuels)
-
-## Coal
-
-### Classification (IEA Standards)
-
-**Hard Coal:** Gross calorific value above 23,865 kJ/kg (23.9 MJ/kg)
-- Includes anthracite, coking coal, and bituminous coal
-
-**Sub-bituminous Coal:** Gross calorific value between 17,435 and 23,865 kJ/kg (17.4-23.9 MJ/kg)
-
-**Brown Coal (Lignite):** Gross calorific value less than 17,435 kJ/kg (< 17.4 MJ/kg)
-
-**Reference:** [IEA - Harmonisation of Definitions of Energy Products and Flows: Coal](https://iea.blob.core.windows.net/assets/imports/events/39/Coal.pdf)
-
-### Heating Values
-
-**Anthracite:**
-- HHV: 24-35 MJ/kg (typical range)
-- LHV: Approximately 5% lower than HHV
-- **Used value:** HHV 32.5 MJ/kg, LHV 31.5 MJ/kg
-
-**Bituminous Coal:**
-- HHV: 24-30 MJ/kg (IEA classification >23.9 MJ/kg)
-- LHV: Approximately 5% lower than HHV
-- **Used value:** HHV 30.0 MJ/kg, LHV 28.5 MJ/kg
-
-**Generic coal (`coal`):**
-- Representative steam coal between sub-bituminous and bituminous coal
-- **Used value:** HHV 26.0 MJ/kg, LHV 25.0 MJ/kg, emission factor 95.0 kg CO2/GJ
-
-**Lignite:**
-- HHV: 8-17 MJ/kg (typical range), 15-19 GJ/tonne per IEA
-- LHV: Approximately 5% lower than HHV
-- **Used value:** HHV 15.0 MJ/kg, LHV 14.0 MJ/kg
-
-**References:**
-- [IEA Coal Product Definitions](https://iea.blob.core.windows.net/assets/imports/events/39/Coal.pdf)
-- [Engineering Toolbox - Coal Heating Values](https://www.engineeringtoolbox.com/coal-heating-values-d_1675.html)
-- [World Nuclear Association - Heat Values of Various Fuels](https://world-nuclear.org/information-library/facts-and-figures/heat-values-of-various-fuels)
-
-### CO2 Emission Factors (IPCC 2006 Guidelines)
-
-Emission factors on a net calorific value (LHV) basis:
-
-- **Anthracite:** 98.3 kg CO2/GJ (98,300 kg CO2/TJ)
-- **Bituminous/Coking Coal:** 94.6 kg CO2/GJ (94,600 kg CO2/TJ)
-- **Sub-bituminous Coal:** 96.1 kg CO2/GJ (96,100 kg CO2/TJ)
-- **Lignite:** 101.0 kg CO2/GJ (101,000 kg CO2/TJ)
-
-**Note:** IPCC 2006 assumes 100% carbon oxidation to CO2.
-
-**Reference:** [IPCC 2006 Guidelines, Volume 2, Chapter 2: Stationary Combustion, Table 2.2](https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_2_Ch2_Stationary_Combustion.pdf)
-
-## Natural Gas and Methane
-
-### Heating Values
-
-**Natural Gas:**
-- HHV: 52.2-55.0 MJ/kg
-- LHV: 47.1-49.5 MJ/kg (approximately 10% lower than HHV)
-- **Used value:** HHV 55.0 MJ/kg, LHV 49.5 MJ/kg
-
-**Methane (CH4):**
-- HHV: 55.5 MJ/kg
-- LHV: 50.0 MJ/kg
-- **Used value:** HHV 55.5 MJ/kg, LHV 50.0 MJ/kg
-
-**References:**
-- [EIA - Heat Content of Natural Gas](https://www.eia.gov/dnav/ng/ng_cons_heat_a_epg0_vgth_btucf_a.htm)
-- [H2tools - Lower and Higher Heating Values](https://h2tools.org/hyarc/calculator-tools/lower-and-higher-heating-values-fuels)
-
-### Density
-
-**Natural Gas (standard conditions):** 0.75 kg/m³
-
-**LNG (Liquefied Natural Gas):** 450 kg/m³ (0.45 kg/L)
-- Range: 410-500 kg/m³ depending on temperature, pressure, and composition
-
-**Reference:** [IMO MEPC.281(70) - LNG Standards](https://wwwcdn.imo.org/localresources/en/KnowledgeCentre/IndexofIMOResolutions/MEPCDocuments/MEPC.281(70).pdf)
-
-### CO2 Emission Factors
-
-**Natural Gas:** 56.1 kg CO2/GJ (56,100 kg CO2/TJ)
-- Carbon content: 15.3 kgC/GJ (range 14.8-15.9 kgC/GJ)
-- Conversion: 15.3 kgC/GJ × (44/12) = 56.1 kg CO2/GJ
-
-**Reference:** [IPCC 2006 Guidelines, Volume 2, Chapter 1, Table 1.3](https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_1_Ch1_Introduction.pdf)
-
-## Petroleum Products
-
-### Heating Values
-
-**Crude Oil:**
-- HHV: 45.0 MJ/kg
-- LHV: 42.5 MJ/kg (approximately 5% lower than HHV)
-- Net calorific value: 42.3 TJ/Gg (range 40.1-44.8 TJ/Gg) per IPCC 2006
-
-**Diesel:**
-- HHV: 45.7 MJ/kg (or approximately 43 MJ/kg from other sources)
-- LHV: 42.8 MJ/kg (approximately 7% lower than HHV)
-- **Current values confirmed accurate**
-
-**Gasoline (Motor Gasoline):**
-- HHV: 46-47.3 MJ/kg
-- LHV: 44.0 MJ/kg (approximately 7-10% lower than HHV)
-- Net calorific value: 44.3 TJ/Gg per IPCC 2006
-- **Current values confirmed accurate**
-
-**Heavy Fuel Oil:**
-- HHV: 43.0 MJ/kg
-- LHV: 40.5 MJ/kg (approximately 5% lower than HHV)
-
-**References:**
-- [University of Waterloo - Gasoline and Diesel Fuel Properties](https://uwaterloo.ca/chem13-news-magazine/may-2018/feature/gasoline-and-diesel-fuel-carbon-pricing-and-heating-values)
-- [IPCC 2006 Guidelines, Volume 2, Chapter 1, Table 1.2](https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_1_Ch1_Introduction.pdf)
-
-### Density
-
-**Diesel:** 840 kg/m³ (0.84 kg/L)
-- Range: 820-845 kg/L at 15°C (EN 590 European standard)
-
-**Gasoline:** 750 kg/m³ (0.75 kg/L)
-- Range: 700-770 kg/L
-
-**Crude Oil:** 870 kg/m³ (0.87 kg/L)
-
-**Heavy Fuel Oil:** 950 kg/m³ (0.95 kg/L)
-
-**References:**
-- [Engineering Toolbox - Fuels Densities](https://www.engineeringtoolbox.com/fuels-densities-specific-volumes-d_166.html)
-- [AFDC - Fuel Properties Comparison](https://afdc.energy.gov/fuels/properties)
-
-### CO2 Emission Factors
-
-**Motor Gasoline:** 69.3 kg CO2/GJ (69,300 kg CO2/TJ)
-- Carbon content: 18.9 kgC/GJ per IPCC 2006
-
-**Diesel (gas/diesel oil):** 74.1 kg CO2/GJ
-
-**Heavy fuel oil (residual fuel oil):** 77.4 kg CO2/GJ
-
-**Crude Oil:** Approximately 73.3 kg CO2/GJ
-- Carbon content: 20.0 kgC/GJ (range 19.4-20.6 kgC/GJ) per IPCC 2006
-
-**References:**
-- [IPCC Annex I - Properties of CO2 and Carbon-Based Fuels](https://www.ipcc.ch/site/assets/uploads/2018/03/srccs_annex1-1.pdf)
-- [IPCC 2006 Guidelines, Volume 2, Chapter 2, Table 2.2](https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_2_Ch2_Stationary_Combustion.pdf)
-
-## Hydrogen
-
-### Heating Values
-
-**Hydrogen (H2):**
-- HHV: 142 MJ/kg
-- LHV: 120 MJ/kg
-- Difference: 18.2% (significantly higher than fossil fuels due to water vapor formation)
-
-**Note:** These values are well-established across all technical literature and regulatory documents.
-
-**References:**
-- [Wikipedia - Heat of Combustion](https://en.wikipedia.org/wiki/Heat_of_combustion)
-- [European Commission (Eurostat) - Hydrogen Reporting Instructions](https://ec.europa.eu/eurostat/documents/38154/16135593/Hydrogen+-+Reporting+instructions.pdf/)
-- [Hycalc.com - Hydrogen Heating Values](https://hycalc.com/hydrogen-heating-values)
-
-### Density
-
-**Hydrogen gas (at standard conditions):** 0.09 kg/m³
-
-### CO2 Emissions
-
-**Hydrogen:** 0 kg CO2/GJ (zero direct combustion emissions)
-- Combustion product is water (H2O) only
-
-## Biomass
-
-### Wood Pellets
-
-Values are **as received** (ENplus A1 quality, 8 % moisture), derived from dry-basis
-properties (HHV 20.0 MJ/kg, 50 % carbon, 6 % hydrogen, 1 % ash):
-
-- HHV (as received) = 20.0 × (1 - 0.08) = 18.4 MJ/kg
-- LHV (as received) = HHV - 2.442 × (moisture + 8.936 × hydrogen) = 17.0 MJ/kg
-  (ENplus A1 requires a net calorific value of at least 16.5 MJ/kg; typical 16.5-17.5)
-- Carbon 46 %, hydrogen 5.5 %, ash 0.9 % (as received)
-- Bulk density: 650 kg/m³ (range 600-750)
-
-Earlier versions used the dry-basis LHV of 18.5 MJ/kg, which overstated the energy
-content of delivered pellets by about 9 %.
+Fuel properties in `energyunits/data/substances.json` follow the **2006 IPCC Guidelines
+for National Greenhouse Gas Inventories, Volume 2 (Energy), Chapter 1** wherever the
+IPCC defines a fuel category:
+
+- net calorific values (NCV, the same as LHV): default values and 95 % confidence limits
+  of **Table 1.2**;
+- CO2 emission factors: default values and lower/upper limits of **Table 1.4**, assuming
+  complete oxidation.
+
+These are the IPCC **Tier 1** defaults: global averages for use when no country- or
+plant-specific data are available. Read [Accuracy and appropriate use](#accuracy-and-appropriate-use)
+before using them for anything other than energy-system modelling and screening.
+
+## Fuel Properties
+
+### Method
+
+- **LHV (NCV)**: IPCC default (Table 1.2). Conversions use the LHV unless `basis="HHV"`.
+- **HHV (GCV)**: the IPCC publishes NCVs only. For IPCC fuels the HHV follows the IPCC rule
+  of thumb that the NCV is about 5 % below the GCV for coal and oil and about 10 % below
+  for natural gas, i.e. HHV = NCV / 0.95 or NCV / 0.90. Pure compounds (methane, hydrogen,
+  methanol) use their thermochemical values; biomass uses moisture-based estimates.
+- **CO2 emission factor** (`carbon_intensity`, kg CO2 per GJ on NCV basis): IPCC default
+  (Table 1.4).
+- **Carbon content**: derived as `carbon_intensity × lhv / 1000 × 12/44`. CO2 computed from
+  fuel *energy* therefore reproduces the IPCC factor exactly, and CO2 from fuel *mass* equals
+  NCV × emission factor.
+- **Ranges** (`lhv_range`, `carbon_intensity_range`): IPCC lower and upper limits, available
+  through `substance_registry.get_properties(name)`.
+- **Densities** are not IPCC data: liquids at 15 °C, solids as indicative bulk densities,
+  gases at 15 °C and 101.325 kPa (see [Gas reference conditions](#gas-reference-conditions)).
+- **Hydrogen and ash contents** are indicative typical values. They are only used for
+  `substance="H2O"` and `substance="ash"`; H2O from fuel moisture is not included.
+
+### Fuels
+
+<!-- BEGIN GENERATED fuel-table: edit `energyunits/data/substances.json` and run `python scripts/update_data.py sync` -->
+| Substance | IPCC category | LHV (MJ/kg) [IPCC range] | HHV (MJ/kg) | kg CO2/GJ [IPCC range] | Density (kg/m3) |
+|-----------|---------------|------:|------:|------:|------:|
+| `coal` | Other Bituminous Coal | 25.8 [19.9–30.5] | 27.16 | 94.6 [89.5–99.7] | 833 |
+| `bituminous` | Other Bituminous Coal | 25.8 [19.9–30.5] | 27.16 | 94.6 [89.5–99.7] | 833 |
+| `coking_coal` | Coking Coal | 28.2 [24.0–31.0] | 29.68 | 94.6 [87.3–101.0] | 800 |
+| `sub_bituminous` | Sub-Bituminous Coal | 18.9 [11.5–26.0] | 19.89 | 96.1 [92.8–100.0] | 800 |
+| `anthracite` | Anthracite | 26.7 [21.6–32.2] | 28.11 | 98.3 [94.6–101.0] | 1000 |
+| `lignite` | Lignite | 11.9 [5.5–21.6] | 12.53 | 101.0 [90.9–115.0] | 700 |
+| `peat` | Peat | 9.76 [7.8–12.5] | 10.27 | 106.0 [100.0–108.0] | 350 |
+| `natural_gas` | Natural Gas | 48.0 [46.5–50.4] | 53.33 | 56.1 [54.3–58.3] | 0.74 |
+| `lng` | Natural Gas | 48.0 [46.5–50.4] | 53.33 | 56.1 [54.3–58.3] | 450 |
+| `crude_oil` | Crude Oil | 42.3 [40.1–44.8] | 44.53 | 73.3 [71.1–75.5] | 870 |
+| `oil` | Crude Oil | 42.3 [40.1–44.8] | 44.53 | 73.3 [71.1–75.5] | 870 |
+| `fuel_oil` | Residual Fuel Oil | 40.4 [39.8–41.7] | 42.53 | 77.4 [75.5–78.8] | 950 |
+| `diesel` | Gas/Diesel Oil | 43.0 [41.4–43.3] | 45.26 | 74.1 [72.6–74.8] | 840 |
+| `gasoline` | Motor Gasoline | 44.3 [42.5–44.8] | 46.63 | 69.3 [67.5–73.0] | 750 |
+| `jet_kerosene` | Jet Kerosene | 44.1 [42.0–45.0] | 46.42 | 71.5 [69.7–74.4] | 800 |
+| `lpg` | Liquefied Petroleum Gases | 47.3 [44.8–52.2] | 49.79 | 63.1 [61.6–65.6] | 540 |
+| `wood` | Wood/Wood Waste | 15.6 [7.9–31.0] | 17.1 | 112.0 [95.0–132.0] (biogenic) | – |
+| `wood_pellets` | Wood/Wood Waste | 17.0 [7.9–31.0] | 18.4 | 99.2 [95.0–132.0] (biogenic) | 650 |
+| `wood_chips` | Wood/Wood Waste | 12.2 [7.9–31.0] | 13.9 | 105.2 [95.0–132.0] (biogenic) | 350 |
+| `methane` | – | 50.0 | 55.5 | 54.9 | 0.68 |
+| `hydrogen` | – | 120.0 | 141.8 | 0.0 | 0.0852 |
+| `methanol` | – | 19.9 | 22.7 | 69.1 | 795 |
+<!-- END GENERATED fuel-table -->
+
+Notes:
+
+- `coal` and `bituminous` both use the IPCC category "Other Bituminous Coal" (steam coal,
+  the most common coal in power generation); `oil` is crude oil; `lng` is natural gas in
+  liquid form.
+- `methane`, `hydrogen` and `methanol` are pure compounds with thermochemical heating values
+  and stoichiometric composition.
+- `wood` is the IPCC default pair for Wood/Wood Waste. Its NCV and emission factor are
+  independent averages, so results from wood *mass* are only indicative; the HHV assumes
+  20 % moisture.
+- `wood_pellets` and `wood_chips` are product definitions (see [Biomass](#biomass)) whose
+  values lie within the IPCC range for wood.
+- `wind`, `solar`, `hydro` and `nuclear` have no combustion products; `CO2`, `H2O` and
+  `ash` are combustion products.
+
+### Gas reference conditions
+
+Densities of gases refer to **15 °C and 101.325 kPa** (ISO 13443 standard reference
+conditions), the convention of IEA and Energy Institute statistics. A gas volume in `m3`,
+`bcm`, `ft3`, `Mcf` or `Bcf` is therefore a standard volume (`Sm3`). US standard cubic feet
+(60 °F, 14.73 psia) differ by less than 0.1 %, which is ignored. For normal cubic metres
+(0 °C, 101.325 kPa) use the unit `Nm3`: the same amount of gas occupies 288.15/273.15 times
+the volume at 15 °C, so 1 Nm3 = 1.0549 Sm3.
+
+With a density of 0.74 kg/m3 at 15 °C and the IPCC NCV of 48.0 MJ/kg, natural gas gives:
+
+| Quantity | Value | Comparison |
+|----------|-------|------------|
+| NCV per volume | 35.5 MJ/Sm3, 37.5 MJ/Nm3 | typical H-gas: 34-37 MJ/Sm3 |
+| GCV per Mcf | 1.06 MMBtu | US average heat content about 1.037 MMBtu/Mcf (EIA), +2 % |
+| 1 bcm | 35.5 PJ = 9.87 TWh (NCV) | Energy Institute: 1 bcm ≈ 0.86 Mtoe = 36 PJ |
+
+Gas composition varies: low-calorific L-gas has about 15 % less energy per cubic metre.
+Load a custom substance for a specific gas quality.
+
+### Biomass
+
+**Wood pellets** (`wood_pellets`) are **as received** (ENplus A1 quality, 8 % moisture),
+derived from dry-basis properties (HHV 20.0 MJ/kg, 50 % carbon, 6 % hydrogen, 1 % ash):
+
+- HHV = 20.0 × (1 - 0.08) = 18.4 MJ/kg; LHV = HHV - 2.442 × (moisture + 8.936 × hydrogen)
+  = 17.0 MJ/kg (ENplus A1 requires at least 16.5 MJ/kg)
+- Carbon 46 %, hydrogen 5.5 %, ash 0.9 % (as received); bulk density 650 kg/m3
+
+**Wood chips** (`wood_chips`) are **as received** at 30 % moisture (class M30), derived from
+HHV 19.8 MJ/kg (dry), 50 % carbon, 6 % hydrogen, 2 % ash: HHV 13.9 MJ/kg, LHV 12.2 MJ/kg
+(about 3.4 kWh/kg). At 50 % moisture the LHV drops to about 8 MJ/kg; load a custom substance
+for other moisture contents.
+
+**Biogenic CO2**: `carbon_intensity` is the physical CO2 released by combustion (the IPCC
+lists 112 kg/GJ for wood in Table 1.4). Inventories report biogenic CO2 as a memo item and
+not in national totals; the fuels are marked `biogenic: true`. The library always returns
+the physical CO2, so apply the accounting convention in your model.
 
 **References:**
 - [ENplus Handbook - Quality Requirements](https://enplus-pellets.eu/)
 - [Natural Resources Canada - Solid Biofuels Bulletin](https://natural-resources.canada.ca/sites/nrcan/files/files/NRCAN_BB_no2_e13.pdf)
-- [Penn State Extension - Characteristics of Biomass as Heating Fuel](https://extension.psu.edu/characteristics-of-biomass-as-a-heating-fuel)
 
-### Wood Chips
+### Verification of the IPCC values
 
-Values are **as received** at 30 % moisture (moisture class M30), derived from
-dry-basis properties (HHV 19.8 MJ/kg, 50 % carbon, 6 % hydrogen, 2 % ash):
+The defaults and NCV limits were checked against reproductions of Tables 1.2 and 1.4 and
+against Chapter 2 (Stationary Combustion), which repeats the emission factors with their
+limits. The lower/upper limits of the emission factors for natural gas, lignite,
+sub-bituminous coal, gas/diesel oil, residual fuel oil, LPG and jet kerosene could not be
+cross-checked against a second source and should be confirmed against the official PDF
+when the data are next reviewed.
 
-- HHV (as received) = 13.9 MJ/kg, LHV (as received) = 12.2 MJ/kg (about 3.4 kWh/kg)
-- Carbon 35 %, hydrogen 4.2 %, ash 1.4 % (as received)
-- Bulk density: 350 kg/m³ (varies strongly with species and moisture)
+## Accuracy and appropriate use
 
-The energy content of wood chips depends strongly on moisture: at 50 % moisture the
-LHV drops to about 8 MJ/kg. Load a custom substance for other moisture contents.
+The defaults are IPCC Tier 1 values. How reliable a result is depends mainly on what the
+calculation starts from:
 
-## Methanol
+| Calculation | Basis | Typical deviation from country- or plant-specific values |
+|-------------|-------|----------------------------------------------------------|
+| CO2 from fuel **energy**: oil products, natural gas | IPCC Tier 1 default | 1-3 % |
+| CO2 from fuel energy: hard coal | IPCC Tier 1 default | 3-5 % |
+| CO2 from fuel energy: lignite, peat | IPCC Tier 1 default (lignite: 90.9-115 kg/GJ) | up to about 10 % |
+| Energy or CO2 from fuel **mass**: oil products | NCV range of a few % | a few % |
+| Energy or CO2 from fuel mass: hard coal | NCV range 19.9-30.5 MJ/kg (other bituminous coal) | 10-20 % |
+| Energy or CO2 from fuel mass: lignite, peat | NCV range 5.5-21.6 MJ/kg (lignite) | up to 50 % |
+| Energy or CO2 from fuel mass: biomass | depends on moisture | 30 % or more |
+| Energy from gas **volume** | composition and reference conditions | 2-5 % (H-gas), about 15 % (L-gas) |
+| Results on HHV basis | IPCC rule of thumb for HHV | 1-3 %; more for LPG and wet lignite |
+| H2O and ash | indicative composition | large |
 
-### Heating Values
+**Suitable for:** energy-system modelling, techno-economic analysis, scenario and screening
+studies, sanity checks. Prefer energy-based inputs (MWh or GJ of fuel) where you can.
 
-**Methanol (CH3OH):**
-- HHV: 22.7-23.0 MJ/kg
-- LHV: 19.9 MJ/kg
-- **Current values (22.7 HHV, 19.9 LHV) confirmed accurate**
+**Not suitable for:** compliance reporting (the EU ETS Monitoring and Reporting Regulation
+requires Tier 2/3 or measured values; national inventories use country-specific factors),
+plant-level accounting and product carbon footprints.
 
-**Density:** 791-795 kg/m³
-- **Used value:** 795 kg/m³
+**Not included:**
 
-### CO2 Emissions
+- CH4 and N2O from combustion. For power plants they add less than 1 % CO2-equivalent for
+  fossil fuels; for small-scale combustion and biomass they matter more.
+- Upstream and lifecycle emissions (mining, methane leakage, transport, processing).
+- Incomplete oxidation (the IPCC defaults assume all carbon is oxidised).
 
-**Direct combustion emissions:** 1.375 kg CO2 per kg methanol
-- Stoichiometric: For each gram of methanol, 44/32 grams of CO2 are emitted
-- Equals 69 g CO2/MJ LHV
+**Sensitivity analysis with the IPCC ranges:**
 
-**Full lifecycle (natural gas-based):** 2.05-2.20 kg CO2eq/kg (includes production)
+```python
+from energyunits import Quantity
+from energyunits.substance import substance_registry
 
-**References:**
-- [Methanol Institute - Carbon Footprint of Methanol](https://www.methanol.org/wp-content/uploads/2022/01/Carbon-Footprint-of-Methanol-studio-Gear-Up-Full-Presentation.pdf)
-- [IMPCA - Methanol Carbon Footprint Guidance](https://impca.eu/wp-content/uploads/2024/06/GU_IMPCA_Methanol-product-carbon-footprint-and-certification.pdf)
-
-## Emission Calculation Methodology
-
-### IPCC 2006 Guidelines Methodology
-
-All CO2 emission factors follow IPCC 2006 Guidelines methodology:
-
-1. **Carbon oxidation factor:** 100% (assumes complete oxidation of carbon to CO2)
-2. **Basis:** Net calorific value (LHV)
-3. **Conversion:** Carbon content (kgC/GJ) × (44/12) = CO2 emissions (kg CO2/GJ)
-   - Molecular weight ratio: CO2 (44) / C (12) = 3.667
-
-### Carbon content and emission factors in substances.json
-
-CO2 is computed stoichiometrically from the carbon mass fraction:
-`CO2 = fuel mass × carbon_content × 44/12`.
-
-For fossil fuels, `carbon_content` is derived from the IPCC default emission factor
-(`carbon_intensity`, kg CO2 per GJ on LHV basis) and the LHV used by the library:
-
-```text
-carbon_content = carbon_intensity × lhv / 1000 × 12/44
+props = substance_registry.get_properties("lignite")
+low, high = props["lhv_range"]                       # 5.5, 21.6 MJ/kg
+energy = Quantity(1000, "t", "lignite").to("GJ")     # 11900.00 GJ (default 11.9 MJ/kg)
+print(energy * (low / props["lhv"]), energy * (high / props["lhv"]))   # 5500.00 GJ of lignite 21600.00 GJ of lignite
 ```
 
-so that converting fuel energy to CO2 reproduces the IPCC Tier 1 factors exactly
-(for example 1 GJ of natural gas -> 56.1 kg CO2, 1 MWh of coal -> 0.342 t CO2).
-Methane and methanol use their stoichiometric composition. Earlier versions used
-rounded carbon fractions (coal 0.75, lignite 0.65) that overstated coal emissions by
-16 % and lignite emissions by 68 % relative to the IPCC factors.
+**Using your own factors:** load a custom substance. Emission factors are usually published
+per unit of energy; if only `lhv` and `carbon_intensity` are given, the carbon content is
+derived automatically (illustrative values for a German lignite, `my_fuels.json`):
 
-For biomass (`biogenic: true`) the physical carbon content is kept, so the library
-returns the biogenic CO2 that is actually emitted, while `carbon_intensity` is 0
-following the IPCC convention of reporting biogenic CO2 separately.
+```json
+{"rhenish_lignite": {"name": "Rhenish lignite", "lhv": 8.9, "carbon_intensity": 113.5}}
+```
 
-| Substance | LHV (MJ/kg) | Carbon content | kg CO2/GJ (computed) | `carbon_intensity` |
-|-----------|------------:|---------------:|---------------------:|-------------------:|
-| `coal` | 25.0 | 0.6477 | 95.0 | 95.0 |
-| `lignite` | 14.0 | 0.3856 | 101.0 | 101.0 |
-| `bituminous` | 28.5 | 0.7353 | 94.6 | 94.6 |
-| `anthracite` | 31.5 | 0.8445 | 98.3 | 98.3 |
-| `natural_gas` | 49.5 | 0.7574 | 56.1 | 56.1 |
-| `lng` | 49.5 | 0.7574 | 56.1 | 56.1 |
-| `methane` | 50.0 | 0.7487 | 54.9 | 54.9 |
-| `crude_oil` | 42.5 | 0.8496 | 73.3 | 73.3 |
-| `oil` | 42.5 | 0.8496 | 73.3 | 73.3 |
-| `fuel_oil` | 40.5 | 0.8549 | 77.4 | 77.4 |
-| `diesel` | 42.8 | 0.8649 | 74.1 | 74.1 |
-| `gasoline` | 44.0 | 0.8316 | 69.3 | 69.3 |
-| `wood_pellets` | 18.5 | 0.5 | 99.1 | 0 (biogenic) |
-| `wood_chips` | 16.0 | 0.48 | 110.0 | 0 (biogenic) |
-| `methanol` | 19.9 | 0.3749 | 69.1 | 69.1 |
+```python
+from energyunits import Quantity
+from energyunits.substance import substance_registry
 
-## Data Quality and Limitations
+substance_registry.load_substances("my_fuels.json")
+print(Quantity(1, "t", "rhenish_lignite").to("t", substance="CO2"))   # 1.01 t of CO2
+```
 
-### Uncertainty Ranges
-
-- Heating values can vary ±5-10% depending on:
-  - Fuel composition and quality
-  - Geographic origin (especially for coal)
-  - Moisture content (especially for biomass)
-  - Refining processes (for petroleum products)
-
-- Emission factors are standardized values:
-  - Actual emissions depend on combustion efficiency
-  - IPCC default values assume complete combustion
-  - Country-specific values may differ
-
-### Future Updates
-
-Data will be periodically reviewed and updated based on:
-- New IPCC Guidelines releases
-- Updated national inventory methodologies
-- Peer-reviewed research publications
-- Industry standards updates
+Add `hhv`, `density` and the other fields of the table above as needed; a conversion that
+needs a missing field raises `MissingDataError`.
 
 ## Additional References
 
@@ -371,14 +239,15 @@ Conversion factors are exact by definition unless noted.
 | `gal` | US liquid gallon, 3.785411784 L |
 | `ft3`, `Mcf`, `Bcf` | cubic foot (0.3048 m)^3, 10^3 and 10^9 ft3 |
 | `bcm` | 10^9 m3 |
+| `Sm3` | standard cubic metre of gas (15 °C, 101.325 kPa), equal to `m3` |
+| `Nm3` | normal cubic metre of gas (0 °C, 101.325 kPa) = 288.15/273.15 Sm3 |
 | `lb` | avoirdupois pound, 0.45359237 kg |
 | `ha`, `km2` | 10^4 m2, 10^6 m2 |
 | `acre` | international acre, 4046.8564224 m2 |
 | `ft2` | square foot, 0.09290304 m2 |
 | `a`, `yr` | 8760 h (365 days), the usual convention in energy models |
 
-Gas volumes (`m3`, `bcm`, `Mcf`) are converted to mass and energy with the density
-of the substance (natural gas: 0.75 kg/m3, approximately normal conditions).
+Gas volumes are standard volumes at 15 °C, see [Gas reference conditions](#gas-reference-conditions).
 
 ## Inflation Data
 
@@ -522,11 +391,12 @@ spreads and fees, and the CNY is a managed currency.
 
 ## Version History
 
-- **2026-11 (v0.3.0):** exchange rates replaced by Federal Reserve G.5A annual
+- **2026-11 (v0.3.0):** fuel properties aligned with the IPCC 2006 Tier 1 defaults (Tables 1.2 and
+  1.4) including their ranges, new IPCC fuel categories, gas densities at 15 °C; exchange rates replaced by Federal Reserve G.5A annual
   averages (2000-2025); inflation data corrected (USD 2010/2011/2014) and extended
   with 2000-2009, 2024/2025 actuals and GBP, JPY, CNY series; projections set to the 2 %
   target and flagged; fossil fuel carbon contents made consistent with the IPCC
-  emission factors; exact unit definitions for barrel and BTU-based units; new units
+  emission factors (superseded by the IPCC alignment); exact unit definitions for barrel and BTU-based units; new units
   (toe, tce, Gcal, therm, quad, bcm, Mcf, lb, kt, ...).
 - **2025-11:** year-dependent exchange rates; fuel properties cross-checked against
   IPCC/IEA references.

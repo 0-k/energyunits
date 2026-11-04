@@ -131,7 +131,7 @@ class TestQuantityOperations:
         energy2 = Quantity(100, "MWh", "natural_gas", "LHV")
         total = energy1 + energy2
         assert total.basis == "HHV"
-        assert total.value == pytest.approx(100 + 100 * 55.0 / 49.5)
+        assert total.value == pytest.approx(100 + 100 * 53.33 / 48.0)
 
         # Multiplication by scalar
         energy = Quantity(100, "MWh")

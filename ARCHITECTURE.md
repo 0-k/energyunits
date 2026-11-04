@@ -225,10 +225,19 @@ Unit names must not contain whitespace, `/`, `*` or `·`.
 
 One object per substance with `name`, `hhv`, `lhv` (MJ/kg), `density` (kg/m3),
 `carbon_intensity` (kg CO2/GJ, LHV), `carbon_content`, `hydrogen_content`,
-`ash_content` (mass fractions) and optionally `biogenic`. Missing properties may be
-`null` or omitted; conversions that need them raise `MissingDataError`. For fossil
-fuels `carbon_content` equals `carbon_intensity × lhv / 1000 × 12/44`, so the
-stoichiometric CO2 reproduces the IPCC emission factor (checked by a test).
+`ash_content` (mass fractions) and optionally `ipcc_category`, `lhv_range` and
+`carbon_intensity_range` (IPCC lower/upper limits as `[low, high]`), `density_basis`,
+`moisture_content`, `biogenic` and `source`. Missing properties may be `null` or
+omitted; conversions that need them raise `MissingDataError`. Conversions only use
+the heating values, density and composition; the other fields are documentation and
+inputs for sensitivity analysis.
+
+`carbon_content` equals `carbon_intensity × lhv / 1000 × 12/44`, so CO2 from fuel
+energy reproduces the emission factor and CO2 from fuel mass equals NCV × factor
+(checked by tests against the IPCC defaults). A loaded substance that gives only one
+of the two gets the other derived (`substance._complete_carbon`). The fuel tables in
+README.md and DATA_SOURCES.md are generated from this file by
+`scripts/update_data.py sync`.
 
 ### `inflation.json`
 
@@ -286,8 +295,8 @@ numbers; the warning makes the choice visible.
 
 **Why physical CO2 for biomass?** The library reports what is emitted. Accounting
 conventions (biogenic CO2 counted as zero) are a reporting decision left to the
-model; `carbon_intensity` follows the IPCC convention and `biogenic` marks the
-fuels.
+model; `carbon_intensity` is the physical factor (IPCC Table 1.4 lists 112 kg/GJ for
+wood) and `biogenic` marks the fuels.
 
 ## Testing
 

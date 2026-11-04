@@ -24,7 +24,7 @@ listed under "Fixed" should be re-checked.
 - **Chained divisions were parsed right-to-left**: `EUR/kW/a` was treated as
   `EUR/(kW/a)`, so converting the time unit gave inverted factors.
 - **HHV basis applied to fuel mass**: `Quantity(1, "t", "coal").to("MWh", basis="HHV")`
-  rescaled the mass before applying the HHV (7.51 MWh instead of 7.22 MWh).
+  rescaled the mass before applying the HHV, so the HHV/LHV ratio was applied twice.
 - **Combustion products of zero-carbon sources** lost the array shape (a scalar 0
   was returned for array input).
 - **Reference years** were dropped when multiplying or dividing a cost by a quantity
@@ -76,6 +76,17 @@ listed under "Fixed" should be re-checked.
 - Units: `BTU`, `therm`, `quad`, `kcal`, `Mcal`, `Gcal`, `toe`, `ktoe`, `Mtoe`, `tce`,
   `Mtce`, `kBTU`, `kt`, `lb`, `bcm`, `gal`, `ft3`, `Mcf`, `Bcf`, `d`, `yr`, and prefixed
   currencies (`kEUR`, `MEUR`, `bnEUR`, ... for USD, EUR, GBP, JPY, CNY).
+- Gas volume units `Sm3` (standard cubic metre, 15 °C; the same as `m3`) and `Nm3`
+  (normal cubic metre, 0 °C; 1 Nm3 = 1.0549 Sm3).
+- Substances `coking_coal`, `sub_bituminous`, `peat`, `jet_kerosene`, `lpg` and `wood`
+  (IPCC categories).
+- Substance fields `ipcc_category`, `lhv_range` and `carbon_intensity_range` (IPCC
+  lower/upper limits for sensitivity analysis), `biogenic`, `moisture_content` and
+  `density_basis`. Custom substances that give only `lhv` and `carbon_intensity` (or
+  `carbon_content`) get the other value derived; ranges are validated on loading.
+- `DATA_SOURCES.md`: an "Accuracy and appropriate use" section with typical deviations,
+  suitable uses and how to load your own factors. The fuel tables in README and
+  DATA_SOURCES are generated from `substances.json`.
 - `AREA` dimension with `m2`, `km2`, `ha`, `acre`, `ft2` for irradiance (`kWh/m2/a`),
   building energy intensity (`kWh/m2/a`, `kBTU/ft2/a`), power density and yields (`t/ha`).
 - Inflation data for GBP, JPY and CNY; inflation and exchange rates from 2000.
@@ -101,11 +112,28 @@ listed under "Fixed" should be re-checked.
 - **Inflation**: corrected USD values (2010, 2011, and 2014, which was 0.12 % instead
   of 1.62 %), 2024 and 2025 actuals, extended back to 2000, new GBP/JPY/CNY series;
   2026-2030 are now explicit placeholders at the 2 % target and emit a warning.
-- **Carbon contents** of fossil fuels are now consistent with the IPCC 2006
-  emission factors stored in `carbon_intensity` (coal emitted 110 instead of
-  95 kg CO2/GJ, lignite 170 instead of 101).
+- **Fuel properties aligned with the IPCC 2006 Guidelines** (Vol. 2, Ch. 1): LHVs are
+  the Table 1.2 net calorific values and `carbon_intensity` the Table 1.4 CO2 emission
+  factors of the matching IPCC category; HHVs follow the IPCC rule of thumb (NCV 5 %
+  below GCV for coal and oil, 10 % for natural gas). Results from fuel mass or volume
+  change accordingly, for example (LHV, MJ/kg): `coal` 25.0 -> 25.8 (now "Other
+  Bituminous Coal"), `bituminous` 28.5 -> 25.8, `anthracite` 31.5 -> 26.7, `lignite`
+  14.0 -> 11.9, `natural_gas` 49.5 -> 48.0, `crude_oil` 42.5 -> 42.3, `diesel`
+  42.8 -> 43.0, `gasoline` 44.0 -> 44.3.
+- **Carbon contents** are derived from the emission factors, so CO2 from fuel energy
+  reproduces the IPCC factors exactly. Previously they were set independently and
+  disagreed with `carbon_intensity` (1 t of coal emitted 2.75 t CO2, now 2.44 t;
+  1 GJ of coal 110 kg instead of 95).
+- **Gas densities at 15 °C and 101.325 kPa** (natural gas 0.74 instead of 0.75, CO2
+  1.87 instead of 1.98 kg/m3, hydrogen 0.0852 instead of 0.09). Natural gas now gives
+  35.5 MJ/m3 (NCV) and 1.06 MMBtu/Mcf (GCV), within 2-3 % of typical values; the
+  previous 37.1 MJ/m3 and 1.11 MMBtu/Mcf were about 7 % high.
 - **Biomass** on an as-received basis (wood pellets 8 % moisture: LHV 17.0 MJ/kg
   instead of the dry-basis 18.5; wood chips 30 % moisture: LHV 12.2 MJ/kg).
+  `carbon_intensity` is now the physical CO2 (pellets 99.2, chips 105.2 kg/GJ) instead
+  of 0, with `biogenic: true`; CO2 from biomass was already physical.
+- `methane` emits 54.9 kg CO2/GJ (stoichiometric; was listed as 56.1), `methanol` 69.1,
+  `hydrogen` HHV 141.8 MJ/kg.
 - Exact definitions for `barrel` (42 US gal) and the BTU-based units.
 
 ## [0.2.0] - 2026-02-15

@@ -156,11 +156,11 @@ class TestMetadataPropagation:
         lhv = Quantity(90, "MWh", "natural_gas", basis="LHV")
         total = hhv + lhv
         assert total.basis == "HHV"
-        assert total.value == pytest.approx(200)
+        assert total.value == pytest.approx(200, rel=1e-4)
 
     def test_add_unspecified_basis_treated_as_lhv(self):
         total = Quantity(90, "MWh", "natural_gas") + Quantity(100, "MWh", "natural_gas", basis="HHV")
-        assert total.value == pytest.approx(180)
+        assert total.value == pytest.approx(180, rel=1e-4)
 
     def test_add_mass_quantities_with_different_basis_labels(self):
         total = Quantity(1, "t", "coal", basis="HHV") + Quantity(1, "t", "coal")

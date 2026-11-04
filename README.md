@@ -18,7 +18,7 @@ from energyunits import Quantity
 
 print(Quantity(100, "MWh").to("GJ"))                         # 360.00 GJ
 print((Quantity(2, "GW") * Quantity(4000, "h")).to("TWh"))   # 8.00 TWh
-print(Quantity(1000, "t", "coal").to("t", substance="CO2"))  # 2374.90 t of CO2
+print(Quantity(1000, "t", "coal").to("t", substance="CO2"))  # 2440.68 t of CO2
 print(Quantity(1200, "EUR/kW", reference_year=2015).to(reference_year=2024))  # 1513.78 EUR/kW
 ```
 
@@ -161,14 +161,15 @@ the lower heating value (LHV) unless the basis is set to `"HHV"`.
 from energyunits import Quantity
 
 coal = Quantity(1, "t", "coal")
-print(coal.to("MWh"))                     # 6.94 MWh of coal
-print(coal.to("MWh", basis="HHV"))        # 7.22 MWh of coal
+print(coal.to("MWh"))                     # 7.17 MWh of coal
+print(coal.to("MWh", basis="HHV"))        # 7.54 MWh of coal
 print(Quantity(1000, "L", "diesel").to("kg"))          # 840.00 kg of diesel
-print(Quantity(1, "bcm", "natural_gas").to("TWh"))     # 10.31 TWh of natural_gas
+print(Quantity(1, "bcm", "natural_gas").to("TWh"))     # 9.87 TWh of natural_gas
+print(Quantity(1, "Nm3", "natural_gas").to("kWh"))     # 10.41 kWh of natural_gas
 
 # Also inside compound units
-print(Quantity(100, "USD/t", "coal").to("USD/MWh"))    # 14.40 USD/MWh of coal
-print(Quantity(500, "MW", "natural_gas").to("t/h"))    # 36.36 t/h of natural_gas
+print(Quantity(100, "USD/t", "coal").to("USD/MWh"))    # 13.95 USD/MWh of coal
+print(Quantity(500, "MW", "natural_gas").to("t/h"))    # 37.50 t/h of natural_gas
 ```
 
 ### Heating value basis
@@ -180,7 +181,7 @@ volumes.
 ```python
 from energyunits import Quantity
 
-print(Quantity(100, "MWh", "natural_gas", basis="HHV").to(basis="LHV"))     # 90.00 MWh of natural_gas
+print(Quantity(100, "MWh", "natural_gas", basis="HHV").to(basis="LHV"))     # 90.01 MWh of natural_gas
 print(Quantity(30, "EUR/MWh", "natural_gas", basis="HHV").to(basis="LHV"))  # 33.33 EUR/MWh of natural_gas
 
 # A US Henry Hub price (HHV) in the European LHV convention
@@ -192,24 +193,24 @@ print(henry_hub.to("USD/MWh", basis="LHV"))   # 13.27 USD/MWh of natural_gas
 
 `.to(substance=...)` converts a fuel quantity into its combustion products `"CO2"`,
 `"H2O"` or `"ash"`, based on the fuel composition. The carbon contents are set so that
-CO2 reproduces the IPCC 2006 default emission factors (kg CO2 per GJ, LHV basis).
+CO2 reproduces the IPCC 2006 Tier 1 emission factors (kg CO2 per GJ, LHV basis).
 
 ```python
 from energyunits import Quantity
 
 print(Quantity(1, "GJ", "natural_gas").to("kg", substance="CO2"))   # 56.10 kg of CO2
 print(Quantity(1, "MWh", "coal").to("t", substance="CO2"))          # 0.34 t of CO2
-print(Quantity(1000, "t", "lignite").to("t", substance="CO2"))      # 1413.87 t of CO2
+print(Quantity(1000, "t", "lignite").to("t", substance="CO2"))      # 1201.90 t of CO2
 
 # Emission rate of a 500 MW (fuel input) gas plant
-print(Quantity(500, "MW", "natural_gas").to("t/h", substance="CO2"))   # 100.99 t/h of CO2
+print(Quantity(500, "MW", "natural_gas").to("t/h", substance="CO2"))   # 100.98 t/h of CO2
 
 # Zero-carbon sources keep the array shape
 print(Quantity([100, 200], "MWh", "wind").to("t", substance="CO2"))    # [0.00, 0.00] t of CO2
 ```
 
 Energy amounts refer to *fuel* energy. For biomass the physical (biogenic) CO2 is
-returned; its `carbon_intensity` is 0 following IPCC accounting conventions.
+returned; biomass is marked `biogenic` because inventories report this CO2 separately.
 
 ## Costs, inflation and exchange rates
 
@@ -303,9 +304,9 @@ from energyunits.pandas_tools import add_units, convert_units, to_quantity
 df = pd.DataFrame({"fuel": [1000.0, 2500.0]})
 df = add_units(df, "fuel", "t", substance="coal")
 df = convert_units(df, "fuel", "MWh")
-print(df["fuel"].round(1).tolist())   # [6944.4, 17361.1]
+print(df["fuel"].round(1).tolist())   # [7166.7, 17916.7]
 print(df.attrs["fuel_unit"])          # MWh
-print(to_quantity(df, "fuel").sum().to("GWh"))   # 24.31 GWh of coal
+print(to_quantity(df, "fuel").sum().to("GWh"))   # 25.08 GWh of coal
 ```
 
 pandas does not keep `attrs` through every operation (for example `groupby`); re-attach
@@ -320,7 +321,7 @@ from energyunits.substance import substance_registry
 print(Quantity.list_dimensions())        # ['AREA', 'CURRENCY', 'ENERGY', 'MASS', 'POWER', 'TIME', 'VOLUME']
 print(Quantity.list_currencies())        # ['CNY', 'EUR', 'GBP', 'JPY', 'USD']
 print("hydrogen" in Quantity.list_substances("hhv"))   # True
-print(substance_registry.get_properties("natural_gas")["lhv"])   # 49.5
+print(substance_registry.get_properties("natural_gas")["lhv"])   # 48.0
 ```
 
 Unit names are also available as constants for autocompletion:
@@ -394,36 +395,57 @@ substances in a sum, combined currency and inflation conversions) are reported a
 | Energy    | `J` `kJ` `MJ` `GJ` `TJ` `PJ` `EJ`, `Wh` `kWh` `MWh` `GWh` `TWh` `PWh`, `BTU` `kBTU` `MMBTU` `therm` `quad`, `kcal` `Mcal` `Gcal`, `toe` `ktoe` `Mtoe`, `tce` `Mtce` |
 | Power     | `W` `kW` `MW` `GW` `TW` |
 | Mass      | `g` `kg` `t` `kt` `Mt` `Gt` `lb` |
-| Volume    | `L` `m3` `bcm`, `barrel` (US oil barrel), `gal` (US gallon), `ft3` `Mcf` `Bcf` |
+| Volume    | `L` `m3` `bcm`, `barrel` (US oil barrel), `gal` (US gallon), `ft3` `Mcf` `Bcf`, `Sm3` (standard, 15 °C), `Nm3` (normal, 0 °C) |
 | Area      | `m2` `km2` `ha` `acre` `ft2` |
 | Time      | `s` `min` `h` `d` `a`/`yr` (8760 h) |
 | Currency  | `USD` `EUR` `GBP` `JPY` `CNY`, each with `k`, `M` and `bn` prefixes (e.g. `kEUR`, `MUSD`, `bnEUR`) |
 
 ### Substances
 
-| Substance      | LHV MJ/kg | HHV MJ/kg | Density kg/m3 | kg CO2/GJ (LHV) |
-|----------------|----------:|----------:|--------------:|----------------:|
-| `coal`         | 25.0 | 26.0 | 833  | 95.0  |
-| `lignite`      | 14.0 | 15.0 | 700  | 101.0 |
-| `bituminous`   | 28.5 | 30.0 | 833  | 94.6  |
-| `anthracite`   | 31.5 | 32.5 | 1000 | 98.3  |
-| `natural_gas`  | 49.5 | 55.0 | 0.75 | 56.1  |
-| `lng`          | 49.5 | 55.0 | 450  | 56.1  |
-| `methane`      | 50.0 | 55.5 | 0.68 | 54.9  |
-| `crude_oil`, `oil` | 42.5 | 45.0 | 870 | 73.3 |
-| `fuel_oil`     | 40.5 | 43.0 | 950  | 77.4  |
-| `diesel`       | 42.8 | 45.7 | 840  | 74.1  |
-| `gasoline`     | 44.0 | 47.3 | 750  | 69.3  |
-| `methanol`     | 19.9 | 22.7 | 795  | 69.1  |
-| `hydrogen`     | 120.0 | 142.0 | 0.09 | 0 |
-| `wood_pellets` | 17.0 | 18.4 | 650  | 0 (biogenic) |
-| `wood_chips`   | 12.2 | 13.9 | 350  | 0 (biogenic) |
+Fuel properties are the IPCC 2006 Tier 1 defaults (net calorific values from Table 1.2,
+CO2 emission factors from Table 1.4) wherever the IPCC defines the fuel; the IPCC
+lower/upper limits are stored with each value.
+
+<!-- BEGIN GENERATED substance-table: edit `energyunits/data/substances.json` and run `python scripts/update_data.py sync` -->
+| Substance | IPCC category | LHV (MJ/kg) | HHV (MJ/kg) | kg CO2/GJ (LHV) | Density (kg/m3) |
+|-----------|---------------|------:|------:|------:|------:|
+| `coal` | Other Bituminous Coal | 25.8 | 27.16 | 94.6 | 833 |
+| `bituminous` | Other Bituminous Coal | 25.8 | 27.16 | 94.6 | 833 |
+| `coking_coal` | Coking Coal | 28.2 | 29.68 | 94.6 | 800 |
+| `sub_bituminous` | Sub-Bituminous Coal | 18.9 | 19.89 | 96.1 | 800 |
+| `anthracite` | Anthracite | 26.7 | 28.11 | 98.3 | 1000 |
+| `lignite` | Lignite | 11.9 | 12.53 | 101.0 | 700 |
+| `peat` | Peat | 9.76 | 10.27 | 106.0 | 350 |
+| `natural_gas` | Natural Gas | 48.0 | 53.33 | 56.1 | 0.74 |
+| `lng` | Natural Gas | 48.0 | 53.33 | 56.1 | 450 |
+| `crude_oil` | Crude Oil | 42.3 | 44.53 | 73.3 | 870 |
+| `oil` | Crude Oil | 42.3 | 44.53 | 73.3 | 870 |
+| `fuel_oil` | Residual Fuel Oil | 40.4 | 42.53 | 77.4 | 950 |
+| `diesel` | Gas/Diesel Oil | 43.0 | 45.26 | 74.1 | 840 |
+| `gasoline` | Motor Gasoline | 44.3 | 46.63 | 69.3 | 750 |
+| `jet_kerosene` | Jet Kerosene | 44.1 | 46.42 | 71.5 | 800 |
+| `lpg` | Liquefied Petroleum Gases | 47.3 | 49.79 | 63.1 | 540 |
+| `wood` | Wood/Wood Waste | 15.6 | 17.1 | 112.0 (biogenic) | – |
+| `wood_pellets` | Wood/Wood Waste | 17.0 | 18.4 | 99.2 (biogenic) | 650 |
+| `wood_chips` | Wood/Wood Waste | 12.2 | 13.9 | 105.2 (biogenic) | 350 |
+| `methane` | – | 50.0 | 55.5 | 54.9 | 0.68 |
+| `hydrogen` | – | 120.0 | 141.8 | 0.0 | 0.0852 |
+| `methanol` | – | 19.9 | 22.7 | 69.1 | 795 |
+<!-- END GENERATED substance-table -->
 
 Further entries: `wind`, `solar`, `hydro`, `nuclear` (no combustion products) and the
-products `CO2`, `H2O`, `ash`. Biomass values are as received (pellets 8 %, chips 30 %
-moisture). Gas densities refer to approximately normal conditions. Sources and
-caveats are documented in
-[DATA_SOURCES.md](https://github.com/0-k/energyunits/blob/master/DATA_SOURCES.md).
+products `CO2`, `H2O`, `ash`. HHVs of IPCC fuels follow the IPCC rule of thumb (NCV 5 %
+below GCV for coal and oil, 10 % for natural gas). Biomass values are as received (pellets
+8 %, chips 30 % moisture). Gas densities refer to 15 °C and 101.325 kPa; use `Nm3` for
+normal cubic metres (0 °C).
+
+**How accurate are the defaults?** CO2 from fuel *energy* reproduces the IPCC Tier 1
+factors exactly, typically within 1-5 % of country-specific values (up to about 10 % for
+lignite). Results that start from fuel *mass* or *volume* also depend on the heating value,
+which varies much more (lignite 5.5-21.6 MJ/kg). The defaults suit energy-system modelling
+and screening, not compliance reporting; CH4, N2O and upstream emissions are not included.
+See [Accuracy and appropriate use](https://github.com/0-k/energyunits/blob/master/DATA_SOURCES.md#accuracy-and-appropriate-use)
+for details and how to load your own factors.
 
 ## Documentation
 

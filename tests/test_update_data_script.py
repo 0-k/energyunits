@@ -27,10 +27,11 @@ def files(ud, tmp_path):
     """A copy of the repository data that the tests may modify."""
     data_dir = tmp_path / "data"
     data_dir.mkdir()
-    for name in ("units", "inflation", "exchange_rates"):
+    for name in ("units", "inflation", "exchange_rates", "substances"):
         shutil.copy(REPO / "energyunits" / "data" / f"{name}.json", data_dir)
     shutil.copy(REPO / "DATA_SOURCES.md", tmp_path)
-    return ud.DataFiles(data_dir, tmp_path / "DATA_SOURCES.md")
+    shutil.copy(REPO / "README.md", tmp_path)
+    return ud.DataFiles(data_dir, tmp_path / "DATA_SOURCES.md", tmp_path / "README.md")
 
 
 def _monthly_csv(series, annual_index, months=12):
@@ -144,7 +145,7 @@ def test_validate_detects_problems(ud, files):
 
 
 def test_command_line(ud, files, capsys):
-    args = ["--data-dir", str(files.data_dir), "--docs", str(files.docs)]
+    args = ["--data-dir", str(files.data_dir), "--docs", str(files.docs), "--readme", str(files.readme)]
     assert ud.main(args + ["check"]) == 0
     assert ud.main(args + ["set", "fx", "eur", str(_next_year(files)), "1.2"]) == 0
     assert ud.main(args + ["check"]) == 1

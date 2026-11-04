@@ -105,26 +105,33 @@ class TestUnitsData:
         assert registry.get_conversion_factor(unit, target) == pytest.approx(expected, rel=1e-12)
 
 
+@pytest.fixture(scope="module")
+def substances():
+    return {k: v for k, v in _load("substances.json").items() if not k.startswith("_")}
+
+
 class TestSubstanceData:
     FIELDS = (
+        "name",
+        "ipcc_category",
+        "source",
         "hhv",
         "lhv",
+        "lhv_range",
         "density",
+        "density_basis",
         "carbon_intensity",
+        "carbon_intensity_range",
         "carbon_content",
         "hydrogen_content",
         "ash_content",
     )
 
-    @pytest.fixture(scope="class")
-    def substances(self):
-        return {k: v for k, v in _load("substances.json").items() if not k.startswith("_")}
-
     def test_all_fields_present(self, substances):
         for name, props in substances.items():
-            assert "name" in props, name
             for field in self.FIELDS:
                 assert field in props, (name, field)
+            assert props["source"], name
 
     def test_heating_values(self, substances):
         for name, props in substances.items():
@@ -139,15 +146,46 @@ class TestSubstanceData:
                 assert 0 <= props[field] <= 1, (name, field)
 
     def test_carbon_content_matches_emission_factor(self, substances):
-        """Stoichiometric CO2 per GJ (LHV) equals the stated emission factor for fossil fuels."""
+        """Stoichiometric CO2 per GJ (LHV) equals the stated emission factor (biogenic CO2 included)."""
         for name, props in substances.items():
-            if props.get("biogenic"):
-                assert props["carbon_intensity"] == 0, name
-                continue
             if props["lhv"] is None or not props["carbon_intensity"]:
                 continue
             kg_co2_per_gj = props["carbon_content"] * 44 / 12 / props["lhv"] * 1000
-            assert kg_co2_per_gj == pytest.approx(props["carbon_intensity"], rel=2e-3), name
+            assert kg_co2_per_gj == pytest.approx(props["carbon_intensity"], rel=1e-3), name
+
+    def test_ipcc_fuels_have_ranges_containing_the_defaults(self, substances):
+        for name, props in substances.items():
+            if props["ipcc_category"] is None:
+                continue
+            for value_field, range_field in (
+                ("lhv", "lhv_range"),
+                ("carbon_intensity", "carbon_intensity_range"),
+            ):
+                low, high = props[range_field]
+                assert low <= props[value_field] <= high, (name, value_field)
+
+    def test_gas_densities_at_standard_conditions(self, substances):
+        for name in ("natural_gas", "methane", "hydrogen", "CO2"):
+            assert "15 °C" in substances[name]["density_basis"], name
+        # natural gas: 35-37 MJ/m3 (NCV) at 15 °C is typical for H-gas
+        assert 35 <= substances["natural_gas"]["density"] * substances["natural_gas"]["lhv"] <= 37
+
+    def test_normal_and_standard_cubic_metres(self):
+        from energyunits import Quantity
+
+        # 1 Nm3 (0 °C) holds 288.15/273.15 times the gas of 1 Sm3 (15 °C); m3 means Sm3
+        assert registry.get_conversion_factor("Nm3", "Sm3") == pytest.approx(288.15 / 273.15, rel=1e-12)
+        assert registry.get_conversion_factor("Sm3", "m3") == 1.0
+        per_nm3 = Quantity(1, "Nm3", "natural_gas").to("MJ").value
+        assert per_nm3 == pytest.approx(0.74 * 48.0 * 288.15 / 273.15)
+        assert 37 <= per_nm3 <= 39  # typical H-gas NCV per normal cubic metre
+
+    def test_us_gas_heat_content(self):
+        """1 Mcf at US standard conditions is about 1.037 MMBtu (HHV, EIA average); allow 3 %."""
+        from energyunits import Quantity
+
+        heat = Quantity(1, "Mcf", "natural_gas").to("MMBTU", basis="HHV").value
+        assert heat == pytest.approx(1.037, rel=0.03)
 
 
 class TestEconomicData:

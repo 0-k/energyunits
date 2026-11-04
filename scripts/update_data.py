@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Maintain the economic data bundled with energyunits.
+"""Maintain the data bundled with energyunits and the tables generated from it.
 
 This is a developer tool. It lives in the repository only, is not part of the
 installed package and needs nothing beyond the Python standard library.
@@ -11,7 +11,8 @@ fetch   Download annual exchange rates (EUR, GBP, JPY, CNY; Federal Reserve G.5A
         data. Nothing is written unless ``--write`` is given.
 set     Set a single value by hand, e.g. inflation rates that are not on FRED.
 sync    Regenerate derived data: the static currency factors in ``units.json``
-        and the generated tables in ``DATA_SOURCES.md``.
+        and the generated tables in ``DATA_SOURCES.md`` and ``README.md``
+        (inflation, exchange rates, fuel properties).
 check   Validate the data and fail if derived data is out of date (runs in CI).
 
 Yearly update, once the annual averages of the previous year are published
@@ -45,6 +46,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_DATA_DIR = REPO / "energyunits" / "data"
 DEFAULT_DOCS = REPO / "DATA_SOURCES.md"
+DEFAULT_README = REPO / "README.md"
 
 FRED_CSV_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
 #: currency -> (FRED series of the G.5A annual average, quoted as units per USD?)
@@ -74,9 +76,12 @@ Change = Tuple[int, Optional[float], float]
 class DataFiles:
     """Locations of the files maintained by this script."""
 
-    def __init__(self, data_dir: Path = DEFAULT_DATA_DIR, docs: Path = DEFAULT_DOCS) -> None:
+    def __init__(
+        self, data_dir: Path = DEFAULT_DATA_DIR, docs: Path = DEFAULT_DOCS, readme: Path = DEFAULT_README
+    ) -> None:
         self.data_dir = Path(data_dir)
         self.docs = Path(docs)
+        self.readme = Path(readme)
 
     def path(self, name: str) -> Path:
         return self.data_dir / f"{name}.json"
@@ -321,6 +326,45 @@ def exchange_rate_table(fx: dict) -> str:
     return "\n".join(lines)
 
 
+def _number(value: Optional[float], fmt: str = "") -> str:
+    """Format a value as written in the data (``48.0`` stays ``48.0``); ``–`` if missing."""
+    if value is None:
+        return "–"
+    return format(value, fmt) if fmt else str(value)
+
+
+def _fuels(substances: dict) -> List[Tuple[str, dict]]:
+    return [(k, v) for k, v in substances.items() if not k.startswith("_") and v.get("lhv") is not None]
+
+
+def fuel_table(substances: dict, with_ranges: bool) -> str:
+    """Markdown table of fuel properties (with IPCC ranges for DATA_SOURCES.md)."""
+    lhv_title, co2_title = ("LHV (MJ/kg) [IPCC range]", "kg CO2/GJ [IPCC range]")
+    if not with_ranges:
+        lhv_title, co2_title = ("LHV (MJ/kg)", "kg CO2/GJ (LHV)")
+    header = f"| Substance | IPCC category | {lhv_title} | HHV (MJ/kg) | {co2_title} | Density (kg/m3) |"
+    lines = [header, "|-----------|---------------|------:|------:|------:|------:|"]
+    for key, props in _fuels(substances):
+        lhv = _number(props["lhv"])
+        co2 = _number(props.get("carbon_intensity"), ".1f")
+        if with_ranges and props.get("lhv_range"):
+            lhv += " [{}–{}]".format(*(_number(v) for v in props["lhv_range"]))
+        if with_ranges and props.get("carbon_intensity_range"):
+            co2 += " [{}–{}]".format(*(_number(v, ".1f") for v in props["carbon_intensity_range"]))
+        if props.get("biogenic"):
+            co2 += " (biogenic)"
+        cells = [
+            f"`{key}`",
+            props.get("ipcc_category") or "–",
+            lhv,
+            _number(props["hhv"]),
+            co2,
+            _number(props.get("density")),
+        ]
+        lines.append("| " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
 def _replace_generated(text: str, name: str, content: str) -> str:
     begin = f"<!-- BEGIN GENERATED {name}"
     end = f"<!-- END GENERATED {name} -->"
@@ -330,29 +374,34 @@ def _replace_generated(text: str, name: str, content: str) -> str:
     return text[:start] + content + "\n" + text[stop:]
 
 
-def derived_outputs(files: DataFiles) -> Tuple[dict, str]:
-    """``units.json`` content and ``DATA_SOURCES.md`` text as ``sync`` would write them."""
+def derived_outputs(files: DataFiles) -> Tuple[dict, str, str]:
+    """``units.json`` content, ``DATA_SOURCES.md`` and ``README.md`` text as ``sync`` would write them."""
     units = files.load("units")
     fx = files.load("exchange_rates")
     inflation = files.load("inflation")
+    substances = files.load("substances")
     units = json.loads(json.dumps(units))
     units["conversion_factors"].update(static_currency_factors(units, fx))
     docs = files.docs.read_text(encoding="utf-8")
     docs = _replace_generated(docs, "inflation-table", inflation_table(inflation))
     docs = _replace_generated(docs, "exchange-rate-table", exchange_rate_table(fx))
-    return units, docs
+    docs = _replace_generated(docs, "fuel-table", fuel_table(substances, with_ranges=True))
+    readme = files.readme.read_text(encoding="utf-8")
+    readme = _replace_generated(readme, "substance-table", fuel_table(substances, with_ranges=False))
+    return units, docs, readme
 
 
 def sync(files: DataFiles) -> List[str]:
     """Write derived data; returns the names of the files that changed."""
-    units, docs = derived_outputs(files)
+    units, docs, readme = derived_outputs(files)
     changed = []
     if units != files.load("units"):
         files.save("units", units)
         changed.append(str(files.path("units")))
-    if docs != files.docs.read_text(encoding="utf-8"):
-        files.docs.write_text(docs, encoding="utf-8")
-        changed.append(str(files.docs))
+    for path, text in ((files.docs, docs), (files.readme, readme)):
+        if text != path.read_text(encoding="utf-8"):
+            path.write_text(text, encoding="utf-8")
+            changed.append(str(path))
     return changed
 
 
@@ -391,11 +440,12 @@ def validate(files: DataFiles) -> List[str]:
         if code in projected and rates and projected[code] > max(int(y) for y in rates) + 1:
             problems.append(f"inflation.json: projected_from of {code} is after the last year")
 
-    units_expected, docs_expected = derived_outputs(files)
+    units_expected, docs_expected, readme_expected = derived_outputs(files)
     if units_expected != units:
         problems.append("units.json: static currency factors are out of date (run `sync`)")
-    if docs_expected != files.docs.read_text(encoding="utf-8"):
-        problems.append(f"{files.docs.name}: generated tables are out of date (run `sync`)")
+    for path, expected in ((files.docs, docs_expected), (files.readme, readme_expected)):
+        if expected != path.read_text(encoding="utf-8"):
+            problems.append(f"{path.name}: generated tables are out of date (run `sync`)")
     return problems
 
 
@@ -408,6 +458,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "--data-dir", type=Path, default=DEFAULT_DATA_DIR, help="directory with the JSON data"
     )
     parser.add_argument("--docs", type=Path, default=DEFAULT_DOCS, help="DATA_SOURCES.md to update")
+    parser.add_argument("--readme", type=Path, default=DEFAULT_README, help="README.md to update")
     commands = parser.add_subparsers(dest="command", required=True)
 
     fetch_parser = commands.add_parser("fetch", help="download FRED data and compare")
@@ -426,7 +477,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     commands.add_parser("check", help="validate data and derived files")
 
     args = parser.parse_args(argv)
-    files = DataFiles(args.data_dir, args.docs)
+    files = DataFiles(args.data_dir, args.docs, args.readme)
 
     if args.command == "fetch":
         try:

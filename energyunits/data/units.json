@@ -1,5 +1,5 @@
 {
-  "_note": "Conversion factors are relative to the SI-coherent base unit of each dimension (J, W, kg, m3, m2, s, USD). Factors of derived dimensions must be coherent with their definition (1 W == 1 J/s). preferred_units are used when a calculation needs to pick a unit (e.g. GJ / h -> MW). Currency factors are static fallbacks equal to the latest annual average in exchange_rates.json; year-specific rates are applied at runtime.",
+  "_note": "Conversion factors are relative to the SI-coherent base unit of each dimension (J, W, kg, m3, m2, s, USD). Factors of derived dimensions must be coherent with their definition (1 W == 1 J/s). preferred_units are used when a calculation needs to pick a unit (e.g. GJ / h -> MW). Currency factors are static fallbacks equal to the latest annual average in exchange_rates.json; year-specific rates are applied at runtime. Gas volumes: densities of gases refer to 15 °C and 101.325 kPa, so for gases m3 == Sm3; Nm3 (0 °C) is the amount of gas that occupies 288.15/273.15 m3 at 15 °C (ideal gas).",
   "dimensions": {
     "J": "ENERGY",
     "kJ": "ENERGY",
@@ -41,6 +41,8 @@
     "lb": "MASS",
     "L": "VOLUME",
     "m3": "VOLUME",
+    "Sm3": "VOLUME",
+    "Nm3": "VOLUME",
     "bcm": "VOLUME",
     "barrel": "VOLUME",
     "gal": "VOLUME",
@@ -120,6 +122,8 @@
     "lb": 0.45359237,
     "L": 0.001,
     "m3": 1.0,
+    "Sm3": 1.0,
+    "Nm3": 1.0549148819330039,
     "bcm": 1000000000.0,
     "barrel": 0.158987294928,
     "gal": 0.003785411784,

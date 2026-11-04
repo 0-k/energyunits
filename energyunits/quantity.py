@@ -217,7 +217,7 @@ class Quantity:
 
         Examples:
             Quantity(100, "MWh").to("GJ")                        # 360 GJ
-            Quantity(1000, "kg", "coal").to("MWh")               # 6.94 MWh (LHV)
+            Quantity(1000, "kg", "coal").to("MWh")               # 7.17 MWh (LHV)
             Quantity(1000, "kg", "coal").to("kg", substance="CO2")
             Quantity(1000, "USD/kW", reference_year=2020).to(reference_year=2025)
             Quantity(50, "EUR/MWh", reference_year=2015).to("USD/MWh", reference_year=2024)

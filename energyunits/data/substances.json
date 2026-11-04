@@ -2,251 +2,578 @@
   "_metadata": {
     "description": "Fuel and material properties used for substance-aware conversions.",
     "fields": {
+      "ipcc_category": "Fuel category of the 2006 IPCC Guidelines (Vol. 2, Ch. 1) the values belong to",
+      "source": "Where the values come from",
+      "lhv": "Lower heating value (net calorific value, NCV) in MJ/kg",
+      "lhv_range": "IPCC lower and upper limit of the 95 % confidence interval of the NCV, MJ/kg",
       "hhv": "Higher heating value (gross calorific value) in MJ/kg",
-      "lhv": "Lower heating value (net calorific value) in MJ/kg",
-      "density": "Density in kg/m3 (bulk density for solids, normal conditions for gases)",
-      "carbon_intensity": "Direct CO2 emission factor in kg CO2 per GJ (LHV basis). 0 for biogenic fuels by IPCC accounting convention",
+      "carbon_intensity": "CO2 emission factor in kg CO2 per GJ (NCV basis), assuming complete oxidation. For biogenic fuels this is the physical (biogenic) CO2",
+      "carbon_intensity_range": "IPCC lower and upper limit of the emission factor, kg CO2/GJ",
       "carbon_content": "Carbon mass fraction (kg C per kg fuel), used for stoichiometric CO2",
-      "hydrogen_content": "Hydrogen mass fraction (kg H per kg fuel), used for H2O",
-      "ash_content": "Ash mass fraction (kg ash per kg fuel)",
-      "biogenic": "True if the carbon is of biogenic origin (CO2 is physical, but usually reported as zero)",
-      "moisture_content": "Moisture mass fraction of the as-received fuel (biomass)"
+      "hydrogen_content": "Hydrogen mass fraction (kg H per kg fuel), used for H2O (indicative)",
+      "ash_content": "Ash mass fraction (kg ash per kg fuel), indicative",
+      "moisture_content": "Moisture mass fraction of the as-received fuel",
+      "density": "Density in kg/m3, see density_basis",
+      "density_basis": "Reference state of the density",
+      "biogenic": "True if the CO2 is biogenic; IPCC reports it separately (memo item)"
     },
-    "consistency": "For fossil fuels, carbon_content = carbon_intensity * lhv / 1000 * 12/44, so that stoichiometric CO2 reproduces the IPCC 2006 default emission factors exactly.",
-    "sources": "IPCC 2006 Guidelines Vol. 2 (Tables 1.2-1.4), IEA, EPA; see DATA_SOURCES.md"
+    "consistency": "carbon_content = carbon_intensity * lhv / 1000 * 12/44, so that CO2 computed from fuel energy reproduces carbon_intensity exactly (for IPCC fuels: the IPCC Tier 1 default).",
+    "heating_values": "IPCC publishes NCVs only. HHVs of IPCC fuels follow the IPCC rule of thumb (NCV about 5 % below GCV for coal and oil, about 10 % for natural gas).",
+    "gas_reference_conditions": "Gas densities refer to 15 °C and 101.325 kPa; m3 of a gas therefore means a standard cubic metre (Sm3). Use the unit Nm3 for volumes at 0 °C."
   },
   "coal": {
-    "name": "Coal (generic)",
-    "hhv": 26.0,
-    "lhv": 25.0,
-    "density": 833,
-    "carbon_intensity": 95.0,
-    "carbon_content": 0.6477,
+    "name": "Coal (steam coal; IPCC other bituminous coal)",
+    "ipcc_category": "Other Bituminous Coal",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 25.8,
+    "lhv_range": [
+      19.9,
+      30.5
+    ],
+    "hhv": 27.16,
+    "carbon_intensity": 94.6,
+    "carbon_intensity_range": [
+      89.5,
+      99.7
+    ],
+    "carbon_content": 0.66564,
     "hydrogen_content": 0.05,
-    "ash_content": 0.1
-  },
-  "lignite": {
-    "name": "Lignite Coal",
-    "hhv": 15.0,
-    "lhv": 14.0,
-    "density": 700,
-    "carbon_intensity": 101.0,
-    "carbon_content": 0.3856,
-    "hydrogen_content": 0.04,
-    "ash_content": 0.15
+    "ash_content": 0.1,
+    "density": 833,
+    "density_basis": "bulk density, indicative (varies with size and moisture)"
   },
   "bituminous": {
-    "name": "Bituminous Coal",
-    "hhv": 30.0,
-    "lhv": 28.5,
-    "density": 833,
+    "name": "Other bituminous coal (steam coal)",
+    "ipcc_category": "Other Bituminous Coal",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 25.8,
+    "lhv_range": [
+      19.9,
+      30.5
+    ],
+    "hhv": 27.16,
     "carbon_intensity": 94.6,
-    "carbon_content": 0.7353,
+    "carbon_intensity_range": [
+      89.5,
+      99.7
+    ],
+    "carbon_content": 0.66564,
     "hydrogen_content": 0.05,
-    "ash_content": 0.08
+    "ash_content": 0.1,
+    "density": 833,
+    "density_basis": "bulk density, indicative (varies with size and moisture)"
+  },
+  "coking_coal": {
+    "name": "Coking coal",
+    "ipcc_category": "Coking Coal",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 28.2,
+    "lhv_range": [
+      24.0,
+      31.0
+    ],
+    "hhv": 29.68,
+    "carbon_intensity": 94.6,
+    "carbon_intensity_range": [
+      87.3,
+      101.0
+    ],
+    "carbon_content": 0.72756,
+    "hydrogen_content": 0.045,
+    "ash_content": 0.09,
+    "density": 800,
+    "density_basis": "bulk density, indicative (varies with size and moisture)"
+  },
+  "sub_bituminous": {
+    "name": "Sub-bituminous coal",
+    "ipcc_category": "Sub-Bituminous Coal",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 18.9,
+    "lhv_range": [
+      11.5,
+      26.0
+    ],
+    "hhv": 19.89,
+    "carbon_intensity": 96.1,
+    "carbon_intensity_range": [
+      92.8,
+      100.0
+    ],
+    "carbon_content": 0.495352,
+    "hydrogen_content": 0.035,
+    "ash_content": 0.07,
+    "density": 800,
+    "density_basis": "bulk density, indicative (varies with size and moisture)"
   },
   "anthracite": {
-    "name": "Anthracite Coal",
-    "hhv": 32.5,
-    "lhv": 31.5,
-    "density": 1000,
+    "name": "Anthracite",
+    "ipcc_category": "Anthracite",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 26.7,
+    "lhv_range": [
+      21.6,
+      32.2
+    ],
+    "hhv": 28.11,
     "carbon_intensity": 98.3,
-    "carbon_content": 0.8445,
+    "carbon_intensity_range": [
+      94.6,
+      101.0
+    ],
+    "carbon_content": 0.715803,
     "hydrogen_content": 0.04,
-    "ash_content": 0.05
+    "ash_content": 0.05,
+    "density": 1000,
+    "density_basis": "bulk density, indicative (varies with size and moisture)"
+  },
+  "lignite": {
+    "name": "Lignite (brown coal)",
+    "ipcc_category": "Lignite",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 11.9,
+    "lhv_range": [
+      5.5,
+      21.6
+    ],
+    "hhv": 12.53,
+    "carbon_intensity": 101.0,
+    "carbon_intensity_range": [
+      90.9,
+      115.0
+    ],
+    "carbon_content": 0.327791,
+    "hydrogen_content": 0.04,
+    "ash_content": 0.15,
+    "density": 700,
+    "density_basis": "bulk density, indicative (varies with size and moisture)"
+  },
+  "peat": {
+    "name": "Peat",
+    "ipcc_category": "Peat",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 9.76,
+    "lhv_range": [
+      7.8,
+      12.5
+    ],
+    "hhv": 10.27,
+    "carbon_intensity": 106.0,
+    "carbon_intensity_range": [
+      100.0,
+      108.0
+    ],
+    "carbon_content": 0.282153,
+    "hydrogen_content": 0.03,
+    "ash_content": 0.04,
+    "density": 350,
+    "density_basis": "bulk density, indicative (varies with size and moisture)"
   },
   "natural_gas": {
-    "name": "Natural Gas",
-    "hhv": 55.0,
-    "lhv": 49.5,
-    "density": 0.75,
+    "name": "Natural gas",
+    "ipcc_category": "Natural Gas",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 10 % below GCV)",
+    "lhv": 48.0,
+    "lhv_range": [
+      46.5,
+      50.4
+    ],
+    "hhv": 53.33,
     "carbon_intensity": 56.1,
-    "carbon_content": 0.7574,
+    "carbon_intensity_range": [
+      54.3,
+      58.3
+    ],
+    "carbon_content": 0.7344,
     "hydrogen_content": 0.25,
-    "ash_content": 0.0
+    "ash_content": 0.0,
+    "density": 0.74,
+    "density_basis": "gas at 15 °C and 101.325 kPa (ISO 13443 standard reference conditions)"
   },
   "lng": {
-    "name": "Liquefied Natural Gas",
-    "hhv": 55.0,
-    "lhv": 49.5,
-    "density": 450,
+    "name": "Liquefied natural gas",
+    "ipcc_category": "Natural Gas",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 10 % below GCV)",
+    "lhv": 48.0,
+    "lhv_range": [
+      46.5,
+      50.4
+    ],
+    "hhv": 53.33,
     "carbon_intensity": 56.1,
-    "carbon_content": 0.7574,
+    "carbon_intensity_range": [
+      54.3,
+      58.3
+    ],
+    "carbon_content": 0.7344,
     "hydrogen_content": 0.25,
-    "ash_content": 0.0
-  },
-  "methane": {
-    "name": "Methane",
-    "hhv": 55.5,
-    "lhv": 50.0,
-    "density": 0.68,
-    "carbon_intensity": 54.9,
-    "carbon_content": 0.7487,
-    "hydrogen_content": 0.2513,
-    "ash_content": 0.0
+    "ash_content": 0.0,
+    "density": 450,
+    "density_basis": "liquid at about -162 °C"
   },
   "crude_oil": {
-    "name": "Crude Oil",
-    "hhv": 45.0,
-    "lhv": 42.5,
-    "density": 870,
+    "name": "Crude oil",
+    "ipcc_category": "Crude Oil",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 42.3,
+    "lhv_range": [
+      40.1,
+      44.8
+    ],
+    "hhv": 44.53,
     "carbon_intensity": 73.3,
-    "carbon_content": 0.8496,
+    "carbon_intensity_range": [
+      71.1,
+      75.5
+    ],
+    "carbon_content": 0.845615,
     "hydrogen_content": 0.13,
-    "ash_content": 0.001
+    "ash_content": 0.001,
+    "density": 870,
+    "density_basis": "liquid at 15 °C (typical)"
   },
   "oil": {
-    "name": "Oil (generic)",
-    "hhv": 45.0,
-    "lhv": 42.5,
-    "density": 870,
+    "name": "Oil (crude oil)",
+    "ipcc_category": "Crude Oil",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 42.3,
+    "lhv_range": [
+      40.1,
+      44.8
+    ],
+    "hhv": 44.53,
     "carbon_intensity": 73.3,
-    "carbon_content": 0.8496,
+    "carbon_intensity_range": [
+      71.1,
+      75.5
+    ],
+    "carbon_content": 0.845615,
     "hydrogen_content": 0.13,
-    "ash_content": 0.001
+    "ash_content": 0.001,
+    "density": 870,
+    "density_basis": "liquid at 15 °C (typical)"
   },
   "fuel_oil": {
-    "name": "Heavy Fuel Oil",
-    "hhv": 43.0,
-    "lhv": 40.5,
-    "density": 950,
+    "name": "Heavy fuel oil (residual fuel oil)",
+    "ipcc_category": "Residual Fuel Oil",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 40.4,
+    "lhv_range": [
+      39.8,
+      41.7
+    ],
+    "hhv": 42.53,
     "carbon_intensity": 77.4,
-    "carbon_content": 0.8549,
+    "carbon_intensity_range": [
+      75.5,
+      78.8
+    ],
+    "carbon_content": 0.852807,
     "hydrogen_content": 0.11,
-    "ash_content": 0.005
+    "ash_content": 0.005,
+    "density": 950,
+    "density_basis": "liquid at 15 °C (typical)"
   },
   "diesel": {
-    "name": "Diesel",
-    "hhv": 45.7,
-    "lhv": 42.8,
-    "density": 840,
+    "name": "Diesel (gas/diesel oil)",
+    "ipcc_category": "Gas/Diesel Oil",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 43.0,
+    "lhv_range": [
+      41.4,
+      43.3
+    ],
+    "hhv": 45.26,
     "carbon_intensity": 74.1,
-    "carbon_content": 0.8649,
+    "carbon_intensity_range": [
+      72.6,
+      74.8
+    ],
+    "carbon_content": 0.868991,
     "hydrogen_content": 0.14,
-    "ash_content": 0.0
+    "ash_content": 0.0,
+    "density": 840,
+    "density_basis": "liquid at 15 °C (typical)"
   },
   "gasoline": {
-    "name": "Gasoline",
-    "hhv": 47.3,
-    "lhv": 44.0,
-    "density": 750,
+    "name": "Gasoline (motor gasoline)",
+    "ipcc_category": "Motor Gasoline",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 44.3,
+    "lhv_range": [
+      42.5,
+      44.8
+    ],
+    "hhv": 46.63,
     "carbon_intensity": 69.3,
-    "carbon_content": 0.8316,
+    "carbon_intensity_range": [
+      67.5,
+      73.0
+    ],
+    "carbon_content": 0.83727,
     "hydrogen_content": 0.15,
-    "ash_content": 0.0
+    "ash_content": 0.0,
+    "density": 750,
+    "density_basis": "liquid at 15 °C (typical)"
+  },
+  "jet_kerosene": {
+    "name": "Jet kerosene",
+    "ipcc_category": "Jet Kerosene",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 44.1,
+    "lhv_range": [
+      42.0,
+      45.0
+    ],
+    "hhv": 46.42,
+    "carbon_intensity": 71.5,
+    "carbon_intensity_range": [
+      69.7,
+      74.4
+    ],
+    "carbon_content": 0.85995,
+    "hydrogen_content": 0.14,
+    "ash_content": 0.0,
+    "density": 800,
+    "density_basis": "liquid at 15 °C (typical)"
+  },
+  "lpg": {
+    "name": "Liquefied petroleum gas",
+    "ipcc_category": "Liquefied Petroleum Gases",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV from the IPCC rule of thumb (NCV about 5 % below GCV)",
+    "lhv": 47.3,
+    "lhv_range": [
+      44.8,
+      52.2
+    ],
+    "hhv": 49.79,
+    "carbon_intensity": 63.1,
+    "carbon_intensity_range": [
+      61.6,
+      65.6
+    ],
+    "carbon_content": 0.81399,
+    "hydrogen_content": 0.18,
+    "ash_content": 0.0,
+    "density": 540,
+    "density_basis": "liquid at 15 °C under pressure (propane/butane mix)"
+  },
+  "wood": {
+    "name": "Wood / wood waste (IPCC default)",
+    "ipcc_category": "Wood/Wood Waste",
+    "source": "IPCC 2006 Guidelines Vol. 2 Ch. 1, Tables 1.2 (NCV) and 1.4 (CO2 EF), default values; HHV estimated for 20 % moisture (no IPCC value). The IPCC NCV and EF are independent averages, so mass-based results are indicative",
+    "lhv": 15.6,
+    "lhv_range": [
+      7.9,
+      31.0
+    ],
+    "hhv": 17.1,
+    "carbon_intensity": 112.0,
+    "carbon_intensity_range": [
+      95.0,
+      132.0
+    ],
+    "carbon_content": 0.476509,
+    "hydrogen_content": 0.048,
+    "ash_content": 0.01,
+    "density": null,
+    "density_basis": null,
+    "biogenic": true,
+    "moisture_content": 0.2
   },
   "wood_pellets": {
-    "name": "Wood Pellets (as received, 8 % moisture)",
-    "hhv": 18.4,
+    "name": "Wood pellets (as received, 8 % moisture)",
+    "ipcc_category": "Wood/Wood Waste",
+    "source": "ENplus A1 quality pellets; composition-based, within the IPCC 2006 range for Wood/Wood Waste",
     "lhv": 17.0,
-    "density": 650,
-    "carbon_intensity": 0,
+    "lhv_range": [
+      7.9,
+      31.0
+    ],
+    "hhv": 18.4,
+    "carbon_intensity": 99.2,
+    "carbon_intensity_range": [
+      95.0,
+      132.0
+    ],
     "carbon_content": 0.46,
     "hydrogen_content": 0.055,
     "ash_content": 0.0092,
     "moisture_content": 0.08,
+    "density": 650,
+    "density_basis": "bulk density, indicative (varies with size and moisture)",
     "biogenic": true
   },
   "wood_chips": {
-    "name": "Wood Chips (as received, 30 % moisture)",
-    "hhv": 13.9,
+    "name": "Wood chips (as received, 30 % moisture)",
+    "ipcc_category": "Wood/Wood Waste",
+    "source": "wood chips, moisture class M30; composition-based, within the IPCC 2006 range for Wood/Wood Waste",
     "lhv": 12.2,
-    "density": 350,
-    "carbon_intensity": 0,
+    "lhv_range": [
+      7.9,
+      31.0
+    ],
+    "hhv": 13.9,
+    "carbon_intensity": 105.2,
+    "carbon_intensity_range": [
+      95.0,
+      132.0
+    ],
     "carbon_content": 0.35,
     "hydrogen_content": 0.042,
     "ash_content": 0.014,
     "moisture_content": 0.3,
+    "density": 350,
+    "density_basis": "bulk density, indicative (varies with size and moisture)",
     "biogenic": true
   },
-  "wind": {
-    "name": "Wind Energy",
-    "hhv": null,
-    "lhv": null,
-    "density": null,
-    "carbon_intensity": 0,
-    "carbon_content": 0.0,
-    "hydrogen_content": 0.0,
-    "ash_content": 0.0
-  },
-  "solar": {
-    "name": "Solar Energy",
-    "hhv": null,
-    "lhv": null,
-    "density": null,
-    "carbon_intensity": 0,
-    "carbon_content": 0.0,
-    "hydrogen_content": 0.0,
-    "ash_content": 0.0
-  },
-  "hydro": {
-    "name": "Hydro Energy",
-    "hhv": null,
-    "lhv": null,
-    "density": null,
-    "carbon_intensity": 0,
-    "carbon_content": 0.0,
-    "hydrogen_content": 0.0,
-    "ash_content": 0.0
-  },
-  "nuclear": {
-    "name": "Nuclear Energy",
-    "hhv": null,
-    "lhv": null,
-    "density": null,
-    "carbon_intensity": 0,
-    "carbon_content": 0.0,
-    "hydrogen_content": 0.0,
-    "ash_content": 0.0
+  "methane": {
+    "name": "Methane (pure)",
+    "ipcc_category": null,
+    "source": "thermochemical properties of CH4",
+    "lhv": 50.0,
+    "lhv_range": null,
+    "hhv": 55.5,
+    "carbon_intensity": 54.9,
+    "carbon_intensity_range": null,
+    "carbon_content": 0.7487,
+    "hydrogen_content": 0.2513,
+    "ash_content": 0.0,
+    "density": 0.68,
+    "density_basis": "gas at 15 °C and 101.325 kPa (ISO 13443 standard reference conditions)"
   },
   "hydrogen": {
     "name": "Hydrogen",
-    "hhv": 142.0,
+    "ipcc_category": null,
+    "source": "thermochemical properties of H2",
     "lhv": 120.0,
-    "density": 0.09,
+    "lhv_range": null,
+    "hhv": 141.8,
     "carbon_intensity": 0,
+    "carbon_intensity_range": null,
     "carbon_content": 0.0,
     "hydrogen_content": 1.0,
-    "ash_content": 0.0
+    "ash_content": 0.0,
+    "density": 0.0852,
+    "density_basis": "gas at 15 °C and 101.325 kPa (ISO 13443 standard reference conditions)"
   },
   "methanol": {
     "name": "Methanol",
-    "hhv": 22.7,
+    "ipcc_category": null,
+    "source": "thermochemical properties of CH3OH",
     "lhv": 19.9,
-    "density": 795,
+    "lhv_range": null,
+    "hhv": 22.7,
     "carbon_intensity": 69.1,
+    "carbon_intensity_range": null,
     "carbon_content": 0.3749,
     "hydrogen_content": 0.1258,
-    "ash_content": 0.0
+    "ash_content": 0.0,
+    "density": 795,
+    "density_basis": "liquid at 15 °C (typical)"
+  },
+  "wind": {
+    "name": "Wind energy",
+    "ipcc_category": null,
+    "source": "no combustion products",
+    "lhv": null,
+    "lhv_range": null,
+    "hhv": null,
+    "carbon_intensity": 0,
+    "carbon_intensity_range": null,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.0,
+    "ash_content": 0.0,
+    "density": null,
+    "density_basis": null
+  },
+  "solar": {
+    "name": "Solar energy",
+    "ipcc_category": null,
+    "source": "no combustion products",
+    "lhv": null,
+    "lhv_range": null,
+    "hhv": null,
+    "carbon_intensity": 0,
+    "carbon_intensity_range": null,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.0,
+    "ash_content": 0.0,
+    "density": null,
+    "density_basis": null
+  },
+  "hydro": {
+    "name": "Hydro energy",
+    "ipcc_category": null,
+    "source": "no combustion products",
+    "lhv": null,
+    "lhv_range": null,
+    "hhv": null,
+    "carbon_intensity": 0,
+    "carbon_intensity_range": null,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.0,
+    "ash_content": 0.0,
+    "density": null,
+    "density_basis": null
+  },
+  "nuclear": {
+    "name": "Nuclear energy",
+    "ipcc_category": null,
+    "source": "no combustion products",
+    "lhv": null,
+    "lhv_range": null,
+    "hhv": null,
+    "carbon_intensity": 0,
+    "carbon_intensity_range": null,
+    "carbon_content": 0.0,
+    "hydrogen_content": 0.0,
+    "ash_content": 0.0,
+    "density": null,
+    "density_basis": null
   },
   "CO2": {
-    "name": "Carbon Dioxide",
-    "hhv": null,
+    "name": "Carbon dioxide",
+    "ipcc_category": null,
+    "source": "combustion product",
     "lhv": null,
-    "density": 1.98,
+    "lhv_range": null,
+    "hhv": null,
     "carbon_intensity": 0.0,
-    "carbon_content": 0.273,
+    "carbon_intensity_range": null,
+    "carbon_content": 0.2729,
     "hydrogen_content": 0.0,
-    "ash_content": 0.0
+    "ash_content": 0.0,
+    "density": 1.87,
+    "density_basis": "gas at 15 °C and 101.325 kPa (ISO 13443 standard reference conditions)"
   },
   "H2O": {
     "name": "Water",
-    "hhv": null,
+    "ipcc_category": null,
+    "source": "combustion product",
     "lhv": null,
-    "density": 1000,
+    "lhv_range": null,
+    "hhv": null,
     "carbon_intensity": 0.0,
+    "carbon_intensity_range": null,
     "carbon_content": 0.0,
-    "hydrogen_content": 0.111,
-    "ash_content": 0.0
+    "hydrogen_content": 0.1119,
+    "ash_content": 0.0,
+    "density": 1000,
+    "density_basis": "liquid"
   },
   "ash": {
     "name": "Ash",
-    "hhv": null,
+    "ipcc_category": null,
+    "source": "combustion product",
     "lhv": null,
-    "density": 1500,
+    "lhv_range": null,
+    "hhv": null,
     "carbon_intensity": 0.0,
+    "carbon_intensity_range": null,
     "carbon_content": 0.0,
     "hydrogen_content": 0.0,
-    "ash_content": 1.0
+    "ash_content": 1.0,
+    "density": 1500,
+    "density_basis": "bulk density, indicative (varies with size and moisture)"
   }
 }

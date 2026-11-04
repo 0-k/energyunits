@@ -62,6 +62,8 @@ lb = "lb"  # avoirdupois pound
 # Volume
 L = "L"
 m3 = "m3"
+Sm3 = "Sm3"  # standard cubic metre of gas (15 °C, 101.325 kPa)
+Nm3 = "Nm3"  # normal cubic metre of gas (0 °C, 101.325 kPa)
 bcm = "bcm"  # billion cubic metres
 barrel = "barrel"  # US oil barrel (42 US gal)
 gal = "gal"  # US gallon
@@ -147,6 +149,8 @@ __all__ = [
     "lb",
     "L",
     "m3",
+    "Sm3",
+    "Nm3",
     "bcm",
     "barrel",
     "gal",
