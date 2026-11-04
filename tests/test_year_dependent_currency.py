@@ -47,8 +47,8 @@ class TestYearDependentExchangeRates:
 
     def test_missing_year_error(self):
         """Test error when requesting unavailable year."""
-        with pytest.raises(ValueError, match="No exchange rate data for EUR in year 2009"):
-            exchange_rate_registry.get_exchange_rate("EUR", 2009)
+        with pytest.raises(ValueError, match="No exchange rate data for EUR in year 1999"):
+            exchange_rate_registry.get_exchange_rate("EUR", 1999)
 
     def test_unsupported_currency_error(self):
         """Test error for unsupported currency."""

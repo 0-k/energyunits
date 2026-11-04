@@ -393,6 +393,16 @@ multiplies by the product of `(1 + rate/100)` for all years after A up to B.
 
 | Year | USD | EUR | GBP | JPY | CNY |
 |------|----:|----:|----:|----:|----:|
+| 2000 | 3.36 | 2.20 | 0.80 | -0.70 | 0.40 |
+| 2001 | 2.85 | 2.40 | 1.20 | -0.70 | 0.70 |
+| 2002 | 1.58 | 2.30 | 1.30 | -0.90 | -0.80 |
+| 2003 | 2.28 | 2.10 | 1.40 | -0.30 | 1.20 |
+| 2004 | 2.66 | 2.20 | 1.30 | 0.00 | 3.90 |
+| 2005 | 3.39 | 2.20 | 2.10 | -0.30 | 1.80 |
+| 2006 | 3.23 | 2.20 | 2.30 | 0.30 | 1.50 |
+| 2007 | 2.85 | 2.10 | 2.30 | 0.00 | 4.80 |
+| 2008 | 3.84 | 3.30 | 3.60 | 1.40 | 5.90 |
+| 2009 | -0.36 | 0.30 | 2.20 | -1.40 | -0.70 |
 | 2010 | 1.64 | 1.60 | 3.30 | -0.70 | 3.30 |
 | 2011 | 3.16 | 2.70 | 4.50 | -0.30 | 5.40 |
 | 2012 | 2.07 | 2.50 | 2.80 | 0.00 | 2.60 |
@@ -426,7 +436,9 @@ Notes:
   annual average, which excludes October 2025 (no data collection during the
   federal funding lapse).
 - Values are rounded to 0.1 percentage points for EUR, GBP, JPY and CNY and to
-  0.01 for USD. Earlier versions of this library contained errors for USD 2010,
+  0.01 for USD. Values for 2000-2009 were cross-checked against secondary
+  compilations (World Bank, OBR) and agree within 0.1 percentage points; the euro area
+  aggregate refers to the changing composition of the euro area in each year. Earlier versions of this library contained errors for USD 2010,
   2011 and 2014 (2014 was listed as 0.12 % instead of 1.62 %) and preliminary
   estimates for 2024.
 
@@ -439,6 +451,16 @@ Fed quotes as units per US dollar, are stored as the inverse of the values below
 
 | Year | EUR (USD per EUR) | GBP (USD per GBP) | JPY (JPY per USD) | CNY (CNY per USD) |
 |------|------------------:|------------------:|------------------:|------------------:|
+| 2000 | 0.9232 | 1.5156 | 107.8 | 8.2784 |
+| 2001 | 0.8952 | 1.4396 | 121.57 | 8.277 |
+| 2002 | 0.9454 | 1.5025 | 125.22 | 8.2771 |
+| 2003 | 1.1321 | 1.6347 | 115.94 | 8.2772 |
+| 2004 | 1.2438 | 1.8330 | 108.15 | 8.2768 |
+| 2005 | 1.2449 | 1.8204 | 110.11 | 8.1936 |
+| 2006 | 1.2563 | 1.8434 | 116.31 | 7.9723 |
+| 2007 | 1.3711 | 2.0020 | 117.76 | 7.6058 |
+| 2008 | 1.4726 | 1.8545 | 103.39 | 6.9477 |
+| 2009 | 1.3935 | 1.5661 | 93.68 | 6.8307 |
 | 2010 | 1.3261 | 1.5465 | 87.78 | 6.7696 |
 | 2011 | 1.3931 | 1.6039 | 79.7 | 6.463 |
 | 2012 | 1.2859 | 1.5852 | 79.82 | 6.3093 |
@@ -464,7 +486,7 @@ occasionally revises historical averages by a few units in the fourth decimal.
 - A quantity with a `reference_year` is converted with the rate of that year.
 - Without a reference year, the most recent year (2025) is used.
 - For years after the most recent available year, the most recent rate is used and
-  an `EnergyUnitsWarning` is emitted. Years before 2010 raise `MissingDataError`.
+  an `EnergyUnitsWarning` is emitted. Years before 2000 raise `MissingDataError`.
 - The static currency factors in `units.json` equal the most recent annual averages;
   they are used by `registry.get_conversion_factor()` and for currencies without
   year-dependent data.
@@ -494,8 +516,8 @@ spreads and fees, and the CNY is a managed currency.
 ## Version History
 
 - **2026-11 (v0.3.0):** exchange rates replaced by Federal Reserve G.5A annual
-  averages (2010-2025); inflation data corrected (USD 2010/2011/2014) and extended
-  with 2024/2025 actuals and GBP, JPY, CNY series; projections set to the 2 %
+  averages (2000-2025); inflation data corrected (USD 2010/2011/2014) and extended
+  with 2000-2009, 2024/2025 actuals and GBP, JPY, CNY series; projections set to the 2 %
   target and flagged; fossil fuel carbon contents made consistent with the IPCC
   emission factors; exact unit definitions for barrel and BTU-based units; new units
   (toe, tce, Gcal, therm, quad, bcm, Mcf, lb, kt, ...).

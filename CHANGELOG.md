@@ -76,7 +76,7 @@ listed under "Fixed" should be re-checked.
 - Units: `BTU`, `therm`, `quad`, `kcal`, `Mcal`, `Gcal`, `toe`, `ktoe`, `Mtoe`, `tce`,
   `Mtce`, `kt`, `lb`, `bcm`, `gal`, `ft3`, `Mcf`, `Bcf`, `d`, `yr`, and prefixed
   currencies (`kEUR`, `MEUR`, `bnEUR`, ... for USD, EUR, GBP, JPY, CNY).
-- Inflation data for GBP, JPY and CNY.
+- Inflation data for GBP, JPY and CNY; inflation and exchange rates from 2000.
 - `Quantity`: unary minus/plus, `abs()`, `sum()` support, `number / quantity`,
   indexing, iteration, `len()`, `.sum()`/`.mean()`/`.min()`/`.max()`, `.shape`,
   `.copy()`, `.is_compatible()`, `float()` for dimensionless quantities, format
@@ -91,10 +91,10 @@ listed under "Fixed" should be re-checked.
   smoke test in CI; publishing checks the release tag against the version.
 
 ### Data
-- **Exchange rates** replaced by Federal Reserve G.5A annual averages 2010-2025
-  (2024 and 2025 are now actual values).
+- **Exchange rates** replaced by Federal Reserve G.5A annual averages, extended to
+  2000-2025 (2024 and 2025 are now actual values).
 - **Inflation**: corrected USD values (2010, 2011, and 2014, which was 0.12 % instead
-  of 1.62 %), 2024 and 2025 actuals for USD and EUR, new GBP/JPY/CNY series;
+  of 1.62 %), 2024 and 2025 actuals, extended back to 2000, new GBP/JPY/CNY series;
   2026-2030 are now explicit placeholders at the 2 % target and emit a warning.
 - **Carbon contents** of fossil fuels are now consistent with the IPCC 2006
   emission factors stored in `carbon_intensity` (coal emitted 110 instead of

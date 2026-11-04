@@ -245,9 +245,9 @@ print(Quantity(100, "USD", reference_year=2015) + Quantity(100, "USD", reference
 Data coverage:
 
 - **Inflation**: USD (BLS CPI-U), EUR (Eurostat HICP), GBP (ONS CPI), JPY and CNY
-  (national CPI), historical 2010-2025. Rates for 2026-2030 are placeholders at the
+  (national CPI), historical 2000-2025. Rates for 2026-2030 are placeholders at the
   2 % central bank target and trigger a warning when used.
-- **Exchange rates**: annual averages 2010-2025 from the Federal Reserve G.5A release.
+- **Exchange rates**: annual averages 2000-2025 from the Federal Reserve G.5A release.
   Later years use the most recent rate, with a warning. Without a reference year the
   most recent rate is used.
 

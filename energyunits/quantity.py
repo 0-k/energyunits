@@ -550,6 +550,9 @@ class Quantity:
     def __abs__(self) -> "Quantity":
         return self._with_value(np.abs(self.value))
 
+    def __round__(self, ndigits: Optional[int] = None) -> "Quantity":
+        return self._with_value(np.round(self.value, ndigits or 0))
+
     def _multiply_or_divide(self, other: "Quantity", multiply: bool) -> "Quantity":
         unit, numerator, denominator = registry.combine_units(self.unit, other.unit, 1 if multiply else -1)
         value = self.value * other.value if multiply else self.value / other.value

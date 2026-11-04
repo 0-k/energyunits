@@ -135,6 +135,7 @@ class UnitRegistry:
             UnitRegistry.get_dimension,
             UnitRegistry.unit_factor,
             UnitRegistry.get_conversion_factor,
+            UnitRegistry.combine_units,
         ):
             method.cache_clear()
 
@@ -446,6 +447,7 @@ class UnitRegistry:
         unit, numerator, denominator = self.combine_units(unit1, unit2, -1)
         return unit, numerator / denominator
 
+    @lru_cache(maxsize=4096)
     def combine_units(self, unit1: str, unit2: str, sign: int) -> Tuple[str, float, float]:
         """Unit of ``unit1 * unit2`` (``sign=1``) or ``unit1 / unit2`` (``sign=-1``).
 

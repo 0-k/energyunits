@@ -49,6 +49,11 @@ class TestUnaryAndSum:
         assert abs(Quantity(-5, "MWh")).value == 5
         assert (+Quantity(5, "MWh")).value == 5
 
+    def test_round(self):
+        assert round(Quantity(2.567, "MWh"), 1).value == pytest.approx(2.6)
+        assert round(Quantity([1.4, 2.6], "MW")).value.tolist() == [1.0, 3.0]
+        assert round(Quantity(2.567, "MWh", "coal"), 1).substance == "coal"
+
     def test_builtin_sum(self):
         total = sum([Quantity(1, "MWh"), Quantity(1000, "kWh"), Quantity(3.6, "GJ")])
         assert total.unit == "MWh"

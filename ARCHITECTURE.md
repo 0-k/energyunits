@@ -306,5 +306,5 @@ pandas, builds the documentation and smoke-tests the built wheel.
 - No uncertainty propagation.
 - One currency per unit for year-specific exchange rates and inflation
   (units such as `USD/EUR` use static rates).
-- Inflation and exchange rate data cover 2010-2025 (inflation projections to 2030).
+- Inflation and exchange rate data cover 2000-2025 (inflation projections to 2030).
 - pandas does not propagate `DataFrame.attrs` through every operation.

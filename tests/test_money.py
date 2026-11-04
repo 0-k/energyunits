@@ -66,6 +66,15 @@ class TestInflation:
         assert inflation_registry.get_cumulative_inflation_factor("USD", 2013, 2014) == pytest.approx(1.0162)
         assert inflation_registry.get_cumulative_inflation_factor("USD", 2023, 2024) == pytest.approx(1.0295)
 
+    @pytest.mark.parametrize(
+        "start, end, index_start, index_end",
+        [(2000, 2025, 172.2, 321.9), (2009, 2024, 214.537, 313.689), (2015, 2025, 237.017, 321.9)],
+    )
+    def test_us_cpi_chain_matches_bls_index(self, start, end, index_start, index_end):
+        """Chained annual rates reproduce the ratio of BLS CPI-U annual average index levels."""
+        factor = inflation_registry.get_cumulative_inflation_factor("USD", start, end)
+        assert factor == pytest.approx(index_end / index_start, rel=2e-3)
+
     @pytest.mark.parametrize("currency", ["USD", "EUR", "GBP", "JPY", "CNY"])
     def test_all_currencies_supported(self, currency):
         cost = Quantity(100, f"{currency}/MWh", reference_year=2015)
@@ -97,7 +106,7 @@ class TestInflation:
             Quantity(100, "USD", reference_year=2015).to(reference_year=2024)
 
     def test_out_of_range_message(self):
-        with pytest.raises(MissingDataError, match="reference years 2009-2030"):
+        with pytest.raises(MissingDataError, match="reference years 1999-2030"):
             Quantity(100, "USD", reference_year=2020).to(reference_year=2050)
 
     def test_custom_inflation_data(self, tmp_path):
