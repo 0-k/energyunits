@@ -31,7 +31,7 @@ class TestUnitRegistry:
 
         # Volume units
         assert registry.get_conversion_factor("L", "m3") == pytest.approx(0.001)
-        assert registry.get_conversion_factor("barrel", "m3") == pytest.approx(0.159)
+        assert registry.get_conversion_factor("barrel", "m3") == pytest.approx(0.158987294928)
 
         # Time units
         assert registry.get_conversion_factor("min", "h") == pytest.approx(1 / 60)
@@ -65,7 +65,10 @@ class TestUnitRegistry:
         price_factor = registry.get_conversion_factor("USD/MWh", "EUR/MWh")
         currency_factor = registry.get_conversion_factor("USD", "EUR")
         assert price_factor == pytest.approx(currency_factor)
-        assert price_factor == pytest.approx(1 / 1.08)
+        from energyunits.exchange_rate import exchange_rate_registry
+
+        latest_eur = exchange_rate_registry.get_exchange_rate("EUR")
+        assert price_factor == pytest.approx(1 / latest_eur)
 
         # Energy intensity
         assert registry.get_conversion_factor("MWh/t", "GJ/t") == pytest.approx(3.6)

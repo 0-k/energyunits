@@ -134,8 +134,8 @@ class TestEnergySystemModels:
         # Adjust for inflation
         price_2025 = price_2020.to(reference_year=2025)
 
-        # With historical inflation rates (2021-2025)
-        historical_factor = 1.047 * 1.08 * 1.0412 * 1.0315 * 1.025
+        # With historical CPI-U inflation rates (2021-2025)
+        historical_factor = 1.047 * 1.08 * 1.0412 * 1.0295 * 1.026
         assert price_2025.value == pytest.approx(50 * historical_factor, rel=1e-3)
         assert price_2025.unit == "USD/MWh"
         assert price_2025.reference_year == 2025

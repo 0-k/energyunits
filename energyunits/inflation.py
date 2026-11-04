@@ -2,94 +2,127 @@
 
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
+
+from .exceptions import MissingDataError
+
+_DATA_DIR = Path(__file__).parent / "data"
+
+
+def _currency_from_string(unit: str, currencies) -> Optional[str]:
+    """Fallback currency detection for strings that are not valid unit expressions."""
+    components = unit.upper().replace("/", " ").replace("*", " ").replace("·", " ").split()
+    for currency in currencies:
+        if currency in components:
+            return currency
+    if "$" in unit or "DOLLAR" in unit.upper():
+        return "USD"
+    return None
 
 
 class InflationRegistry:
-    """Registry for inflation data with historical rates."""
+    """Registry of annual consumer price inflation rates per currency.
 
-    def __init__(self):
-        self._inflation_data = {}
+    The rate stored for year ``Y`` is the change of the annual average price
+    index from ``Y - 1`` to ``Y`` in percent. Converting a value from
+    ``reference_year=2015`` to ``2024`` therefore multiplies by
+    ``prod(1 + rate[Y] / 100 for Y in 2016..2024)``.
+
+    A module-level instance is available as
+    :data:`energyunits.inflation.inflation_registry`.
+    """
+
+    def __init__(self) -> None:
         self._load_defaults()
 
-    def _load_defaults(self):
-        """Load default inflation data from JSON."""
-        data_path = Path(__file__).parent / "data" / "inflation.json"
-        with open(data_path) as f:
+    def _load_defaults(self) -> None:
+        self._inflation_data: Dict[str, Dict[int, float]] = {}
+        self._projected_from: Dict[str, int] = {}
+        with open(_DATA_DIR / "inflation.json", encoding="utf-8") as f:
+            self._ingest(json.load(f))
+
+    def reset(self) -> None:
+        """Discard custom data and reload the bundled defaults."""
+        self._load_defaults()
+
+    def load_inflation(self, file_path: str) -> None:
+        """Load custom inflation rates from a JSON file.
+
+        Format: ``{"USD": {"2031": 2.1, ...}, ...}``. An optional
+        ``"_metadata": {"projected_from": {"USD": 2031}}`` entry marks the first
+        projected (non-historical) year per currency.
+        """
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
+        self._ingest(data)
 
-        # Convert string years to integers, skip metadata fields
-        self._inflation_data = {
-            currency: {int(year): rate for year, rate in years.items()}
-            for currency, years in data.items()
-            if not currency.startswith("_")
-        }
-
-    def load_inflation(self, file_path: str):
-        """Load custom inflation data from JSON file."""
-        with open(file_path) as f:
-            data = json.load(f)
-
+    def _ingest(self, data: dict) -> None:
         for currency, year_data in data.items():
-            # Skip metadata fields
             if currency.startswith("_"):
                 continue
+            rates = self._inflation_data.setdefault(currency, {})
+            rates.update({int(year): float(rate) for year, rate in year_data.items()})
+        metadata = data.get("_metadata", {})
+        for currency, year in metadata.get("projected_from", {}).items():
+            self._projected_from[currency] = int(year)
 
-            if currency not in self._inflation_data:
-                self._inflation_data[currency] = {}
+    def get_cumulative_inflation_factor(self, currency: str, from_year: int, to_year: int) -> float:
+        """Cumulative price change factor from ``from_year`` to ``to_year``.
 
-            # Convert string years to integers
-            self._inflation_data[currency].update(
-                {int(year): rate for year, rate in year_data.items()}
-            )
-
-    def get_cumulative_inflation_factor(
-        self, currency: str, from_year: int, to_year: int
-    ) -> float:
-        """Calculate cumulative inflation factor between two years."""
+        Raises:
+            MissingDataError: if the currency or a required year is not available.
+        """
         if currency not in self._inflation_data:
-            raise ValueError(f"Currency '{currency}' not supported")
-
-        currency_data = self._inflation_data[currency]
-
+            raise MissingDataError(
+                f"Currency '{currency}' not supported for inflation adjustment. "
+                f"Supported: {self.get_supported_currencies()}"
+            )
         if from_year == to_year:
             return 1.0
+        rates = self._inflation_data[currency]
+        start, end = sorted((int(from_year), int(to_year)))
+        factor = 1.0
+        for year in range(start + 1, end + 1):
+            if year not in rates:
+                first, last = self.get_available_years(currency)
+                raise MissingDataError(
+                    f"No inflation data for {currency} in year {year} "
+                    f"(reference years {first}-{last} are supported)."
+                )
+            factor *= 1.0 + rates[year] / 100.0
+        return factor if to_year > from_year else 1.0 / factor
 
-        if from_year > to_year:
-            # Deflating
-            years_range = range(to_year + 1, from_year + 1)
-            factor = 1.0
-            for year in years_range:
-                if year not in currency_data:
-                    raise ValueError(f"No inflation data for {currency} in year {year}")
-                factor /= 1.0 + (currency_data[year] / 100.0)
-            return factor
-        else:
-            # Inflating
-            years_range = range(from_year + 1, to_year + 1)
-            factor = 1.0
-            for year in years_range:
-                if year not in currency_data:
-                    raise ValueError(f"No inflation data for {currency} in year {year}")
-                factor *= 1.0 + (currency_data[year] / 100.0)
-            return factor
+    def get_available_years(self, currency: str) -> Tuple[int, int]:
+        """First and last reference year that can be converted for a currency."""
+        years = sorted(self._inflation_data[currency])
+        return years[0] - 1, years[-1]
 
-    def get_supported_currencies(self):
-        """Get list of supported currencies."""
-        return list(self._inflation_data.keys())
+    def uses_projection(self, currency: str, from_year: int, to_year: int) -> bool:
+        """True if converting between the two years relies on projected rates."""
+        first_projected = self._projected_from.get(currency)
+        if first_projected is None or from_year == to_year:
+            return False
+        return max(from_year, to_year) >= first_projected
+
+    def get_projected_from(self, currency: str) -> Optional[int]:
+        """First year for which the rate of ``currency`` is a projection (or ``None``)."""
+        return self._projected_from.get(currency)
+
+    def get_supported_currencies(self) -> List[str]:
+        """Currencies with inflation data."""
+        return list(self._inflation_data)
 
     def detect_currency_from_unit(self, unit: str) -> Optional[str]:
-        """Detect currency from unit string."""
-        # Split compound units into components for exact matching
-        components = unit.upper().replace("/", " ").split()
+        """Detect the currency (with inflation data) contained in a unit string."""
+        from .registry import registry
 
-        for currency in self._inflation_data:
-            if currency in components:
-                return currency
-
-        if "$" in unit or "DOLLAR" in unit.upper():
-            return "USD"
-
+        try:
+            terms = registry.currency_terms(unit)
+        except (TypeError, ValueError):
+            return _currency_from_string(unit, self._inflation_data)
+        for _, code, _ in terms:
+            if code in self._inflation_data:
+                return code
         return None
 
 

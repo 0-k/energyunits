@@ -1,4 +1,5 @@
 {
+  "_note": "Conversion factors are relative to the base unit of each dimension. Factors of derived dimensions must be coherent with their definition (1 MW == 1 MWh/h). Currency factors are static fallbacks equal to the latest annual average in exchange_rates.json; year-specific rates are applied at runtime.",
   "dimensions": {
     "J": "ENERGY",
     "kJ": "ENERGY",
@@ -13,7 +14,18 @@
     "GWh": "ENERGY",
     "TWh": "ENERGY",
     "PWh": "ENERGY",
+    "BTU": "ENERGY",
     "MMBTU": "ENERGY",
+    "therm": "ENERGY",
+    "quad": "ENERGY",
+    "kcal": "ENERGY",
+    "Mcal": "ENERGY",
+    "Gcal": "ENERGY",
+    "toe": "ENERGY",
+    "ktoe": "ENERGY",
+    "Mtoe": "ENERGY",
+    "tce": "ENERGY",
+    "Mtce": "ENERGY",
     "W": "POWER",
     "kW": "POWER",
     "MW": "POWER",
@@ -22,58 +34,117 @@
     "g": "MASS",
     "kg": "MASS",
     "t": "MASS",
+    "kt": "MASS",
     "Mt": "MASS",
     "Gt": "MASS",
-    "m3": "VOLUME",
+    "lb": "MASS",
     "L": "VOLUME",
+    "m3": "VOLUME",
+    "bcm": "VOLUME",
     "barrel": "VOLUME",
+    "gal": "VOLUME",
+    "ft3": "VOLUME",
+    "Mcf": "VOLUME",
+    "Bcf": "VOLUME",
     "s": "TIME",
     "min": "TIME",
     "h": "TIME",
+    "d": "TIME",
     "a": "TIME",
+    "yr": "TIME",
     "USD": "CURRENCY",
+    "kUSD": "CURRENCY",
+    "MUSD": "CURRENCY",
+    "bnUSD": "CURRENCY",
     "EUR": "CURRENCY",
+    "kEUR": "CURRENCY",
+    "MEUR": "CURRENCY",
+    "bnEUR": "CURRENCY",
     "GBP": "CURRENCY",
+    "kGBP": "CURRENCY",
+    "MGBP": "CURRENCY",
+    "bnGBP": "CURRENCY",
     "JPY": "CURRENCY",
-    "CNY": "CURRENCY"
+    "kJPY": "CURRENCY",
+    "MJPY": "CURRENCY",
+    "bnJPY": "CURRENCY",
+    "CNY": "CURRENCY",
+    "kCNY": "CURRENCY",
+    "MCNY": "CURRENCY",
+    "bnCNY": "CURRENCY"
   },
   "conversion_factors": {
-    "J": 2.7777777777777776e-10,
-    "kJ": 2.7777777777777777e-07,
+    "J": 2.7777777777777777e-10,
+    "kJ": 2.7777777777777776e-07,
     "MJ": 0.0002777777777777778,
     "GJ": 0.2777777777777778,
     "TJ": 277.77777777777777,
-    "PJ": 277777.77777777777,
-    "EJ": 277777777.77777778,
+    "PJ": 277777.77777777775,
+    "EJ": 277777777.7777778,
     "Wh": 1e-06,
     "kWh": 0.001,
-    "MWh": 1,
-    "GWh": 1000,
-    "TWh": 1000000,
-    "PWh": 1000000000,
-    "MMBTU": 0.293071,
+    "MWh": 1.0,
+    "GWh": 1000.0,
+    "TWh": 1000000.0,
+    "PWh": 1000000000.0,
+    "BTU": 2.930710701722222e-07,
+    "MMBTU": 0.2930710701722222,
+    "therm": 0.02930710701722222,
+    "quad": 293071070.1722222,
+    "kcal": 1.163e-06,
+    "Mcal": 0.001163,
+    "Gcal": 1.163,
+    "toe": 11.63,
+    "ktoe": 11630.0,
+    "Mtoe": 11630000.0,
+    "tce": 8.141,
+    "Mtce": 8141000.0,
     "W": 1e-06,
     "kW": 0.001,
-    "MW": 1,
-    "GW": 1000,
-    "TW": 1000000,
+    "MW": 1.0,
+    "GW": 1000.0,
+    "TW": 1000000.0,
     "g": 1e-06,
     "kg": 0.001,
-    "t": 1,
-    "Mt": 1000000,
-    "Gt": 1000000000,
-    "m3": 1,
+    "t": 1.0,
+    "kt": 1000.0,
+    "Mt": 1000000.0,
+    "Gt": 1000000000.0,
+    "lb": 0.00045359237,
     "L": 0.001,
-    "barrel": 0.159,
+    "m3": 1.0,
+    "bcm": 1000000000.0,
+    "barrel": 0.158987294928,
+    "gal": 0.003785411784,
+    "ft3": 0.028316846592,
+    "Mcf": 28.316846592,
+    "Bcf": 28316846.592,
     "s": 0.0002777777777777778,
     "min": 0.016666666666666666,
-    "h": 1,
-    "a": 8760,
-    "USD": 1,
-    "EUR": 1.08,
-    "GBP": 1.27,
-    "JPY": 0.0067,
-    "CNY": 0.14
+    "h": 1.0,
+    "d": 24.0,
+    "a": 8760.0,
+    "yr": 8760.0,
+    "USD": 1.0,
+    "kUSD": 1000.0,
+    "MUSD": 1000000.0,
+    "bnUSD": 1000000000.0,
+    "EUR": 1.1306,
+    "kEUR": 1130.6,
+    "MEUR": 1130600.0,
+    "bnEUR": 1130600000.0,
+    "GBP": 1.3192,
+    "kGBP": 1319.2,
+    "MGBP": 1319200.0,
+    "bnGBP": 1319200000.0,
+    "JPY": 0.0066858953,
+    "kJPY": 6.6858953,
+    "MJPY": 6685.8953,
+    "bnJPY": 6685895.3,
+    "CNY": 0.13913043,
+    "kCNY": 139.13043,
+    "MCNY": 139130.43,
+    "bnCNY": 139130430.0
   },
   "base_units": {
     "ENERGY": "MWh",
@@ -82,6 +153,94 @@
     "VOLUME": "m3",
     "TIME": "h",
     "CURRENCY": "USD"
+  },
+  "derived_dimensions": {
+    "POWER": {
+      "ENERGY": 1,
+      "TIME": -1
+    }
+  },
+  "currency_units": {
+    "USD": {
+      "currency": "USD",
+      "scale": 1.0
+    },
+    "kUSD": {
+      "currency": "USD",
+      "scale": 1000.0
+    },
+    "MUSD": {
+      "currency": "USD",
+      "scale": 1000000.0
+    },
+    "bnUSD": {
+      "currency": "USD",
+      "scale": 1000000000.0
+    },
+    "EUR": {
+      "currency": "EUR",
+      "scale": 1.0
+    },
+    "kEUR": {
+      "currency": "EUR",
+      "scale": 1000.0
+    },
+    "MEUR": {
+      "currency": "EUR",
+      "scale": 1000000.0
+    },
+    "bnEUR": {
+      "currency": "EUR",
+      "scale": 1000000000.0
+    },
+    "GBP": {
+      "currency": "GBP",
+      "scale": 1.0
+    },
+    "kGBP": {
+      "currency": "GBP",
+      "scale": 1000.0
+    },
+    "MGBP": {
+      "currency": "GBP",
+      "scale": 1000000.0
+    },
+    "bnGBP": {
+      "currency": "GBP",
+      "scale": 1000000000.0
+    },
+    "JPY": {
+      "currency": "JPY",
+      "scale": 1.0
+    },
+    "kJPY": {
+      "currency": "JPY",
+      "scale": 1000.0
+    },
+    "MJPY": {
+      "currency": "JPY",
+      "scale": 1000000.0
+    },
+    "bnJPY": {
+      "currency": "JPY",
+      "scale": 1000000000.0
+    },
+    "CNY": {
+      "currency": "CNY",
+      "scale": 1.0
+    },
+    "kCNY": {
+      "currency": "CNY",
+      "scale": 1000.0
+    },
+    "MCNY": {
+      "currency": "CNY",
+      "scale": 1000000.0
+    },
+    "bnCNY": {
+      "currency": "CNY",
+      "scale": 1000000000.0
+    }
   },
   "corresponding_units": {
     "W": "Wh",
@@ -97,7 +256,10 @@
   },
   "dimensional_multiplication_rules": [
     {
-      "dimensions": ["POWER", "TIME"],
+      "dimensions": [
+        "POWER",
+        "TIME"
+      ],
       "result_dimension": "ENERGY",
       "source_dimension": "POWER"
     }
@@ -107,6 +269,11 @@
       "numerator_dimension": "ENERGY",
       "denominator_dimension": "TIME",
       "result_dimension": "POWER"
+    },
+    {
+      "numerator_dimension": "ENERGY",
+      "denominator_dimension": "POWER",
+      "result_dimension": "TIME"
     }
   ]
 }

@@ -12,24 +12,21 @@ class TestQuantityInputValidation:
     """Test input validation for Quantity creation and methods."""
 
     def test_invalid_value_types(self):
-        """Test error handling for invalid value types."""
-        # NumPy is very permissive - test what actually happens
-        q = Quantity("not_a_number", "MWh")
-        # Should be some numpy value (string, object array, etc.)
-        assert hasattr(q.value, "dtype")  # It's a numpy value
+        """Non-numeric values are rejected at construction."""
+        with pytest.raises(TypeError, match="numeric"):
+            Quantity("not_a_number", "MWh")
 
-        # None values are handled by numpy
-        q_none = Quantity(None, "MWh")
-        # Should create a numpy array
-        assert hasattr(q_none.value, "dtype")
+        with pytest.raises(TypeError, match="numeric"):
+            Quantity(None, "MWh")
 
-        # Complex objects might work or fail
-        try:
-            q_dict = Quantity({"value": 100}, "MWh")
-            # NumPy might create an object array
-            assert hasattr(q_dict.value, "dtype")
-        except (TypeError, ValueError):
-            pass  # Also acceptable
+        with pytest.raises(TypeError, match="numeric"):
+            Quantity({"value": 100}, "MWh")
+
+    def test_numeric_values_stored_as_float_arrays(self):
+        """Integers, booleans and lists are stored as float arrays."""
+        assert Quantity(5, "MWh").value.dtype == np.float64
+        assert Quantity([1, 2, 3], "MWh").value.dtype == np.float64
+        assert Quantity(np.int32(4), "MWh").value == 4.0
 
     def test_invalid_unit_types(self):
         """Test error handling for invalid unit types."""
@@ -64,29 +61,27 @@ class TestQuantityInputValidation:
             invalid_quantity.to(substance="CO2")
 
     def test_invalid_basis_values(self):
-        """Test error handling for invalid basis values."""
-        # Currently doesn't validate at creation
-        quantity = Quantity(100, "MWh", "coal", basis="INVALID")
+        """Invalid heating value bases are rejected at construction."""
+        with pytest.raises(ValueError, match="Basis must be"):
+            Quantity(100, "MWh", "coal", basis="INVALID")
 
-        # Should fail during basis conversion
-        with pytest.raises(ValueError, match="Invalid basis conversion"):
-            quantity.to(basis="LHV")
+        # Lower-case bases are normalised
+        assert Quantity(100, "MWh", "coal", basis="hhv").basis == "HHV"
 
     def test_invalid_reference_year_types(self):
-        """Test error handling for invalid reference year types."""
-        # Currently the library is quite permissive with reference years
+        """Reference years must be integers (integral floats are accepted)."""
+        with pytest.raises(TypeError):
+            Quantity(100, "USD/kW", reference_year="2020")
 
-        # String reference year - might be accepted or rejected
-        try:
-            quantity = Quantity(100, "USD/kW", reference_year="2020")
-            # If accepted, test that it works
-            assert quantity.reference_year == "2020"
-        except (TypeError, ValueError):
-            pass  # Also acceptable
+        with pytest.raises(TypeError):
+            Quantity(100, "USD/kW", reference_year=2020.5)
 
-        # Float reference year (currently accepted)
-        quantity = Quantity(100, "USD/kW", reference_year=2020.5)
-        assert quantity.reference_year == 2020.5
+        with pytest.raises(TypeError):
+            Quantity(100, "USD/kW", reference_year=True)
+
+        # Integral floats (e.g. read from a CSV) and NumPy integers are fine
+        assert Quantity(100, "USD/kW", reference_year=2020.0).reference_year == 2020
+        assert Quantity(100, "USD/kW", reference_year=np.int64(2020)).reference_year == 2020
 
     def test_array_input_validation(self):
         """Test validation of array inputs."""
@@ -140,20 +135,13 @@ class TestConversionErrors:
             energy.to("kWh_thermal")  # Non-existent unit
 
     def test_malformed_compound_units(self):
-        """Test behavior with unusual compound unit formats."""
-        # The system actually handles these by creating compound dimensions
-        q1 = Quantity(100, "MW//h")  # Double slash
-        q2 = Quantity(100, "MW/")  # Trailing slash
-        q3 = Quantity(100, "/h")  # Leading slash
+        """Malformed compound units are rejected at construction."""
+        for malformed in ["MW//h", "MW/", "/h", "MW*", "·h"]:
+            with pytest.raises(ValueError, match="Malformed unit"):
+                Quantity(100, malformed)
 
-        # These create valid but unusual compound dimensions
-        assert "POWER_PER_DIMENSIONLESS_PER_TIME" in q1.dimension
-        assert "POWER_PER_DIMENSIONLESS" in q2.dimension
-        assert "DIMENSIONLESS_PER_TIME" in q3.dimension
-
-        # However, they shouldn't be useful for normal conversions
-        with pytest.raises(ValueError):
-            q1.to("MW")  # Cannot convert complex compound to simple unit
+        # A leading "1" is the explicit way to write a reciprocal unit
+        assert Quantity(100, "1/h").dimension == "DIMENSIONLESS_PER_TIME"
 
     def test_circular_unit_conversion(self):
         """Test that circular conversions don't cause infinite loops."""

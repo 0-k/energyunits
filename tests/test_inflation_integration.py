@@ -74,9 +74,10 @@ class TestInflationIntegration:
         with pytest.raises(ValueError, match="Reference year not specified"):
             quantity_no_year.to(reference_year=2025)
 
-        # Unsupported currency
-        quantity_unsupported = Quantity(1000, "JPY/kW", reference_year=2020)
-        with pytest.raises(ValueError, match="Cannot detect currency"):
+        # Currency without inflation data
+        _register_currency_without_inflation_data("AUD")
+        quantity_unsupported = Quantity(1000, "AUD/kW", reference_year=2020)
+        with pytest.raises(ValueError, match="Currency 'AUD' not supported"):
             quantity_unsupported.to(reference_year=2025)
 
     def test_array_values(self):
@@ -131,8 +132,8 @@ class TestInflationRegistry:
 
     def test_unsupported_currency(self):
         """Test error for unsupported currency."""
-        with pytest.raises(ValueError, match="Currency 'JPY' not supported"):
-            inflation_registry.get_cumulative_inflation_factor("JPY", 2020, 2021)
+        with pytest.raises(ValueError, match="Currency 'AUD' not supported"):
+            inflation_registry.get_cumulative_inflation_factor("AUD", 2020, 2021)
 
     def test_year_out_of_range(self):
         """Test error for year out of range."""
@@ -145,3 +146,14 @@ class TestInflationRegistry:
         assert "USD" in currencies
         assert "EUR" in currencies
 
+
+def _register_currency_without_inflation_data(code):
+    """Register a currency unit that has no inflation data (registries reset after each test)."""
+    import json
+    import tempfile
+
+    from energyunits.registry import registry
+
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump({"dimensions": {code: "CURRENCY"}, "conversion_factors": {code: 0.65}}, f)
+    registry.load_units(f.name)

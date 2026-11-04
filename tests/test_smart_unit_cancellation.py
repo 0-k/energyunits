@@ -133,8 +133,8 @@ class TestSmartCompoundUnitCancellation:
         assert result.value == pytest.approx(1000)
         assert result.unit == "USD"
 
-    def test_reference_year_cleared_when_not_matching(self):
-        """Test that reference year is cleared when other operand has none."""
+    def test_reference_year_preserved_from_cost_operand(self):
+        """The price base year of a cost survives multiplication with a non-monetary quantity."""
         capex = Quantity(1500, "USD/kW", reference_year=2020)
         capacity = Quantity(500, "MW")  # No reference year
 
@@ -142,8 +142,8 @@ class TestSmartCompoundUnitCancellation:
 
         assert result.value == pytest.approx(750_000_000)
         assert result.unit == "USD"
-        # Reference year is cleared because capacity has no reference year
-        assert result.reference_year is None
+        # Total cost is still expressed in 2020 dollars
+        assert result.reference_year == 2020
 
     def test_with_inflation_adjustment(self):
         """Test smart cancellation works with inflated quantities."""
@@ -156,8 +156,8 @@ class TestSmartCompoundUnitCancellation:
         # Should be > 500M due to inflation
         assert result.value > 500_000_000
         assert result.unit == "USD"
-        # Reference year is cleared because capacity has no reference year
-        assert result.reference_year is None
+        # Total cost is expressed in 2025 dollars
+        assert result.reference_year == 2025
 
 
 class TestSmartCancellationEdgeCases:

@@ -1,14 +1,28 @@
 {
-  "_note": "Data sourced from IPCC 2006 Guidelines, IEA, EPA, and peer-reviewed literature. See DATA_SOURCES.md for full citations.",
+  "_metadata": {
+    "description": "Fuel and material properties used for substance-aware conversions.",
+    "fields": {
+      "hhv": "Higher heating value (gross calorific value) in MJ/kg",
+      "lhv": "Lower heating value (net calorific value) in MJ/kg",
+      "density": "Density in kg/m3 (bulk density for solids, normal conditions for gases)",
+      "carbon_intensity": "Direct CO2 emission factor in kg CO2 per GJ (LHV basis). 0 for biogenic fuels by IPCC accounting convention",
+      "carbon_content": "Carbon mass fraction (kg C per kg fuel), used for stoichiometric CO2",
+      "hydrogen_content": "Hydrogen mass fraction (kg H per kg fuel), used for H2O",
+      "ash_content": "Ash mass fraction (kg ash per kg fuel)",
+      "biogenic": "True if the carbon is of biogenic origin (CO2 is physical, but usually reported as zero)"
+    },
+    "consistency": "For fossil fuels, carbon_content = carbon_intensity * lhv / 1000 * 12/44, so that stoichiometric CO2 reproduces the IPCC 2006 default emission factors exactly.",
+    "sources": "IPCC 2006 Guidelines Vol. 2 (Tables 1.2-1.4), IEA, EPA; see DATA_SOURCES.md"
+  },
   "coal": {
     "name": "Coal (generic)",
     "hhv": 26.0,
     "lhv": 25.0,
     "density": 833,
     "carbon_intensity": 95.0,
-    "carbon_content": 0.75,
+    "carbon_content": 0.6477,
     "hydrogen_content": 0.05,
-    "ash_content": 0.10
+    "ash_content": 0.1
   },
   "lignite": {
     "name": "Lignite Coal",
@@ -16,7 +30,7 @@
     "lhv": 14.0,
     "density": 700,
     "carbon_intensity": 101.0,
-    "carbon_content": 0.65,
+    "carbon_content": 0.3856,
     "hydrogen_content": 0.04,
     "ash_content": 0.15
   },
@@ -26,7 +40,7 @@
     "lhv": 28.5,
     "density": 833,
     "carbon_intensity": 94.6,
-    "carbon_content": 0.80,
+    "carbon_content": 0.7353,
     "hydrogen_content": 0.05,
     "ash_content": 0.08
   },
@@ -36,7 +50,7 @@
     "lhv": 31.5,
     "density": 1000,
     "carbon_intensity": 98.3,
-    "carbon_content": 0.85,
+    "carbon_content": 0.8445,
     "hydrogen_content": 0.04,
     "ash_content": 0.05
   },
@@ -46,7 +60,7 @@
     "lhv": 49.5,
     "density": 0.75,
     "carbon_intensity": 56.1,
-    "carbon_content": 0.75,
+    "carbon_content": 0.7574,
     "hydrogen_content": 0.25,
     "ash_content": 0.0
   },
@@ -56,7 +70,7 @@
     "lhv": 49.5,
     "density": 450,
     "carbon_intensity": 56.1,
-    "carbon_content": 0.75,
+    "carbon_content": 0.7574,
     "hydrogen_content": 0.25,
     "ash_content": 0.0
   },
@@ -65,9 +79,9 @@
     "hhv": 55.5,
     "lhv": 50.0,
     "density": 0.68,
-    "carbon_intensity": 56.1,
-    "carbon_content": 0.75,
-    "hydrogen_content": 0.25,
+    "carbon_intensity": 54.9,
+    "carbon_content": 0.7487,
+    "hydrogen_content": 0.2513,
     "ash_content": 0.0
   },
   "crude_oil": {
@@ -76,7 +90,7 @@
     "lhv": 42.5,
     "density": 870,
     "carbon_intensity": 73.3,
-    "carbon_content": 0.85,
+    "carbon_content": 0.8496,
     "hydrogen_content": 0.13,
     "ash_content": 0.001
   },
@@ -86,7 +100,7 @@
     "lhv": 42.5,
     "density": 870,
     "carbon_intensity": 73.3,
-    "carbon_content": 0.85,
+    "carbon_content": 0.8496,
     "hydrogen_content": 0.13,
     "ash_content": 0.001
   },
@@ -96,7 +110,7 @@
     "lhv": 40.5,
     "density": 950,
     "carbon_intensity": 77.4,
-    "carbon_content": 0.87,
+    "carbon_content": 0.8549,
     "hydrogen_content": 0.11,
     "ash_content": 0.005
   },
@@ -106,7 +120,7 @@
     "lhv": 42.8,
     "density": 840,
     "carbon_intensity": 74.1,
-    "carbon_content": 0.86,
+    "carbon_content": 0.8649,
     "hydrogen_content": 0.14,
     "ash_content": 0.0
   },
@@ -116,7 +130,7 @@
     "lhv": 44.0,
     "density": 750,
     "carbon_intensity": 69.3,
-    "carbon_content": 0.85,
+    "carbon_content": 0.8316,
     "hydrogen_content": 0.15,
     "ash_content": 0.0
   },
@@ -126,9 +140,10 @@
     "lhv": 18.5,
     "density": 650,
     "carbon_intensity": 0,
-    "carbon_content": 0.50,
+    "carbon_content": 0.5,
     "hydrogen_content": 0.06,
-    "ash_content": 0.01
+    "ash_content": 0.01,
+    "biogenic": true
   },
   "wood_chips": {
     "name": "Wood Chips",
@@ -138,7 +153,8 @@
     "carbon_intensity": 0,
     "carbon_content": 0.48,
     "hydrogen_content": 0.06,
-    "ash_content": 0.02
+    "ash_content": 0.02,
+    "biogenic": true
   },
   "wind": {
     "name": "Wind Energy",
@@ -195,9 +211,9 @@
     "hhv": 22.7,
     "lhv": 19.9,
     "density": 795,
-    "carbon_intensity": 69.0,
-    "carbon_content": 0.375,
-    "hydrogen_content": 0.125,
+    "carbon_intensity": 69.1,
+    "carbon_content": 0.3749,
+    "hydrogen_content": 0.1258,
     "ash_content": 0.0
   },
   "CO2": {
