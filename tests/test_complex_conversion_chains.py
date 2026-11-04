@@ -120,9 +120,7 @@ class TestComplexConversionChains:
 
         # Convert to different power units using compound units
         power_rate_1 = Quantity(500, "MWh/h")  # Same as 500 MW
-        power_rate_2 = Quantity(
-            500 / 60, "MWh/min"
-        )  # Same as 500 MW (500 MWh/hour = 500/60 MWh/min)
+        power_rate_2 = Quantity(500 / 60, "MWh/min")  # Same as 500 MW (500 MWh/hour = 500/60 MWh/min)
 
         # Convert compound units to simple power units
         power_1 = power_rate_1.to("MW")
@@ -198,9 +196,7 @@ class TestComplexConversionChains:
 
         total_co2 = coal_co2 + gas_co2 + oil_co2
         assert total_co2.substance == "CO2"  # All same substance
-        assert total_co2.value == pytest.approx(
-            coal_co2.value + gas_co2.value + oil_co2.value
-        )
+        assert total_co2.value == pytest.approx(coal_co2.value + gas_co2.value + oil_co2.value)
 
     def test_renewable_vs_fossil_comparison(self):
         """Test conversion chains comparing renewable and fossil energy."""
@@ -233,16 +229,7 @@ class TestComplexConversionChains:
         energy = Quantity(precise_value, "MWh", "diesel")
 
         # Long conversion chain
-        result = (
-            energy.to("GJ")
-            .to("t")
-            .to("m3")
-            .to("kg")
-            .to("t")
-            .to("MWh")
-            .to("kWh")
-            .to("MWh")
-        )
+        result = energy.to("GJ").to("t").to("m3").to("kg").to("t").to("MWh").to("kWh").to("MWh")
 
         # Should preserve precision reasonably well
         assert result.value == pytest.approx(precise_value, rel=1e-10)

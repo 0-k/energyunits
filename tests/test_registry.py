@@ -55,9 +55,7 @@ class TestUnitRegistry:
     def test_compound_unit_conversions(self):
         """Test conversions between compound units."""
         # Energy prices
-        assert registry.get_conversion_factor("USD/MWh", "USD/GJ") == pytest.approx(
-            0.277778
-        )
+        assert registry.get_conversion_factor("USD/MWh", "USD/GJ") == pytest.approx(0.277778)
         assert registry.get_conversion_factor("EUR/GJ", "EUR/MWh") == pytest.approx(3.6)
 
         # Different currencies
@@ -104,9 +102,7 @@ class TestUnitRegistry:
             }
 
         # Mass to volume for water (1000 kg = 1 m3)
-        result = registry.convert_between_dimensions(
-            1000, "kg", "m3", substance="water"
-        )
+        result = registry.convert_between_dimensions(1000, "kg", "m3", substance="water")
         assert result == pytest.approx(1.0, rel=1e-2)
 
         # Volume to mass for water (2 m3 = 2000 kg)
@@ -116,9 +112,7 @@ class TestUnitRegistry:
         # Test with natural gas
         # Natural gas density ≈ 0.75 kg/m3
         # 750 kg of natural gas ≈ 1000 m3
-        result = registry.convert_between_dimensions(
-            750, "kg", "m3", substance="natural_gas"
-        )
+        result = registry.convert_between_dimensions(750, "kg", "m3", substance="natural_gas")
         assert result == pytest.approx(1000.0, rel=0.1)
 
         # Test with different units

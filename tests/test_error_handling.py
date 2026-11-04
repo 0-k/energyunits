@@ -66,9 +66,7 @@ class TestRegistryErrors:
         """Test errors for unknown substances."""
         # Unknown substance in convert_between_dimensions
         with pytest.raises(ValueError) as excinfo:
-            registry.convert_between_dimensions(
-                1000, "kg", "m3", substance="unknown_substance"
-            )
+            registry.convert_between_dimensions(1000, "kg", "m3", substance="unknown_substance")
         assert "Unknown substance: 'unknown_substance'" in str(excinfo.value)
 
 
@@ -96,9 +94,7 @@ class TestQuantityErrors:
         # Truly incompatible units (no conversion path exists)
         with pytest.raises(ValueError) as excinfo:
             energy.to("USD")
-        assert "Cannot convert from MWh (ENERGY) to USD (CURRENCY)" in str(
-            excinfo.value
-        )
+        assert "Cannot convert from MWh (ENERGY) to USD (CURRENCY)" in str(excinfo.value)
 
     def test_substance_errors(self):
         # Heating value conversion requires substance
@@ -121,9 +117,7 @@ class TestQuantityErrors:
         mass = Quantity(100, "t")  # No substance
         with pytest.raises(ValueError) as excinfo:
             mass.to(substance="CO2")
-        assert "Source substance must be specified for substance conversion" in str(
-            excinfo.value
-        )
+        assert "Source substance must be specified for substance conversion" in str(excinfo.value)
 
     def test_inflation_adjustment_errors(self):
         """Test errors in inflation adjustments."""

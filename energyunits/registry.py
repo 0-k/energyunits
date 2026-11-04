@@ -23,8 +23,10 @@ Every atomic unit belongs to a named dimension (``ENERGY``, ``POWER``,
 ``"GJ/h"`` and ``"MW"`` have the same dimension, as do ``"kWh/kW"`` and ``"h"``.
 
 Conversion factors are stored relative to the base unit of each dimension.
-For derived dimensions the factors must be coherent with the definition, i.e.
-``factor(MW) == factor(MWh) / factor(h)``.
+Internally the factors are relative to SI-coherent base units (J, W, kg, m3,
+s, USD), which keeps metric conversions exact in floating point. For derived
+dimensions the factors must be coherent with the definition, i.e.
+``factor(W) == factor(J) / factor(s)``.
 """
 
 import difflib
@@ -66,6 +68,7 @@ class UnitRegistry:
         self._dimensions: Dict[str, str] = {}
         self._conversion_factors: Dict[str, float] = {}
         self._base_units: Dict[str, str] = {}
+        self._preferred_units: Dict[str, str] = {}
         self._derived_dimensions: Dict[str, Dict[str, int]] = {}
         self._currency_units: Dict[str, dict] = {}
         self._corresponding_units: Dict[str, str] = {}
@@ -82,7 +85,7 @@ class UnitRegistry:
         """Load additional units from a JSON file.
 
         The file may contain any of the sections of the bundled ``units.json``:
-        ``dimensions``, ``conversion_factors``, ``base_units``,
+        ``dimensions``, ``conversion_factors``, ``base_units``, ``preferred_units``,
         ``derived_dimensions``, ``currency_units``, ``corresponding_units``,
         ``dimensional_multiplication_rules`` and ``dimensional_division_rules``.
         Existing entries with the same name are overwritten.
@@ -104,6 +107,7 @@ class UnitRegistry:
             {unit: float(factor) for unit, factor in data.get("conversion_factors", {}).items()}
         )
         self._base_units.update(data.get("base_units", {}))
+        self._preferred_units.update(data.get("preferred_units", {}))
         for name, composition in data.get("derived_dimensions", {}).items():
             self._derived_dimensions[name] = {dim: int(exp) for dim, exp in composition.items()}
         self._currency_units.update(data.get("currency_units", {}))
@@ -262,11 +266,16 @@ class UnitRegistry:
         return True
 
     def base_unit(self, dimension: str) -> str:
-        """Base unit of a dimension (e.g. ``"MASS"`` -> ``"t"``)."""
+        """Base unit (conversion factor 1) of a dimension, e.g. ``"ENERGY"`` -> ``"J"``."""
         try:
             return self._base_units[dimension]
         except KeyError:
             raise UnknownUnitError(f"No base unit defined for dimension '{dimension}'") from None
+
+    def preferred_unit(self, dimension: str) -> str:
+        """Unit used when a calculation has to choose one, e.g. ``"ENERGY"`` -> ``"MWh"``."""
+        preferred = self._preferred_units.get(dimension)
+        return preferred if preferred is not None else self.base_unit(dimension)
 
     def is_compatible(self, unit1: str, unit2: str) -> bool:
         """True if both units have the same dimension (directly convertible)."""
@@ -294,7 +303,7 @@ class UnitRegistry:
 
     @lru_cache(maxsize=4096)
     def unit_factor(self, unit: str) -> float:
-        """Size of ``unit`` relative to the coherent base units (MWh, MW, t, m3, h, USD)."""
+        """Size of ``unit`` relative to the coherent base units (J, W, kg, m3, s, USD)."""
         factor = 1.0
         for atom, exp in self.parse_unit(unit):
             atom_factor = self._conversion_factors.get(atom)
@@ -409,27 +418,38 @@ class UnitRegistry:
 
         Example: ``multiply_units("USD/kW", "MW") == ("USD", 1000.0)``.
         """
-        return self._combine(unit1, unit2, 1)
+        unit, numerator, denominator = self.combine_units(unit1, unit2, 1)
+        return unit, numerator / denominator
 
     def divide_units(self, unit1: str, unit2: str) -> Tuple[str, float]:
         """Unit of a quotient and the factor to apply to the quotient of the values.
 
         Example: ``divide_units("MWh", "a") == ("MW", 1 / 8760)``.
         """
-        return self._combine(unit1, unit2, -1)
+        unit, numerator, denominator = self.combine_units(unit1, unit2, -1)
+        return unit, numerator / denominator
 
-    def _combine(self, unit1: str, unit2: str, sign: int) -> Tuple[str, float]:
+    def combine_units(self, unit1: str, unit2: str, sign: int) -> Tuple[str, float, float]:
+        """Unit of ``unit1 * unit2`` (``sign=1``) or ``unit1 / unit2`` (``sign=-1``).
+
+        Returns ``(unit, numerator, denominator)``; the combined value is
+        ``value1 * value2 * numerator / denominator`` (or ``value1 / value2 * ...``).
+        Keeping numerator and denominator separate preserves floating point exactness.
+        """
         items = [[atom, exp, {0}] for atom, exp in self.parse_unit(unit1)]
         items += [[atom, exp * sign, {1}] for atom, exp in self.parse_unit(unit2)]
-        items, factor = self._merge_same_kind(items)
-        while True:
-            applied = self._apply_dimension_rule(items)
-            if applied is None:
-                break
-            items, rule_factor = applied
-            items, merge_factor = self._merge_same_kind(items)
-            factor *= rule_factor * merge_factor
-        return self.format_terms([(atom, exp) for atom, exp, _ in items]), factor
+        scale = [1.0, 1.0]
+        items = self._merge_same_kind(items, scale)
+        while self._apply_dimension_rule(items, scale):
+            items = self._merge_same_kind(items, scale)
+        return self.format_terms([(atom, exp) for atom, exp, _ in items]), scale[0], scale[1]
+
+    def _scale_by(self, scale: List[float], atom: str, exp: int) -> None:
+        """Multiply ``scale`` (numerator, denominator) by ``factor(atom) ** exp``."""
+        if exp > 0:
+            scale[0] *= self._conversion_factors[atom] ** exp
+        elif exp < 0:
+            scale[1] *= self._conversion_factors[atom] ** -exp
 
     def _same_kind(self, atom1: str, atom2: str) -> bool:
         dim = self._dimensions[atom1]
@@ -443,10 +463,9 @@ class UnitRegistry:
             return currency2 is not None and currency1[0] == currency2[0]
         return True
 
-    def _merge_same_kind(self, items: list) -> Tuple[list, float]:
+    def _merge_same_kind(self, items: list, scale: List[float]) -> list:
         """Merge atoms of the same kind, converting later atoms into earlier ones."""
         merged: list = []
-        factor = 1.0
         for atom, exp, origin in items:
             for existing in merged:
                 if existing[0] == atom:
@@ -454,28 +473,30 @@ class UnitRegistry:
                     existing[2] = existing[2] | origin
                     break
                 if self._same_kind(existing[0], atom):
-                    factor *= (self._conversion_factors[atom] / self._conversion_factors[existing[0]]) ** exp
+                    # atom**exp == (factor(atom) / factor(existing))**exp * existing**exp
+                    self._scale_by(scale, atom, exp)
+                    self._scale_by(scale, existing[0], -exp)
                     existing[1] += exp
                     existing[2] = existing[2] | origin
                     break
             else:
                 merged.append([atom, exp, set(origin)])
-        return [item for item in merged if item[1] != 0], factor
+        return [item for item in merged if item[1] != 0]
 
     def _result_unit(self, atom: str, result_dimension: str) -> Optional[str]:
         corresponding = self._corresponding_units.get(atom)
         if corresponding is not None and self._dimensions.get(corresponding) == result_dimension:
             return corresponding
-        return self._base_units.get(result_dimension)
+        return self._preferred_units.get(result_dimension, self._base_units.get(result_dimension))
 
     def _atom_vector(self, atom: str) -> Dict[str, int]:
         return dict(self._dimension_name_vector(self._dimensions[atom]))
 
-    def _apply_dimension_rule(self, items: list) -> Optional[Tuple[list, float]]:
-        """Apply the first matching multiplication/division rule (e.g. MW·h -> MWh).
+    def _apply_dimension_rule(self, items: list, scale: List[float]) -> bool:
+        """Apply the first matching multiplication/division rule in place (e.g. MW·h -> MWh).
 
         Rules only combine atoms that stem from different operands, so a unit
-        like ``"MWh/a"`` is never rewritten on its own.
+        like ``"MWh/a"`` is never rewritten on its own. Returns True if a rule was applied.
         """
         candidates = []
         for rule in self._dimensional_multiplication_rules:
@@ -507,22 +528,16 @@ class UnitRegistry:
                             expected[dim] = expected.get(dim, 0) + dim_exp * exp
                     if {d: e for d, e in expected.items() if e} != self._atom_vector(target):
                         continue
-                    try:
-                        factor = (
-                            self._conversion_factors[source[0]]
-                            * self._conversion_factors[other[0]] ** other_exp
-                            / self._conversion_factors[target]
-                        )
-                    except KeyError:
+                    if any(a not in self._conversion_factors for a in (source[0], other[0], target)):
                         continue
-                    new_items = []
-                    for k, item in enumerate(items):
-                        if k == i:
-                            new_items.append([target, 1, source[2] | other[2]])
-                        elif k != j:
-                            new_items.append(item)
-                    return new_items, factor
-        return None
+                    # source * other**other_exp == factor * target
+                    self._scale_by(scale, source[0], 1)
+                    self._scale_by(scale, other[0], other_exp)
+                    self._scale_by(scale, target, -1)
+                    items[i] = [target, 1, source[2] | other[2]]
+                    del items[j]
+                    return True
+        return False
 
     # ---------------------------------------------------------------- currencies
 
@@ -589,11 +604,17 @@ class UnitRegistry:
         if {from_dim, to_dim} == {"POWER", "ENERGY"}:
             hours = kwargs.get("hours", 1.0)
             if from_dim == "POWER":
-                return value * self.get_conversion_factor(from_unit, "MW") * hours * self.get_conversion_factor(
-                    "MWh", to_unit
+                return (
+                    value
+                    * self.get_conversion_factor(from_unit, "MW")
+                    * hours
+                    * self.get_conversion_factor("MWh", to_unit)
                 )
-            return value * self.get_conversion_factor(from_unit, "MWh") / hours * self.get_conversion_factor(
-                "MW", to_unit
+            return (
+                value
+                * self.get_conversion_factor(from_unit, "MWh")
+                / hours
+                * self.get_conversion_factor("MW", to_unit)
             )
         try:
             factor = self.conversion_factor(from_unit, to_unit, substance, kwargs.get("basis"))
@@ -626,7 +647,10 @@ class UnitRegistry:
         Example: ``("ENERGY", "TIME")`` -> ``"POWER"``.
         """
         for rule in self._dimensional_division_rules:
-            if rule["numerator_dimension"] == numerator_dim and rule["denominator_dimension"] == denominator_dim:
+            if (
+                rule["numerator_dimension"] == numerator_dim
+                and rule["denominator_dimension"] == denominator_dim
+            ):
                 return rule["result_dimension"]
         return None
 

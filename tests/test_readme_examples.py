@@ -3,10 +3,11 @@
 Test script to verify all README examples work correctly
 """
 
+
 def test_basic_usage():
     """Test Basic Usage section examples"""
     print("Testing Basic Usage examples...")
-    
+
     from energyunits import Quantity
 
     # Simple unit conversions
@@ -15,11 +16,11 @@ def test_basic_usage():
     print(f"100 MWh = {result}")  # → 360.0 GJ
     assert abs(result.value - 360.0) < 0.1, f"Expected ~360.0, got {result.value}"
 
-    # Substance-based calculations  
+    # Substance-based calculations
     coal = Quantity(1000, "t", substance="coal")
     energy_content = coal.to("MWh")  # Uses heating value
     print(f"1000 t coal = {energy_content}")
-    
+
     co2_emissions = coal.to("t", substance="CO2")  # Combustion emissions
     print(f"1000 t coal → {co2_emissions} CO2")
 
@@ -48,7 +49,7 @@ def test_basic_usage():
 def test_energy_system_analysis():
     """Test Energy System Analysis examples"""
     print("\nTesting Energy System Analysis examples...")
-    
+
     from energyunits import Quantity
 
     # Power plant performance analysis
@@ -59,7 +60,7 @@ def test_energy_system_analysis():
     efficiency = electricity_output / fuel_input.to("MWh")
     print(f"Plant efficiency: {efficiency.value:.1%}")
 
-    # Emission intensity  
+    # Emission intensity
     co2_rate = fuel_input.to("t", substance="CO2") / electricity_output
     print(f"CO2 intensity: {co2_rate.value:.2f} t CO2/MWh")
 
@@ -67,7 +68,7 @@ def test_energy_system_analysis():
 def test_techno_economic_modeling():
     """Test Techno-Economic Modeling examples"""
     print("\nTesting Techno-Economic Modeling examples...")
-    
+
     from energyunits import Quantity
 
     # LCOE calculation with inflation adjustment
@@ -87,34 +88,34 @@ def test_techno_economic_modeling():
 def test_fuel_analysis():
     """Test Fuel Analysis examples"""
     print("\nTesting Fuel Analysis examples...")
-    
+
     from energyunits import Quantity
 
     # Compare fuel heating values
     coal_hhv = Quantity(1, "t", "coal").to("MWh", basis="HHV")
-    coal_lhv = Quantity(1, "t", "coal").to("MWh", basis="LHV") 
+    coal_lhv = Quantity(1, "t", "coal").to("MWh", basis="LHV")
     wood_lhv = Quantity(1, "t", "wood_pellets").to("MWh", basis="LHV")
 
     print(f"Coal HHV: {coal_hhv.value:.1f}")
-    print(f"Coal LHV: {coal_lhv.value:.1f}")  
+    print(f"Coal LHV: {coal_lhv.value:.1f}")
     print(f"Wood LHV: {wood_lhv.value:.1f}")
 
 
 def test_compound_units():
     """Test Compound Units examples"""
     print("\nTesting Compound Units examples...")
-    
+
     from energyunits import Quantity
 
     # Energy intensity analysis
-    steel_production = Quantity(1000, "t")  
+    steel_production = Quantity(1000, "t")
     energy_use = Quantity(20, "GWh")
     intensity = energy_use / steel_production  # → 20 GWh/kt
     print(f"Energy intensity: {intensity}")
 
     # Cost analysis
     fuel_cost = Quantity(50, "USD/t", "coal")
-    fuel_mass = Quantity(100, "t", "coal")  
+    fuel_mass = Quantity(100, "t", "coal")
     total_cost = fuel_cost * fuel_mass  # → 5000 USD
     print(f"Total fuel cost: {total_cost}")
     assert abs(total_cost.value - 5000) < 0.1, f"Expected 5000, got {total_cost.value}"
@@ -123,7 +124,7 @@ def test_compound_units():
 def test_multi_step_conversions():
     """Test Multi-Step Conversions examples"""
     print("\nTesting Multi-Step Conversions examples...")
-    
+
     from energyunits import Quantity
 
     # Complex conversion chains
@@ -135,14 +136,14 @@ def test_multi_step_conversions():
 
     # Equivalent step-by-step
     energy = coal_mass.to("MWh", basis="LHV")
-    co2 = energy.to("t", substance="CO2")  
+    co2 = energy.to("t", substance="CO2")
     print(f"Step-by-step: {coal_mass} → {energy} → {co2}")
 
 
 def test_economic_time_series():
     """Test Economic Time Series examples"""
     print("\nTesting Economic Time Series examples...")
-    
+
     from energyunits import Quantity
 
     # Historical cost analysis
@@ -157,24 +158,21 @@ def test_custom_units_extensibility():
     """Test Custom Units extensibility examples"""
     print("\nTesting Custom Units extensibility examples...")
 
-    from energyunits.registry import registry
     import json
     import tempfile
 
+    from energyunits.registry import registry
+
     # Create custom units file
     custom_units = {
-        'dimensions': {'BTU': 'ENERGY'},
-        'conversion_factors': {'BTU': 0.000293071},
-        'dimensional_multiplication_rules': [
-            {
-                'dimensions': ['FORCE', 'LENGTH'],
-                'result_dimension': 'ENERGY',
-                'source_dimension': 'FORCE'
-            }
-        ]
+        "dimensions": {"BTU": "ENERGY"},
+        "conversion_factors": {"BTU": 0.000293071},
+        "dimensional_multiplication_rules": [
+            {"dimensions": ["FORCE", "LENGTH"], "result_dimension": "ENERGY", "source_dimension": "FORCE"}
+        ],
     }
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(custom_units, f)
         temp_file = f.name
 
@@ -182,7 +180,7 @@ def test_custom_units_extensibility():
     registry.load_units(temp_file)
 
     print(f"Custom BTU dimension: {registry.get_dimension('BTU')}")
-    assert registry.get_dimension('BTU') == 'ENERGY'
+    assert registry.get_dimension("BTU") == "ENERGY"
     print(f"Total multiplication rules: {len(registry._dimensional_multiplication_rules)}")
     assert len(registry._dimensional_multiplication_rules) >= 2
 
@@ -191,22 +189,23 @@ def test_custom_substances_extensibility():
     """Test Custom Substances extensibility examples"""
     print("\nTesting Custom Substances extensibility examples...")
 
-    from energyunits.substance import substance_registry
     import json
     import tempfile
 
+    from energyunits.substance import substance_registry
+
     # Create custom substances file
     custom_fuels = {
-        'custom_coal': {
-            'name': 'Regional Coal Blend',
-            'hhv': 28.5,
-            'lhv': 27.2,
-            'density': 850,
-            'carbon_intensity': 350
+        "custom_coal": {
+            "name": "Regional Coal Blend",
+            "hhv": 28.5,
+            "lhv": 27.2,
+            "density": 850,
+            "carbon_intensity": 350,
         }
     }
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(custom_fuels, f)
         temp_file = f.name
 
@@ -214,11 +213,11 @@ def test_custom_substances_extensibility():
     substance_registry.load_substances(temp_file)
 
     print(f"Custom coal HHV: {substance_registry.hhv('custom_coal')} MJ/kg")
-    assert substance_registry.hhv('custom_coal') == 28.5
+    assert substance_registry.hhv("custom_coal") == 28.5
     print(f"Custom coal LHV: {substance_registry.lhv('custom_coal')} MJ/kg")
-    assert substance_registry.lhv('custom_coal') == 27.2
+    assert substance_registry.lhv("custom_coal") == 27.2
     print(f"Custom coal density: {substance_registry.density('custom_coal')} kg/m3")
-    assert substance_registry.density('custom_coal') == 850
+    assert substance_registry.density("custom_coal") == 850
 
 
 def test_pandas_integration():
@@ -227,18 +226,16 @@ def test_pandas_integration():
 
     try:
         import pandas as pd
-        from energyunits.pandas_tools import convert_units
+
         from energyunits import Quantity
+        from energyunits.pandas_tools import convert_units
 
         # DataFrame operations
-        df = pd.DataFrame({
-            'power': [100, 200, 300],
-            'hours': [24, 12, 8]
-        })
+        df = pd.DataFrame({"power": [100, 200, 300], "hours": [24, 12, 8]})
 
         # Calculate energy in MWh (manually since DataFrame columns are just numbers)
-        df['energy_MWh'] = df['power'] * df['hours'] / 1000  # Convert MW*h to MWh
-        df['energy_GJ'] = df['energy_MWh'].apply(lambda x: Quantity(x, 'MWh').to('GJ').value)
+        df["energy_MWh"] = df["power"] * df["hours"] / 1000  # Convert MW*h to MWh
+        df["energy_GJ"] = df["energy_MWh"].apply(lambda x: Quantity(x, "MWh").to("GJ").value)
 
         print("Pandas integration test:")
         print(df)
@@ -267,5 +264,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Error testing README examples: {e}")
         import traceback
+
         traceback.print_exc()
         exit(1)

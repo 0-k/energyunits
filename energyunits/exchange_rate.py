@@ -106,7 +106,9 @@ class ExchangeRateRegistry:
         to_rate = self.get_exchange_rate(to_currency, year)
         return value * from_rate / to_rate
 
-    def get_conversion_factor(self, from_currency: str, to_currency: str, year: Optional[int] = None) -> float:
+    def get_conversion_factor(
+        self, from_currency: str, to_currency: str, year: Optional[int] = None
+    ) -> float:
         """Factor such that ``amount_to = amount_from * factor``."""
         return self.convert_currency(1.0, from_currency, to_currency, year)
 

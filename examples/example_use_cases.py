@@ -8,7 +8,7 @@ through practical examples for energy system modeling and analysis.
 import numpy as np
 
 from energyunits import Quantity
-from energyunits.units import EUR, GJ, GW, MW, MWh, USD, h, kg, kW, t
+from energyunits.units import EUR, GJ, GW, MW, USD, MWh, h, kg, kW, t
 
 
 def basic_conversions():

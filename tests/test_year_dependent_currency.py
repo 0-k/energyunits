@@ -1,7 +1,9 @@
 """Tests for year-dependent currency conversions."""
 
 import warnings
+
 import pytest
+
 from energyunits import Quantity
 from energyunits.exchange_rate import exchange_rate_registry
 

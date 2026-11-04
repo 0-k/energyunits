@@ -332,7 +332,6 @@ class TestCustomExceptionUsage:
             energy.to("kg")
 
 
-
 class TestErrorMessageQuality:
     """Test the quality and helpfulness of error messages."""
 

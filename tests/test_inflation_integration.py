@@ -63,9 +63,7 @@ class TestInflationIntegration:
         # Should convert both unit and apply inflation
         assert capex_2025_mw.unit == "USD/MW"
         assert capex_2025_mw.reference_year == 2025
-        assert (
-            capex_2025_mw.value > 1000000
-        )  # USD/MW is 1000x larger than USD/kW, plus inflation
+        assert capex_2025_mw.value > 1000000  # USD/MW is 1000x larger than USD/kW, plus inflation
 
     def test_error_handling(self):
         """Test error cases for inflation adjustment."""

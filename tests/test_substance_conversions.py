@@ -70,23 +70,17 @@ class TestSubstanceConversions:
             # Test CO2
             co2 = fuel.to(substance="CO2")
             expected_co2 = composition["carbon_content"] * (44 / 12)
-            assert co2.value == pytest.approx(
-                expected_co2
-            ), f"CO2 calculation failed for {fuel_name}"
+            assert co2.value == pytest.approx(expected_co2), f"CO2 calculation failed for {fuel_name}"
 
             # Test H2O
             h2o = fuel.to(substance="H2O")
             expected_h2o = composition["hydrogen_content"] * (18 / 2)
-            assert h2o.value == pytest.approx(
-                expected_h2o
-            ), f"H2O calculation failed for {fuel_name}"
+            assert h2o.value == pytest.approx(expected_h2o), f"H2O calculation failed for {fuel_name}"
 
             # Test ash
             ash = fuel.to(substance="ash")
             expected_ash = composition["ash_content"]
-            assert ash.value == pytest.approx(
-                expected_ash
-            ), f"Ash calculation failed for {fuel_name}"
+            assert ash.value == pytest.approx(expected_ash), f"Ash calculation failed for {fuel_name}"
 
     def test_renewable_zero_emissions(self):
         """Test that renewable sources produce zero combustion products."""
@@ -202,9 +196,7 @@ class TestSubstanceConversions:
 
             # Both should be positive and reasonable values
             assert co2_kg_per_mwh > 0, f"Calculated CO2 should be positive for {fuel}"
-            assert (
-                stored_intensity >= 0
-            ), f"Stored intensity should be non-negative for {fuel}"
+            assert stored_intensity >= 0, f"Stored intensity should be non-negative for {fuel}"
 
             # For fossil fuels, calculated values should be in reasonable range (100-500 kg CO2/MWh)
             if fuel != "wood_pellets":  # Biomass might be considered carbon neutral

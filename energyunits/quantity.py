@@ -237,7 +237,9 @@ class Quantity:
 
         currency_change = target_unit is not None and _changes_currency(result.unit, target_unit)
         year_change = (
-            reference_year is not None and result.reference_year is not None and reference_year != result.reference_year
+            reference_year is not None
+            and result.reference_year is not None
+            and reference_year != result.reference_year
         )
         if currency_change and year_change:
             from .exchange_rate import exchange_rate_registry
@@ -257,10 +259,15 @@ class Quantity:
     def _convert_unit(self, target_unit: str, exchange_rate_year: Optional[int] = None) -> "Quantity":
         from .exchange_rate import exchange_rate_registry
 
-        factor = registry.conversion_factor(self.unit, target_unit, self.substance, self.basis)
         year = exchange_rate_year if exchange_rate_year is not None else self.reference_year
-        factor *= exchange_rate_registry.unit_correction_factor(self.unit, target_unit, year)
-        return self._make(self.value * factor, target_unit, self.substance, self.basis, self.reference_year)
+        correction = exchange_rate_registry.unit_correction_factor(self.unit, target_unit, year)
+        if correction == 1.0 and registry.is_compatible(self.unit, target_unit):
+            # Two-step scaling keeps common conversions exact (100 MWh -> 360.0 GJ).
+            value = self.value * registry.unit_factor(self.unit) / registry.unit_factor(target_unit)
+        else:
+            factor = registry.conversion_factor(self.unit, target_unit, self.substance, self.basis)
+            value = self.value * (factor * correction)
+        return self._make(value, target_unit, self.substance, self.basis, self.reference_year)
 
     def _convert_basis(self, target_basis: str) -> "Quantity":
         target_basis = _normalize_basis(target_basis)
@@ -304,7 +311,8 @@ class Quantity:
         amounts = [dim for dim in AMOUNT_DIMENSIONS if vector.get(dim)]
         if len(amounts) != 1:
             raise IncompatibleUnitsError(
-                f"Cannot determine the amount of fuel in unit '{self.unit}' for a combustion product conversion."
+                f"Cannot determine the amount of fuel in unit '{self.unit}' "
+                "for a combustion product conversion."
             )
         amount_dim = amounts[0]
         if amount_dim == "MASS":
@@ -313,8 +321,10 @@ class Quantity:
         for atom, exp in registry.parse_unit(self.unit):
             atom_vector = dict(registry.dimension_vector(atom))
             if amount_dim in atom_vector:
-                replacement = [(registry.base_unit("MASS"), atom_vector[amount_dim])]
-                replacement += [(registry.base_unit(d), e) for d, e in atom_vector.items() if d != amount_dim]
+                replacement = [(registry.preferred_unit("MASS"), atom_vector[amount_dim])]
+                replacement += [
+                    (registry.preferred_unit(d), e) for d, e in atom_vector.items() if d != amount_dim
+                ]
                 for new_atom, new_exp in replacement:
                     exponents[new_atom] = exponents.get(new_atom, 0) + new_exp * exp
             else:
@@ -336,9 +346,13 @@ class Quantity:
                 f"Supported currencies: {inflation_registry.get_supported_currencies()}"
             )
         if len(terms) > 1:
-            raise EnergyUnitsError(f"Cannot adjust inflation for a unit with several currencies: '{self.unit}'")
+            raise EnergyUnitsError(
+                f"Cannot adjust inflation for a unit with several currencies: '{self.unit}'"
+            )
         _, currency, exponent = terms[0]
-        factor = inflation_registry.get_cumulative_inflation_factor(currency, self.reference_year, target_year)
+        factor = inflation_registry.get_cumulative_inflation_factor(
+            currency, self.reference_year, target_year
+        )
         if inflation_registry.uses_projection(currency, self.reference_year, target_year):
             warn(
                 f"Inflation adjustment of {currency} between {self.reference_year} and {target_year} uses "
@@ -353,15 +367,16 @@ class Quantity:
         text = f"{value_str} {self.unit}" if self.unit else value_str
         if self.substance:
             text += f" of {self.substance}"
+        if self.value.size > 5:
+            text += f" ({self.value.size} values)"
         return text
 
     def _value_string(self, formatter) -> str:
         if self.value.size == 1:
             return formatter(self.value.item())
-        flat = self.value.flat
         if self.value.size <= 5:
-            return "[" + ", ".join(formatter(v) for v in flat) + "]"
-        return f"[{formatter(self.value.flat[0])}, ..., {formatter(self.value.flat[-1])}] ({self.value.size} values)"
+            return "[" + ", ".join(formatter(v) for v in self.value.flat) + "]"
+        return f"[{formatter(self.value.flat[0])}, ..., {formatter(self.value.flat[-1])}]"
 
     def __str__(self) -> str:
         return self._label(self._value_string(_format_number))
@@ -384,6 +399,8 @@ class Quantity:
     def _repr_html_(self) -> str:
         """Rich HTML representation for Jupyter notebooks."""
         value_str = html.escape(self._value_string(lambda v: f"{v:,.4g}"))
+        if self.value.size > 5:
+            value_str += f" ({self.value.size} values)"
         parts = [
             f'<span style="font-weight:bold;font-size:1.1em">{value_str}</span>',
             f'<span style="color:#2563eb;font-weight:bold"> {html.escape(self.unit)}</span>',
@@ -394,9 +411,13 @@ class Quantity:
                 f'<span style="background:#e0f2fe;color:#0369a1;{badge}">{html.escape(self.substance)}</span>'
             )
         if self.basis:
-            parts.append(f'<span style="background:#fef3c7;color:#92400e;{badge}">{html.escape(self.basis)}</span>')
+            parts.append(
+                f'<span style="background:#fef3c7;color:#92400e;{badge}">{html.escape(self.basis)}</span>'
+            )
         if self.reference_year is not None:
-            parts.append(f'<span style="background:#f3e8ff;color:#6b21a8;{badge}">{self.reference_year}</span>')
+            parts.append(
+                f'<span style="background:#f3e8ff;color:#6b21a8;{badge}">{self.reference_year}</span>'
+            )
         return "".join(parts)
 
     # ------------------------------------------------------- array behaviour
@@ -408,6 +429,18 @@ class Quantity:
 
     def __len__(self) -> int:
         return len(self.value)
+
+    def __bool__(self) -> bool:
+        # NumPy semantics: scalars by value, multi-element arrays are ambiguous.
+        return bool(self.value)
+
+    def __float__(self) -> float:
+        if registry.dimension_vector(self.unit) != ():
+            raise TypeError(
+                f"Only dimensionless quantities can be converted to float, not '{self.unit}'. "
+                f"Use quantity.value or quantity.to(unit).value instead."
+            )
+        return float(self.value * registry.unit_factor(self.unit))
 
     def __getitem__(self, key) -> "Quantity":
         return self._with_value(self.value[key])
@@ -517,14 +550,10 @@ class Quantity:
         return self._with_value(np.abs(self.value))
 
     def _multiply_or_divide(self, other: "Quantity", multiply: bool) -> "Quantity":
-        if multiply:
-            unit, factor = registry.multiply_units(self.unit, other.unit)
-            value = self.value * other.value
-        else:
-            unit, factor = registry.divide_units(self.unit, other.unit)
-            value = self.value / other.value
-        if factor != 1.0:
-            value = value * factor
+        unit, numerator, denominator = registry.combine_units(self.unit, other.unit, 1 if multiply else -1)
+        value = self.value * other.value if multiply else self.value / other.value
+        if numerator != denominator:
+            value = value * numerator / denominator
         basis = self.basis if self.basis == other.basis else None
         if self.reference_year is None:
             year = other.reference_year
@@ -556,10 +585,10 @@ class Quantity:
     def __rtruediv__(self, other: ArrayLike) -> "Quantity":
         if not _is_numeric_operand(other):
             raise TypeError(f"Cannot divide {type(other).__name__} by Quantity")
-        unit, factor = registry.divide_units("", self.unit)
+        unit, numerator, denominator = registry.combine_units("", self.unit, -1)
         value = _as_array(other) / self.value
-        if factor != 1.0:
-            value = value * factor
+        if numerator != denominator:
+            value = value * numerator / denominator
         return self._make(value, unit, self.substance, self.basis, self.reference_year)
 
     # -------------------------------------------------------------- comparisons

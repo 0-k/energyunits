@@ -21,9 +21,7 @@ class TestInflationAdjustment:
 
     def test_backward_adjustment(self):
         """Test deflation to past years."""
-        capex_2022 = Quantity(
-            1130.76, "USD/kW", reference_year=2022
-        )  # 1000 * 1.047 * 1.08
+        capex_2022 = Quantity(1130.76, "USD/kW", reference_year=2022)  # 1000 * 1.047 * 1.08
         capex_2020 = capex_2022.to(reference_year=2020)
 
         assert capex_2020.value == pytest.approx(1000, rel=1e-2)
