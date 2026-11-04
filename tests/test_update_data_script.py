@@ -115,7 +115,7 @@ def test_fetch_with_fake_downloads(ud, files):
     units = files.load("units")["conversion_factors"]
     assert units["EUR"] == 1.17
     assert units["MEUR"] == 1.17e6
-    assert f"| {year} | 1.1700 | 1.3500 | 150.0 | 7.1 |" in files.docs.read_text()
+    assert f"| {year} | 1.1700 | 1.3500 | 150.0 | 7.1 |" in files.docs.read_text(encoding="utf-8")
 
 
 def test_set_values_by_hand(ud, files):
@@ -150,4 +150,4 @@ def test_command_line(ud, files, capsys):
     assert ud.main(args + ["check"]) == 1
     assert ud.main(args + ["sync"]) == 0
     assert ud.main(args + ["check"]) == 0
-    assert json.loads(files.path("units").read_text())["conversion_factors"]["kEUR"] == 1200.0
+    assert json.loads(files.path("units").read_text(encoding="utf-8"))["conversion_factors"]["kEUR"] == 1200.0
