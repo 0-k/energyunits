@@ -60,18 +60,42 @@ protection rule (required reviewer) to `pypi`.
    python -c "import energyunits; print(energyunits.__version__)"
    ```
 
-## Data updates
+## Data updates (yearly)
 
-Exchange rates and inflation should be refreshed once a year when the annual
-averages for the previous year are published (Federal Reserve G.5A in early
-January; BLS, Eurostat, ONS, Statistics Bureau of Japan and NBS in January/February):
+Exchange rates and inflation should be refreshed once a year, when the annual
+averages of the previous year are published (Federal Reserve G.5A in early January;
+BLS, Eurostat, ONS, Statistics Bureau of Japan and NBS by mid-February). The
+developer tool `scripts/update_data.py` does the bookkeeping. It is not part of the
+installed package and needs only the standard library:
 
-1. Update `energyunits/data/exchange_rates.json` and `inflation.json` (move the
-   `projected_from` years forward).
-2. Update the static currency factors in `units.json` to the most recent annual
-   averages (including the `k`/`M`/`bn` prefixed units). `tests/test_data_integrity.py`
-   fails if they disagree.
-3. Update the tables in `DATA_SOURCES.md` and note the change in `CHANGELOG.md`.
+```bash
+# Exchange rates (EUR, GBP, JPY, CNY) and US CPI-U from FRED: review, then write
+python scripts/update_data.py fetch
+python scripts/update_data.py fetch --write
+
+# Inflation rates that are not on FRED, entered by hand
+python scripts/update_data.py set inflation EUR 2026 2.4   # Eurostat HICP, annual average rate of change
+python scripts/update_data.py set inflation GBP 2026 3.1   # ONS series D7G7
+python scripts/update_data.py set inflation JPY 2026 2.0   # Statistics Bureau of Japan
+python scripts/update_data.py set inflation CNY 2026 0.5   # National Bureau of Statistics of China
+
+# Regenerate derived data and verify
+python scripts/update_data.py sync    # static currency factors in units.json, tables in DATA_SOURCES.md
+python scripts/update_data.py check   # also runs in CI
+pytest
+```
+
+Notes:
+
+- `fetch` also shows revisions of earlier years; review them before writing.
+- Setting a value for a year that was a projection moves that currency's
+  `projected_from` boundary forward. Add or adjust placeholder years by hand in
+  `inflation.json` if needed.
+- Exchange rates can also be entered by hand: `set fx JPY 2026 147.2 --per-usd`
+  (JPY and CNY are quoted per USD by the Fed; EUR and GBP as USD per unit).
+- If README examples print values that depend on revised data, `tests/test_readme.py`
+  fails and the documented output in `README.md` needs updating.
+- Add a line to `CHANGELOG.md` and to the version history in `DATA_SOURCES.md`.
 
 ## Versioning
 

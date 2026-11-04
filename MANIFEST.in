@@ -3,3 +3,4 @@ include energyunits/py.typed
 recursive-include energyunits/data *.json
 recursive-include tests *.py
 recursive-include examples *.py
+recursive-include scripts *.py

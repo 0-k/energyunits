@@ -78,7 +78,7 @@ an atom of its own.
 ### Dimensions
 
 Every atom belongs to a named dimension. Base dimensions are `ENERGY`, `MASS`,
-`VOLUME`, `TIME` and `CURRENCY`; `POWER` is a *derived* dimension defined as
+`VOLUME`, `AREA`, `TIME` and `CURRENCY`; `POWER` is a *derived* dimension defined as
 `ENERGY / TIME` in `units.json`. Each unit therefore has a **dimension vector**
 over base dimensions:
 
@@ -98,7 +98,7 @@ name of a matching dimension for compound units (`"GJ/h"` -> `POWER`,
 ### Conversion factors
 
 Each atom has a factor relative to the **SI-coherent base unit** of its dimension:
-J, W, kg, m3, s and USD. Factors of derived dimensions must be coherent with their
+J, W, kg, m3, m2, s and USD. Factors of derived dimensions must be coherent with their
 definition (`factor(W) == factor(J) / factor(s)`); a data-integrity test enforces
 this. Keeping factors relative to SI units means metric prefixes are exact powers
 of ten and conversions like `MWh -> GJ` are exact in floating point. For the same
@@ -301,7 +301,8 @@ pandas, builds the documentation and smoke-tests the built wheel.
 
 ## Limitations and possible extensions
 
-- No temperature, pressure or area dimensions. Affine units such as degree Celsius
+- No temperature, pressure or length dimensions (length can be loaded as a custom
+  dimension, see the tests). Affine units such as degree Celsius
   would need special handling.
 - No uncertainty propagation.
 - One currency per unit for year-specific exchange rates and inflation

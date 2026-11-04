@@ -139,7 +139,7 @@ class TestEnergySystemModels:
         # Create proper cost quantity
         cost_quantity = Quantity(cost, "USD", reference_year=2025)
 
-        assert cost_quantity.value == pytest.approx(10000 * 50 * historical_factor)
+        assert cost_quantity.value == pytest.approx(10000 * price_2025.value)
 
         # Convert to another currency
         cost_eur = cost_quantity.to("EUR")

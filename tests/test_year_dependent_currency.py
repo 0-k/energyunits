@@ -58,9 +58,11 @@ class TestYearDependentExchangeRates:
     def test_default_to_most_recent_year(self):
         """Test that None year defaults to most recent."""
         rate_none = exchange_rate_registry.get_exchange_rate("EUR", None)
-        rate_2025 = exchange_rate_registry.get_exchange_rate("EUR", 2025)
+        latest_year = exchange_rate_registry.get_available_years("EUR")[1]
+        rate_latest = exchange_rate_registry.get_exchange_rate("EUR", latest_year)
 
-        assert rate_none == rate_2025
+        assert latest_year >= 2025
+        assert rate_none == rate_latest
 
 
 class TestCurrencyConversionWithoutInflation:
@@ -71,8 +73,9 @@ class TestCurrencyConversionWithoutInflation:
         cost_eur = Quantity(100, "EUR")
         cost_usd = cost_eur.to("USD")
 
-        # Should use most recent rate (2025: 1.1306)
-        assert cost_usd.value == pytest.approx(100 * 1.1306, rel=1e-4)
+        # Should use the most recent annual average (2025: 1.1306 at the time of writing)
+        latest = exchange_rate_registry.get_exchange_rate("EUR")
+        assert cost_usd.value == pytest.approx(100 * latest, rel=1e-12)
         assert cost_usd.unit == "USD"
 
     def test_currency_conversion_with_explicit_year(self):
@@ -245,8 +248,9 @@ class TestEdgeCases:
         cost = Quantity(100, "EUR")  # No reference year
         converted = cost.to("USD")
 
-        # Should use 2025 rate
-        assert converted.value == pytest.approx(100 * 1.1306, rel=1e-4)
+        # Should use the most recent annual average
+        latest = exchange_rate_registry.get_exchange_rate("EUR")
+        assert converted.value == pytest.approx(100 * latest, rel=1e-12)
 
     def test_same_currency_no_conversion_needed(self):
         """Test converting to same currency is no-op."""

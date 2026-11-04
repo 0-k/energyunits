@@ -30,6 +30,7 @@ GWh = "GWh"
 TWh = "TWh"
 PWh = "PWh"
 BTU = "BTU"  # International Table BTU
+kBTU = "kBTU"  # thousand BTU
 MMBTU = "MMBTU"  # million BTU
 therm = "therm"  # 100,000 BTU
 quad = "quad"  # 10^15 BTU
@@ -67,6 +68,13 @@ gal = "gal"  # US gallon
 ft3 = "ft3"  # cubic foot
 Mcf = "Mcf"  # thousand cubic feet
 Bcf = "Bcf"  # billion cubic feet
+
+# Area
+m2 = "m2"
+km2 = "km2"
+ha = "ha"  # hectare
+acre = "acre"  # international acre
+ft2 = "ft2"  # square foot
 
 # Time
 s = "s"
@@ -113,6 +121,7 @@ __all__ = [
     "TWh",
     "PWh",
     "BTU",
+    "kBTU",
     "MMBTU",
     "therm",
     "quad",
@@ -144,6 +153,11 @@ __all__ = [
     "ft3",
     "Mcf",
     "Bcf",
+    "m2",
+    "km2",
+    "ha",
+    "acre",
+    "ft2",
     "s",
     "h",
     "d",

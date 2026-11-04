@@ -26,7 +26,8 @@ print(Quantity(1200, "EUR/kW", reference_year=2015).to(reference_year=2024))  # 
 
 - **Units for energy work**: SI and IEC-style energy units plus energy-statistics units
   (`toe`, `Mtoe`, `tce`, `Gcal`, `MMBTU`, `therm`, `quad`), gas volumes (`bcm`, `Mcf`),
-  `barrel`, `lb`, and currencies with prefixes (`kEUR`, `MUSD`, `bnEUR`, ...).
+  `barrel`, `lb`, areas (`m2`, `ha`, `km2`, `acre`, `ft2`) and currencies with prefixes
+  (`kEUR`, `MUSD`, `bnEUR`, ...).
 - **Compound units with dimensional analysis**: `EUR/kW/a`, `t/MWh`, `USD/MMBTU`, `GJ/h`,
   `kWh/kW` are parsed, checked and converted (`GJ/h` and `MW` are the same dimension).
 - **Arithmetic that gets units right**: `MW × h → MWh`, `USD/kW × MW → USD`,
@@ -129,6 +130,26 @@ from energyunits import Quantity
 price_times_hours = Quantity(50, "USD/MWh") * Quantity(10, "h")
 print(price_times_hours)                  # 500.00 USD·h/MWh
 print(price_times_hours.to("USD/MW"))     # 500.00 USD/MW
+```
+
+### Area-based quantities
+
+Areas combine with energy and power like any other unit, which covers irradiance,
+building energy intensity, land use and biomass yields:
+
+```python
+from energyunits import Quantity
+
+# PV: annual irradiation x module area x efficiency
+print(Quantity(1700, "kWh/m2/a") * Quantity(20, "m2") * 0.2)   # 6800.00 kWh/a
+
+# Building energy intensity, EU and US conventions
+print(Quantity(120, "kWh/m2/a") * Quantity(500, "m2"))         # 60000.00 kWh/a
+print(Quantity(40, "kBTU/ft2/a").to("kWh/m2/a"))               # 126.18 kWh/m2/a
+
+# Biomass yield and power density
+print((Quantity(10, "t/ha", "wood_chips") * Quantity(200, "ha")).to("GWh"))  # 6.78 GWh of wood_chips
+print(Quantity(1, "W/m2").to("MW/km2"))                        # 1.00 MW/km2
 ```
 
 ## Fuels and substances
@@ -296,7 +317,7 @@ units with `add_units` where needed.
 from energyunits import Quantity
 from energyunits.substance import substance_registry
 
-print(Quantity.list_dimensions())        # ['CURRENCY', 'ENERGY', 'MASS', 'POWER', 'TIME', 'VOLUME']
+print(Quantity.list_dimensions())        # ['AREA', 'CURRENCY', 'ENERGY', 'MASS', 'POWER', 'TIME', 'VOLUME']
 print(Quantity.list_currencies())        # ['CNY', 'EUR', 'GBP', 'JPY', 'USD']
 print("hydrogen" in Quantity.list_substances("hhv"))   # True
 print(substance_registry.get_properties("natural_gas")["lhv"])   # 49.5
@@ -335,7 +356,7 @@ print(Quantity(1, "t", "biomethane").to("MWh"))   # 13.89 MWh of biomethane
 ```
 
 Conversion factors are relative to the SI base unit of each dimension (J, W, kg, m3,
-s, USD). Use `inflation_registry.load_inflation()` and
+m2, s, USD). Use `inflation_registry.load_inflation()` and
 `exchange_rate_registry.load_exchange_rates()` for economic data, and `.reset()` on any
 registry to restore the bundled defaults. The file formats are described in
 [ARCHITECTURE.md](https://github.com/0-k/energyunits/blob/master/ARCHITECTURE.md).
@@ -370,10 +391,11 @@ substances in a sum, combined currency and inflation conversions) are reported a
 
 | Dimension | Units |
 |-----------|-------|
-| Energy    | `J` `kJ` `MJ` `GJ` `TJ` `PJ` `EJ`, `Wh` `kWh` `MWh` `GWh` `TWh` `PWh`, `BTU` `MMBTU` `therm` `quad`, `kcal` `Mcal` `Gcal`, `toe` `ktoe` `Mtoe`, `tce` `Mtce` |
+| Energy    | `J` `kJ` `MJ` `GJ` `TJ` `PJ` `EJ`, `Wh` `kWh` `MWh` `GWh` `TWh` `PWh`, `BTU` `kBTU` `MMBTU` `therm` `quad`, `kcal` `Mcal` `Gcal`, `toe` `ktoe` `Mtoe`, `tce` `Mtce` |
 | Power     | `W` `kW` `MW` `GW` `TW` |
 | Mass      | `g` `kg` `t` `kt` `Mt` `Gt` `lb` |
 | Volume    | `L` `m3` `bcm`, `barrel` (US oil barrel), `gal` (US gallon), `ft3` `Mcf` `Bcf` |
+| Area      | `m2` `km2` `ha` `acre` `ft2` |
 | Time      | `s` `min` `h` `d` `a`/`yr` (8760 h) |
 | Currency  | `USD` `EUR` `GBP` `JPY` `CNY`, each with `k`, `M` and `bn` prefixes (e.g. `kEUR`, `MUSD`, `bnEUR`) |
 

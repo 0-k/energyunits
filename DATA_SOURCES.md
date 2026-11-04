@@ -363,7 +363,7 @@ Conversion factors are exact by definition unless noted.
 |------|------------|
 | `Wh` | 3600 J |
 | `BTU` | International Table BTU, 1055.05585262 J |
-| `MMBTU`, `therm`, `quad` | 10^6, 10^5 and 10^15 BTU |
+| `kBTU`, `MMBTU`, `therm`, `quad` | 10^3, 10^6, 10^5 and 10^15 BTU |
 | `kcal`, `Mcal`, `Gcal` | International Table calorie, 4.1868 J |
 | `toe` | tonne of oil equivalent, 41.868 GJ (IEA/OECD) |
 | `tce` | tonne of coal equivalent, 29.3076 GJ (7 Gcal) |
@@ -372,6 +372,9 @@ Conversion factors are exact by definition unless noted.
 | `ft3`, `Mcf`, `Bcf` | cubic foot (0.3048 m)^3, 10^3 and 10^9 ft3 |
 | `bcm` | 10^9 m3 |
 | `lb` | avoirdupois pound, 0.45359237 kg |
+| `ha`, `km2` | 10^4 m2, 10^6 m2 |
+| `acre` | international acre, 4046.8564224 m2 |
+| `ft2` | square foot, 0.09290304 m2 |
 | `a`, `yr` | 8760 h (365 days), the usual convention in energy models |
 
 Gas volumes (`m3`, `bcm`, `Mcf`) are converted to mass and energy with the density
@@ -391,6 +394,7 @@ multiplies by the product of `(1 + rate/100)` for all years after A up to B.
 | JPY | Statistics Bureau of Japan, CPI all items, yearly average |
 | CNY | National Bureau of Statistics of China, CPI, annual change |
 
+<!-- BEGIN GENERATED inflation-table: edit the JSON data and run `python scripts/update_data.py sync` -->
 | Year | USD | EUR | GBP | JPY | CNY |
 |------|----:|----:|----:|----:|----:|
 | 2000 | 3.36 | 2.20 | 0.80 | -0.70 | 0.40 |
@@ -424,6 +428,7 @@ multiplies by the product of `(1 + rate/100)` for all years after A up to B.
 | 2028* | 2.00 | 2.00 | 2.00 | 2.00 | 2.00 |
 | 2029* | 2.00 | 2.00 | 2.00 | 2.00 | 2.00 |
 | 2030* | 2.00 | 2.00 | 2.00 | 2.00 | 2.00 |
+<!-- END GENERATED inflation-table -->
 
 \* Projections: placeholders equal to the 2 % central bank target, not forecasts.
 Conversions that use them emit an `EnergyUnitsWarning`. Replace them with your own
@@ -449,6 +454,7 @@ of the Federal Reserve System, release G.5A ("Foreign Exchange Rates, Annual"). 
 library stores all rates as US dollars per unit of currency; JPY and CNY, which the
 Fed quotes as units per US dollar, are stored as the inverse of the values below.
 
+<!-- BEGIN GENERATED exchange-rate-table: edit the JSON data and run `python scripts/update_data.py sync` -->
 | Year | EUR (USD per EUR) | GBP (USD per GBP) | JPY (JPY per USD) | CNY (CNY per USD) |
 |------|------------------:|------------------:|------------------:|------------------:|
 | 2000 | 0.9232 | 1.5156 | 107.8 | 8.2784 |
@@ -477,6 +483,7 @@ Fed quotes as units per US dollar, are stored as the inverse of the values below
 | 2023 | 1.0817 | 1.2440 | 140.5001 | 7.0809 |
 | 2024 | 1.0820 | 1.2781 | 151.4551 | 7.1957 |
 | 2025 | 1.1306 | 1.3192 | 149.5686 | 7.1875 |
+<!-- END GENERATED exchange-rate-table -->
 
 Values were taken from the most recent G.5A release that lists each year; the Fed
 occasionally revises historical averages by a few units in the fourth decimal.

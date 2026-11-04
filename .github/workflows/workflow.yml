@@ -20,11 +20,13 @@ jobs:
       - name: Install linters
         run: python -m pip install black isort flake8
       - name: black
-        run: black --check energyunits tests
+        run: black --check energyunits tests scripts
       - name: isort
-        run: isort --check-only energyunits tests
-      - name: flake8 (package)
-        run: flake8 energyunits
+        run: isort --check-only energyunits tests scripts
+      - name: flake8 (package and scripts)
+        run: flake8 energyunits scripts
+      - name: Data consistency (generated tables, static currency factors)
+        run: python scripts/update_data.py check
       - name: flake8 (syntax errors and undefined names everywhere)
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 

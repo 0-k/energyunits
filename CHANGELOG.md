@@ -74,8 +74,10 @@ listed under "Fixed" should be re-checked.
 - Division rule *energy / power = time* (full-load hours) and dimensionless results
   (`GWh / MWh`, capacity factors); reciprocal units (`1/h`).
 - Units: `BTU`, `therm`, `quad`, `kcal`, `Mcal`, `Gcal`, `toe`, `ktoe`, `Mtoe`, `tce`,
-  `Mtce`, `kt`, `lb`, `bcm`, `gal`, `ft3`, `Mcf`, `Bcf`, `d`, `yr`, and prefixed
+  `Mtce`, `kBTU`, `kt`, `lb`, `bcm`, `gal`, `ft3`, `Mcf`, `Bcf`, `d`, `yr`, and prefixed
   currencies (`kEUR`, `MEUR`, `bnEUR`, ... for USD, EUR, GBP, JPY, CNY).
+- `AREA` dimension with `m2`, `km2`, `ha`, `acre`, `ft2` for irradiance (`kWh/m2/a`),
+  building energy intensity (`kWh/m2/a`, `kBTU/ft2/a`), power density and yields (`t/ha`).
 - Inflation data for GBP, JPY and CNY; inflation and exchange rates from 2000.
 - `Quantity`: unary minus/plus, `abs()`, `sum()` support, `number / quantity`,
   indexing, iteration, `len()`, `.sum()`/`.mean()`/`.min()`/`.max()`, `.shape`,
@@ -86,6 +88,9 @@ listed under "Fixed" should be re-checked.
 - Registries: `reset()`, `UnitRegistry.parse_unit`, `dimension_vector`,
   `is_compatible`, `multiply_units`, `divide_units`, `conversion_factor`
   (substance-aware), `preferred_unit`, `currency_of`.
+- Developer tool `scripts/update_data.py` (not installed) for the yearly data update:
+  fetches exchange rates and US CPI from FRED, regenerates derived data, and checks
+  consistency in CI.
 - `py.typed` marker, data-integrity tests, README examples executed as tests,
   CI on Linux/Windows/macOS for Python 3.10-3.14, documentation build and wheel
   smoke test in CI; publishing checks the release tag against the version.

@@ -24,7 +24,7 @@ Every atomic unit belongs to a named dimension (``ENERGY``, ``POWER``,
 
 Conversion factors are stored relative to the base unit of each dimension.
 Internally the factors are relative to SI-coherent base units (J, W, kg, m3,
-s, USD), which keeps metric conversions exact in floating point. For derived
+m2, s, USD), which keeps metric conversions exact in floating point. For derived
 dimensions the factors must be coherent with the definition, i.e.
 ``factor(W) == factor(J) / factor(s)``.
 """
@@ -319,7 +319,7 @@ class UnitRegistry:
 
     @lru_cache(maxsize=4096)
     def unit_factor(self, unit: str) -> float:
-        """Size of ``unit`` relative to the coherent base units (J, W, kg, m3, s, USD)."""
+        """Size of ``unit`` relative to the coherent base units (J, W, kg, m3, m2, s, USD)."""
         numerator, denominator = self.unit_factor_parts(unit)
         return numerator / denominator
 
