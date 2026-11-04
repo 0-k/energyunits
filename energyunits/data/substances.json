@@ -9,7 +9,8 @@
       "carbon_content": "Carbon mass fraction (kg C per kg fuel), used for stoichiometric CO2",
       "hydrogen_content": "Hydrogen mass fraction (kg H per kg fuel), used for H2O",
       "ash_content": "Ash mass fraction (kg ash per kg fuel)",
-      "biogenic": "True if the carbon is of biogenic origin (CO2 is physical, but usually reported as zero)"
+      "biogenic": "True if the carbon is of biogenic origin (CO2 is physical, but usually reported as zero)",
+      "moisture_content": "Moisture mass fraction of the as-received fuel (biomass)"
     },
     "consistency": "For fossil fuels, carbon_content = carbon_intensity * lhv / 1000 * 12/44, so that stoichiometric CO2 reproduces the IPCC 2006 default emission factors exactly.",
     "sources": "IPCC 2006 Guidelines Vol. 2 (Tables 1.2-1.4), IEA, EPA; see DATA_SOURCES.md"
@@ -135,25 +136,27 @@
     "ash_content": 0.0
   },
   "wood_pellets": {
-    "name": "Wood Pellets",
-    "hhv": 20.0,
-    "lhv": 18.5,
+    "name": "Wood Pellets (as received, 8 % moisture)",
+    "hhv": 18.4,
+    "lhv": 17.0,
     "density": 650,
     "carbon_intensity": 0,
-    "carbon_content": 0.5,
-    "hydrogen_content": 0.06,
-    "ash_content": 0.01,
+    "carbon_content": 0.46,
+    "hydrogen_content": 0.055,
+    "ash_content": 0.0092,
+    "moisture_content": 0.08,
     "biogenic": true
   },
   "wood_chips": {
-    "name": "Wood Chips",
-    "hhv": 19.0,
-    "lhv": 16.0,
+    "name": "Wood Chips (as received, 30 % moisture)",
+    "hhv": 13.9,
+    "lhv": 12.2,
     "density": 350,
     "carbon_intensity": 0,
-    "carbon_content": 0.48,
-    "hydrogen_content": 0.06,
-    "ash_content": 0.02,
+    "carbon_content": 0.35,
+    "hydrogen_content": 0.042,
+    "ash_content": 0.014,
+    "moisture_content": 0.3,
     "biogenic": true
   },
   "wind": {

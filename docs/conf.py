@@ -13,7 +13,7 @@ from energyunits import __version__
 # -- Project information -----------------------------------------------------
 
 project = "energyunits"
-copyright = "2025, Martin Klein"
+copyright = "2024-2026, Martin Klein"
 author = "Martin Klein"
 release = __version__
 
@@ -24,11 +24,11 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    "sphinx.ext.intersphinx",
     "myst_parser",
 ]
 
-templates_path = ["_templates"]
+templates_path = []
+highlight_language = "text"  # unlabelled code blocks are not Python
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 source_suffix = {
@@ -45,13 +45,8 @@ html_theme = "furo"
 autodoc_member_order = "bysource"
 autodoc_typehints = "description"
 
-# -- intersphinx configuration -----------------------------------------------
-
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", None),
-    "numpy": ("https://numpy.org/doc/stable/", None),
-}
-
 # -- myst configuration ------------------------------------------------------
 
 myst_heading_anchors = 3
+# README/CHANGELOG link to repository files by absolute URL; nothing to resolve locally.
+suppress_warnings = ["myst.xref_missing"]

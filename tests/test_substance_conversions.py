@@ -60,7 +60,7 @@ class TestSubstanceConversions:
             ),
             (
                 "wood_pellets",
-                {"carbon_content": 0.50, "hydrogen_content": 0.06, "ash_content": 0.01},
+                {"carbon_content": 0.46, "hydrogen_content": 0.055, "ash_content": 0.0092},
             ),
         ]
 

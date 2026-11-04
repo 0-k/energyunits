@@ -39,7 +39,8 @@ class TestIPCCEmissionFactors:
         assert props["biogenic"] is True
         assert props["carbon_intensity"] == 0
         co2 = Quantity(1, "t", "wood_pellets").to("t", substance="CO2")
-        assert co2.value == pytest.approx(0.5 * 44 / 12)
+        # 46 % carbon as received (50 % dry, 8 % moisture)
+        assert co2.value == pytest.approx(0.46 * 44 / 12)
 
 
 class TestHeatingValueBasis:

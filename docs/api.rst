@@ -9,6 +9,19 @@ Quantity
    :undoc-members:
    :show-inheritance:
 
+Exceptions and warnings
+-----------------------
+
+.. automodule:: energyunits.exceptions
+   :members:
+   :show-inheritance:
+
+Pandas integration
+------------------
+
+.. automodule:: energyunits.pandas_tools
+   :members:
+
 Unit Registry
 -------------
 

@@ -1,8 +1,8 @@
 """
 EnergyUnits: units, conversions and calculations for energy system modeling.
 
-Example:
-    ```python
+Example::
+
     from energyunits import Quantity
 
     # Basic unit conversion
@@ -19,7 +19,6 @@ Example:
 
     # Costs with inflation and year-dependent exchange rates
     Quantity(1000, "EUR/kW", reference_year=2015).to("USD/kW", reference_year=2024)
-    ```
 """
 
 from . import units

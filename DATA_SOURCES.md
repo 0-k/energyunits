@@ -4,7 +4,7 @@ This document provides citations and references for all energy conversion values
 
 ## Overview
 
-All data in `energyunits/data/substances.json` has been verified against authoritative sources including:
+The fuel properties in `energyunits/data/substances.json` are based on authoritative sources including:
 - IPCC (Intergovernmental Panel on Climate Change) Guidelines
 - IEA (International Energy Agency) databases
 - EPA (US Environmental Protection Agency) emission factors
@@ -30,12 +30,12 @@ All data in `energyunits/data/substances.json` has been verified against authori
 
 ### Classification (IEA Standards)
 
-**Hard Coal:** Gross calorific value above 23.865 kJ/kg (23.9 MJ/kg)
+**Hard Coal:** Gross calorific value above 23,865 kJ/kg (23.9 MJ/kg)
 - Includes anthracite, coking coal, and bituminous coal
 
-**Sub-bituminous Coal:** Gross calorific value between 17.435 and 23.865 kJ/kg (17.4-23.9 MJ/kg)
+**Sub-bituminous Coal:** Gross calorific value between 17,435 and 23,865 kJ/kg (17.4-23.9 MJ/kg)
 
-**Brown Coal (Lignite):** Gross calorific value less than 17.435 kJ/kg (< 17.4 MJ/kg)
+**Brown Coal (Lignite):** Gross calorific value less than 17,435 kJ/kg (< 17.4 MJ/kg)
 
 **Reference:** [IEA - Harmonisation of Definitions of Energy Products and Flows: Coal](https://iea.blob.core.windows.net/assets/imports/events/39/Coal.pdf)
 
@@ -51,9 +51,9 @@ All data in `energyunits/data/substances.json` has been verified against authori
 - LHV: Approximately 5% lower than HHV
 - **Used value:** HHV 30.0 MJ/kg, LHV 28.5 MJ/kg
 
-**Sub-bituminous Coal:**
-- HHV: 17.4-23.9 MJ/kg (IEA classification)
-- **Used value:** HHV 23.0 MJ/kg, LHV 22.0 MJ/kg
+**Generic coal (`coal`):**
+- Representative steam coal between sub-bituminous and bituminous coal
+- **Used value:** HHV 26.0 MJ/kg, LHV 25.0 MJ/kg, emission factor 95.0 kg CO2/GJ
 
 **Lignite:**
 - HHV: 8-17 MJ/kg (typical range), 15-19 GJ/tonne per IEA
@@ -162,7 +162,9 @@ Emission factors on a net calorific value (LHV) basis:
 **Motor Gasoline:** 69.3 kg CO2/GJ (69,300 kg CO2/TJ)
 - Carbon content: 18.9 kgC/GJ per IPCC 2006
 
-**Diesel and Fuel Oil:** Approximately 74.1 kg CO2/GJ (typical value for distillate fuel oil)
+**Diesel (gas/diesel oil):** 74.1 kg CO2/GJ
+
+**Heavy fuel oil (residual fuel oil):** 77.4 kg CO2/GJ
 
 **Crude Oil:** Approximately 73.3 kg CO2/GJ
 - Carbon content: 20.0 kgC/GJ (range 19.4-20.6 kgC/GJ) per IPCC 2006
@@ -200,28 +202,34 @@ Emission factors on a net calorific value (LHV) basis:
 
 ### Wood Pellets
 
-**Heating Values:**
-- HHV: 18.4-20.5 MJ/kg (softwoods 19.66-20.36 MJ/kg, hardwoods 17.63-20.81 MJ/kg)
-- LHV: 15.6-17.0 MJ/kg (softwoods 15.63-16.94 MJ/kg, hardwoods 14.41-17.91 MJ/kg)
-- **Used values:** HHV 20.0 MJ/kg, LHV 18.5 MJ/kg
+Values are **as received** (ENplus A1 quality, 8 % moisture), derived from dry-basis
+properties (HHV 20.0 MJ/kg, 50 % carbon, 6 % hydrogen, 1 % ash):
 
-**Density:** 650-700 kg/m³ (bulk density)
-- **Used value:** 650 kg/m³
+- HHV (as received) = 20.0 × (1 - 0.08) = 18.4 MJ/kg
+- LHV (as received) = HHV - 2.442 × (moisture + 8.936 × hydrogen) = 17.0 MJ/kg
+  (ENplus A1 requires a net calorific value of at least 16.5 MJ/kg; typical 16.5-17.5)
+- Carbon 46 %, hydrogen 5.5 %, ash 0.9 % (as received)
+- Bulk density: 650 kg/m³ (range 600-750)
+
+Earlier versions used the dry-basis LHV of 18.5 MJ/kg, which overstated the energy
+content of delivered pellets by about 9 %.
 
 **References:**
+- [ENplus Handbook - Quality Requirements](https://enplus-pellets.eu/)
 - [Natural Resources Canada - Solid Biofuels Bulletin](https://natural-resources.canada.ca/sites/nrcan/files/files/NRCAN_BB_no2_e13.pdf)
-- [EUBIA - Biomass Characteristics](https://www.eubia.org/cms/wiki-biomass/biomass-characteristics-2/)
 - [Penn State Extension - Characteristics of Biomass as Heating Fuel](https://extension.psu.edu/characteristics-of-biomass-as-a-heating-fuel)
 
 ### Wood Chips
 
-**Heating Values:**
-- HHV: 19.0 MJ/kg (dry basis)
-- LHV: 16.0 MJ/kg (accounting for moisture)
+Values are **as received** at 30 % moisture (moisture class M30), derived from
+dry-basis properties (HHV 19.8 MJ/kg, 50 % carbon, 6 % hydrogen, 2 % ash):
 
-**Density:** 350 kg/m³ (bulk density, varies with moisture content)
+- HHV (as received) = 13.9 MJ/kg, LHV (as received) = 12.2 MJ/kg (about 3.4 kWh/kg)
+- Carbon 35 %, hydrogen 4.2 %, ash 1.4 % (as received)
+- Bulk density: 350 kg/m³ (varies strongly with species and moisture)
 
-**Note:** Values vary significantly based on wood species and moisture content.
+The energy content of wood chips depends strongly on moisture: at 50 % moisture the
+LHV drops to about 8 MJ/kg. Load a custom substance for other moisture contents.
 
 ## Methanol
 
@@ -258,15 +266,45 @@ All CO2 emission factors follow IPCC 2006 Guidelines methodology:
 3. **Conversion:** Carbon content (kgC/GJ) × (44/12) = CO2 emissions (kg CO2/GJ)
    - Molecular weight ratio: CO2 (44) / C (12) = 3.667
 
-### Carbon Intensity Values in substances.json
+### Carbon content and emission factors in substances.json
 
-The `carbon_intensity` field in `substances.json` represents **kg CO2 emissions per GJ of fuel energy (LHV basis)**.
+CO2 is computed stoichiometrically from the carbon mass fraction:
+`CO2 = fuel mass × carbon_content × 44/12`.
 
-These values are used to calculate CO2 emissions when converting from fuel energy to CO2 mass:
-```python
-coal_energy = Quantity(1, "GJ", substance="coal", basis="LHV")
-co2_emissions = coal_energy.to("t", substance="CO2")
+For fossil fuels, `carbon_content` is derived from the IPCC default emission factor
+(`carbon_intensity`, kg CO2 per GJ on LHV basis) and the LHV used by the library:
+
+```text
+carbon_content = carbon_intensity × lhv / 1000 × 12/44
 ```
+
+so that converting fuel energy to CO2 reproduces the IPCC Tier 1 factors exactly
+(for example 1 GJ of natural gas -> 56.1 kg CO2, 1 MWh of coal -> 0.342 t CO2).
+Methane and methanol use their stoichiometric composition. Earlier versions used
+rounded carbon fractions (coal 0.75, lignite 0.65) that overstated coal emissions by
+16 % and lignite emissions by 68 % relative to the IPCC factors.
+
+For biomass (`biogenic: true`) the physical carbon content is kept, so the library
+returns the biogenic CO2 that is actually emitted, while `carbon_intensity` is 0
+following the IPCC convention of reporting biogenic CO2 separately.
+
+| Substance | LHV (MJ/kg) | Carbon content | kg CO2/GJ (computed) | `carbon_intensity` |
+|-----------|------------:|---------------:|---------------------:|-------------------:|
+| `coal` | 25.0 | 0.6477 | 95.0 | 95.0 |
+| `lignite` | 14.0 | 0.3856 | 101.0 | 101.0 |
+| `bituminous` | 28.5 | 0.7353 | 94.6 | 94.6 |
+| `anthracite` | 31.5 | 0.8445 | 98.3 | 98.3 |
+| `natural_gas` | 49.5 | 0.7574 | 56.1 | 56.1 |
+| `lng` | 49.5 | 0.7574 | 56.1 | 56.1 |
+| `methane` | 50.0 | 0.7487 | 54.9 | 54.9 |
+| `crude_oil` | 42.5 | 0.8496 | 73.3 | 73.3 |
+| `oil` | 42.5 | 0.8496 | 73.3 | 73.3 |
+| `fuel_oil` | 40.5 | 0.8549 | 77.4 | 77.4 |
+| `diesel` | 42.8 | 0.8649 | 74.1 | 74.1 |
+| `gasoline` | 44.0 | 0.8316 | 69.3 | 69.3 |
+| `wood_pellets` | 18.5 | 0.5 | 99.1 | 0 (biogenic) |
+| `wood_chips` | 16.0 | 0.48 | 110.0 | 0 (biogenic) |
+| `methanol` | 19.9 | 0.3749 | 69.1 | 69.1 |
 
 ## Data Quality and Limitations
 
@@ -317,162 +355,152 @@ Data will be periodically reviewed and updated based on:
 - [H2tools - Hydrogen Properties](https://h2tools.org/)
 - [AFDC - Alternative Fuels Data Center](https://afdc.energy.gov/)
 
+## Unit Definitions
+
+Conversion factors are exact by definition unless noted.
+
+| Unit | Definition |
+|------|------------|
+| `Wh` | 3600 J |
+| `BTU` | International Table BTU, 1055.05585262 J |
+| `MMBTU`, `therm`, `quad` | 10^6, 10^5 and 10^15 BTU |
+| `kcal`, `Mcal`, `Gcal` | International Table calorie, 4.1868 J |
+| `toe` | tonne of oil equivalent, 41.868 GJ (IEA/OECD) |
+| `tce` | tonne of coal equivalent, 29.3076 GJ (7 Gcal) |
+| `barrel` | US oil barrel, 42 US gallons = 0.158987294928 m3 |
+| `gal` | US liquid gallon, 3.785411784 L |
+| `ft3`, `Mcf`, `Bcf` | cubic foot (0.3048 m)^3, 10^3 and 10^9 ft3 |
+| `bcm` | 10^9 m3 |
+| `lb` | avoirdupois pound, 0.45359237 kg |
+| `a`, `yr` | 8760 h (365 days), the usual convention in energy models |
+
+Gas volumes (`m3`, `bcm`, `Mcf`) are converted to mass and energy with the density
+of the substance (natural gas: 0.75 kg/m3, approximately normal conditions).
+
 ## Inflation Data
 
-### USD Inflation Rates (2010-2024)
+Annual consumer price inflation in percent, defined as the change of the annual
+average price index from the previous year. Converting from reference year A to B
+multiplies by the product of `(1 + rate/100)` for all years after A up to B.
 
-Historical inflation rates sourced from U.S. Bureau of Labor Statistics (BLS) Consumer Price Index (CPI) data, available through FRED (Federal Reserve Economic Data).
+| Currency | Source |
+|----------|--------|
+| USD | US Bureau of Labor Statistics, CPI-U, U.S. city average, all items |
+| EUR | Eurostat, HICP all items, euro area, annual average rate of change |
+| GBP | UK Office for National Statistics, CPI annual average rate (D7G7) |
+| JPY | Statistics Bureau of Japan, CPI all items, yearly average |
+| CNY | National Bureau of Statistics of China, CPI, annual change |
 
-**Historical Values (2010-2024):**
-The library uses annual CPI percentage changes published by BLS. Key verified values:
-- 2020: 1.23%
-- 2021: 4.70%
-- 2022: 8.00%
-- 2023: 4.12%
-- 2024: ~2.9-3.15% (preliminary/estimated)
+| Year | USD | EUR | GBP | JPY | CNY |
+|------|----:|----:|----:|----:|----:|
+| 2010 | 1.64 | 1.60 | 3.30 | -0.70 | 3.30 |
+| 2011 | 3.16 | 2.70 | 4.50 | -0.30 | 5.40 |
+| 2012 | 2.07 | 2.50 | 2.80 | 0.00 | 2.60 |
+| 2013 | 1.46 | 1.40 | 2.60 | 0.40 | 2.60 |
+| 2014 | 1.62 | 0.40 | 1.50 | 2.70 | 2.00 |
+| 2015 | 0.12 | 0.00 | 0.00 | 0.80 | 1.40 |
+| 2016 | 1.26 | 0.20 | 0.70 | -0.10 | 2.00 |
+| 2017 | 2.13 | 1.50 | 2.70 | 0.50 | 1.60 |
+| 2018 | 2.44 | 1.80 | 2.50 | 1.00 | 2.10 |
+| 2019 | 1.81 | 1.20 | 1.80 | 0.50 | 2.90 |
+| 2020 | 1.23 | 0.30 | 0.90 | 0.00 | 2.50 |
+| 2021 | 4.70 | 2.60 | 2.60 | -0.20 | 0.90 |
+| 2022 | 8.00 | 8.40 | 9.10 | 2.50 | 2.00 |
+| 2023 | 4.12 | 5.40 | 7.30 | 3.20 | 0.20 |
+| 2024 | 2.95 | 2.40 | 2.50 | 2.70 | 0.20 |
+| 2025 | 2.60 | 2.10 | 3.40 | 3.20 | 0.00 |
+| 2026* | 2.00 | 2.00 | 2.00 | 2.00 | 2.00 |
+| 2027* | 2.00 | 2.00 | 2.00 | 2.00 | 2.00 |
+| 2028* | 2.00 | 2.00 | 2.00 | 2.00 | 2.00 |
+| 2029* | 2.00 | 2.00 | 2.00 | 2.00 | 2.00 |
+| 2030* | 2.00 | 2.00 | 2.00 | 2.00 | 2.00 |
 
-**Future Projections (2025-2030):**
-Values for 2025-2030 are estimates based on Federal Reserve targets and economic projections. These should be treated as approximate and updated as actual data becomes available.
+\* Projections: placeholders equal to the 2 % central bank target, not forecasts.
+Conversions that use them emit an `EnergyUnitsWarning`. Replace them with your own
+assumptions via `inflation_registry.load_inflation()` where it matters.
 
-**References:**
-- [FRED - Inflation, Consumer Prices for United States](https://fred.stlouisfed.org/series/FPCPITOTLZGUSA)
-- [BLS - Consumer Price Index](https://www.bls.gov/cpi/)
-- [US Inflation Calculator - Current Rates](https://www.usinflationcalculator.com/inflation/current-inflation-rates/)
+Notes:
 
-### EUR Inflation Rates (2010-2024)
+- USD rates are computed from the BLS annual average index (e.g. 2024: 313.689 vs.
+  304.702 in 2023 = +2.95 %). The 2025 value (+2.6 %) is based on the published
+  annual average, which excludes October 2025 (no data collection during the
+  federal funding lapse).
+- Values are rounded to 0.1 percentage points for EUR, GBP, JPY and CNY and to
+  0.01 for USD. Earlier versions of this library contained errors for USD 2010,
+  2011 and 2014 (2014 was listed as 0.12 % instead of 1.62 %) and preliminary
+  estimates for 2024.
 
-Historical inflation rates sourced from Eurostat's Harmonised Index of Consumer Prices (HICP) for the Euro area.
+## Exchange Rates
 
-**Historical Values (2010-2024):**
-- 2020: 0.3%
-- 2021: 2.6%
-- 2022: 8.4%
-- 2023: ~5.4%
-- 2024: ~2.8% (preliminary/estimated)
+Annual averages of daily noon buying rates in New York from the Board of Governors
+of the Federal Reserve System, release G.5A ("Foreign Exchange Rates, Annual"). The
+library stores all rates as US dollars per unit of currency; JPY and CNY, which the
+Fed quotes as units per US dollar, are stored as the inverse of the values below.
 
-**Future Projections (2025-2030):**
-Values for 2025-2030 are estimates based on ECB inflation targets. These should be treated as approximate.
+| Year | EUR (USD per EUR) | GBP (USD per GBP) | JPY (JPY per USD) | CNY (CNY per USD) |
+|------|------------------:|------------------:|------------------:|------------------:|
+| 2010 | 1.3261 | 1.5465 | 87.78 | 6.7696 |
+| 2011 | 1.3931 | 1.6039 | 79.7 | 6.463 |
+| 2012 | 1.2859 | 1.5852 | 79.82 | 6.3093 |
+| 2013 | 1.3281 | 1.5642 | 97.6 | 6.1478 |
+| 2014 | 1.3297 | 1.6484 | 105.74 | 6.162 |
+| 2015 | 1.1096 | 1.5284 | 121.05 | 6.2827 |
+| 2016 | 1.1072 | 1.3555 | 108.66 | 6.64 |
+| 2017 | 1.1301 | 1.2890 | 112.1 | 6.7569 |
+| 2018 | 1.1817 | 1.3363 | 110.3974 | 6.609 |
+| 2019 | 1.1194 | 1.2768 | 109.0188 | 6.9081 |
+| 2020 | 1.1410 | 1.2829 | 106.7754 | 6.9042 |
+| 2021 | 1.1830 | 1.3764 | 109.8429 | 6.4508 |
+| 2022 | 1.0534 | 1.2371 | 131.4589 | 6.729 |
+| 2023 | 1.0817 | 1.2440 | 140.5001 | 7.0809 |
+| 2024 | 1.0820 | 1.2781 | 151.4551 | 7.1957 |
+| 2025 | 1.1306 | 1.3192 | 149.5686 | 7.1875 |
 
-**References:**
-- [Eurostat - HICP Inflation Rate](https://ec.europa.eu/eurostat/databrowser/view/tec00118/default/table?lang=en)
-- [Eurostat - Inflation in the Euro Area](https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Inflation_in_the_euro_area)
-- [Trading Economics - Euro Area Inflation](https://tradingeconomics.com/euro-area/inflation-cpi)
+Values were taken from the most recent G.5A release that lists each year; the Fed
+occasionally revises historical averages by a few units in the fourth decimal.
 
-### Methodology
+### How exchange rates are applied
 
-The library uses these inflation rates to adjust currency values between reference years using cumulative inflation:
+- A quantity with a `reference_year` is converted with the rate of that year.
+- Without a reference year, the most recent year (2025) is used.
+- For years after the most recent available year, the most recent rate is used and
+  an `EnergyUnitsWarning` is emitted. Years before 2010 raise `MissingDataError`.
+- The static currency factors in `units.json` equal the most recent annual averages;
+  they are used by `registry.get_conversion_factor()` and for currencies without
+  year-dependent data.
 
-```python
-adjusted_value = original_value × Π(1 + inflation_rate_i)
-```
+### Currency + inflation convention: "inflate first, then convert"
 
-where the product is taken over all years between the original and target reference year.
-
-**Important Notes:**
-1. Inflation adjustments are approximate and suitable for planning purposes
-2. Future year projections are estimates and should be updated regularly
-3. Different price indices exist (CPI, PPI, GDP deflator) - this library uses consumer price indices
-4. Real-world inflation varies by sector and geography
-
-## Currency Conversion Values
-
-### Year-Dependent Exchange Rates
-
-**New in v0.2.0**: The library now includes year-dependent exchange rates for historical economic analysis.
-
-Exchange rate data is stored in `exchange_rates.json` with annual average rates from 2010-2025 for:
-- **EUR** (Euro)
-- **GBP** (British Pound)
-- **JPY** (Japanese Yen)
-- **CNY** (Chinese Yuan)
-- **USD** (US Dollar - base currency, always 1.0)
-
-**Data Sources:**
-- European Central Bank (ECB) - EUR/USD reference rates
-- Bank of England - GBP/USD official rates
-- Bank of Japan - JPY/USD rates
-- People's Bank of China - CNY/USD reference rates
-- Cross-validated with IMF, US Treasury, and FRED data
-
-**Methodology:**
-Annual averages computed from daily reference rates published by central banks. This provides representative rates for year-over-year economic analysis while avoiding daily volatility.
-
-### Currency + Inflation Convention: "Inflate First, Then Convert"
-
-When combining currency conversion with inflation adjustment, the library uses a **deterministic convention**:
+When a conversion changes both the currency and the reference year, the value is
+first inflated in its original currency and then converted with the exchange rate
+of the target year:
 
 ```python
 cost_eur_2015 = Quantity(50, "EUR/MWh", reference_year=2015)
 cost_usd_2024 = cost_eur_2015.to("USD/MWh", reference_year=2024)
-
-# Execution order:
-# 1. Inflate EUR from 2015 to 2024 using EUR inflation rates
-# 2. Convert EUR to USD using 2024 exchange rate
+# 1. inflate EUR 2015 -> 2024 with euro area HICP (x 1.2615)
+# 2. convert with the 2024 annual average rate (1.0820 USD/EUR) -> 68.25 USD/MWh
 ```
 
-**Why This Matters:**
+Converting first and inflating afterwards (with US inflation) gives a different
+result, because inflation differentials and exchange rate changes do not cancel
+exactly. Neither path is "right"; the library uses one deterministic convention and
+emits an `EnergyUnitsWarning` whenever it applies. For financial analysis use
+dedicated tools.
 
-The order matters because exchange rates and inflation rates are not perfectly synchronized:
-- **Path 1** (Inflate then Convert): 50 EUR × 1.20 EUR-inflation × 1.085 EUR/USD = ~65 USD
-- **Path 2** (Convert then Inflate): 50 EUR × 1.11 EUR/USD(2015) × 1.30 USD-inflation = ~72 USD
-
-These give **different results** (~10% difference) because EUR and USD had different inflation rates over this period.
-
-**Convention Used:** Path 1 (Inflate First, Then Convert)
-- More closely approximates purchasing power parity
-- Answers: "What would this cost in today's dollars?"
-- Library issues a warning when this combination is detected
-
-**Important Limitations:**
-
-1. **Economic Assumptions**: This convention makes economic assumptions that may not suit all analyses
-2. **Not Financial Returns**: Does not model actual financial returns from currency holdings
-3. **Approximate**: Annual averages smooth over intra-year volatility
-4. **No Transaction Costs**: Rates don't include spreads, fees, or transaction costs
-5. **For Financial Precision**: Use dedicated forex/economic analysis tools
-
-**Supported Use Cases:**
-- Historical energy cost comparisons across countries
-- Long-term infrastructure project cost analysis
-- Academic/research economic modeling
-- Rough currency conversions for context
-
-**Example: Brexit Impact Visible in Data**
-
-```python
-# GBP exchange rate before/after Brexit referendum (June 2016)
-gbp_2015 = Quantity(100, "GBP", reference_year=2015).to("USD")
-# → ~153 USD (strong pound)
-
-gbp_2017 = Quantity(100, "GBP", reference_year=2017).to("USD")
-# → ~129 USD (post-Brexit depreciation)
-```
-
-### Static Fallback Rates (units.json)
-
-For backwards compatibility, `units.json` retains static exchange rate factors:
-- USD: 1.00
-- EUR: 1.08 (approximate 2024-2025 average)
-- GBP: 1.27
-- JPY: 0.0067
-- CNY: 0.14
-
-These are used only when `reference_year` is not specified. **Recommendation**: Always specify `reference_year` for currency conversions to use accurate historical rates.
+**Limitations:** annual averages smooth over intra-year volatility, rates exclude
+spreads and fees, and the CNY is a managed currency.
 
 ## Version History
 
-- **2025-11-24:** Year-dependent currency conversions
-  - Added historical exchange rate data (2010-2025) for EUR, GBP, JPY, CNY
-  - Implemented "inflate first, then convert" convention for currency + inflation
-  - Exchange rates sourced from ECB, Bank of England, Bank of Japan, PBOC
-  - Added comprehensive documentation of path dependency and economic assumptions
-
-- **2025-11-23:** Initial comprehensive data verification and documentation
-  - Fuel properties updated from preliminary estimates to IPCC/IEA standards
-  - CO2 emission factors verified against IPCC 2006 Guidelines
-  - Heating values cross-referenced with multiple authoritative sources
-  - Added inflation data sources and methodology documentation
-  - Documented currency conversion limitations
+- **2026-11 (v0.3.0):** exchange rates replaced by Federal Reserve G.5A annual
+  averages (2010-2025); inflation data corrected (USD 2010/2011/2014) and extended
+  with 2024/2025 actuals and GBP, JPY, CNY series; projections set to the 2 %
+  target and flagged; fossil fuel carbon contents made consistent with the IPCC
+  emission factors; exact unit definitions for barrel and BTU-based units; new units
+  (toe, tce, Gcal, therm, quad, bcm, Mcf, lb, kt, ...).
+- **2025-11:** year-dependent exchange rates; fuel properties cross-checked against
+  IPCC/IEA references.
 
 ## Contact
 

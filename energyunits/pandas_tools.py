@@ -7,8 +7,8 @@ Unit metadata is stored in :attr:`pandas.DataFrame.attrs` under the keys
 :meth:`energyunits.Quantity.to`, so they support everything a ``Quantity``
 supports (compound units, substances, exchange rates, inflation).
 
-Example:
-    ```python
+Example::
+
     import pandas as pd
     from energyunits.pandas_tools import add_units, convert_units, to_quantity
 
@@ -16,7 +16,6 @@ Example:
     df = add_units(df, "generation", "MWh")
     df_gj = convert_units(df, "generation", "GJ")
     total = to_quantity(df_gj, "generation").sum()   # Quantity in GJ
-    ```
 
 Note:
     pandas does not propagate ``attrs`` through every operation (for example

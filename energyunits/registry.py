@@ -130,6 +130,7 @@ class UnitRegistry:
     def _clear_caches(self) -> None:
         for method in (
             UnitRegistry.parse_unit,
+            UnitRegistry.unit_factor_parts,
             UnitRegistry.dimension_vector,
             UnitRegistry.get_dimension,
             UnitRegistry.unit_factor,
@@ -302,15 +303,24 @@ class UnitRegistry:
     # -------------------------------------------------------- conversion factors
 
     @lru_cache(maxsize=4096)
-    def unit_factor(self, unit: str) -> float:
-        """Size of ``unit`` relative to the coherent base units (J, W, kg, m3, s, USD)."""
-        factor = 1.0
+    def unit_factor_parts(self, unit: str) -> Tuple[float, float]:
+        """Size of ``unit`` relative to the base units as ``(numerator, denominator)``."""
+        numerator = denominator = 1.0
         for atom, exp in self.parse_unit(unit):
             atom_factor = self._conversion_factors.get(atom)
             if atom_factor is None:
                 raise MissingDataError(f"No conversion factor defined for unit '{atom}'.")
-            factor *= atom_factor**exp
-        return factor
+            if exp > 0:
+                numerator *= atom_factor**exp
+            else:
+                denominator *= atom_factor**-exp
+        return numerator, denominator
+
+    @lru_cache(maxsize=4096)
+    def unit_factor(self, unit: str) -> float:
+        """Size of ``unit`` relative to the coherent base units (J, W, kg, m3, s, USD)."""
+        numerator, denominator = self.unit_factor_parts(unit)
+        return numerator / denominator
 
     @lru_cache(maxsize=4096)
     def get_conversion_factor(self, from_unit: str, to_unit: str) -> float:
@@ -327,7 +337,14 @@ class UnitRegistry:
             raise IncompatibleUnitsError(f"Incompatible units: {from_unit} and {to_unit}")
         if self.parse_unit(from_unit) == self.parse_unit(to_unit):
             return 1.0
-        return self.unit_factor(from_unit) / self.unit_factor(to_unit)
+        numerator, denominator = self.scaling_parts(from_unit, to_unit)
+        return numerator / denominator
+
+    def scaling_parts(self, from_unit: str, to_unit: str) -> Tuple[float, float]:
+        """``(numerator, denominator)`` of the factor between two units of the same dimension."""
+        from_num, from_den = self.unit_factor_parts(from_unit)
+        to_num, to_den = self.unit_factor_parts(to_unit)
+        return from_num * to_den, from_den * to_num
 
     def conversion_factor(
         self,

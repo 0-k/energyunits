@@ -263,7 +263,8 @@ class Quantity:
         correction = exchange_rate_registry.unit_correction_factor(self.unit, target_unit, year)
         if correction == 1.0 and registry.is_compatible(self.unit, target_unit):
             # Two-step scaling keeps common conversions exact (100 MWh -> 360.0 GJ).
-            value = self.value * registry.unit_factor(self.unit) / registry.unit_factor(target_unit)
+            numerator, denominator = registry.scaling_parts(self.unit, target_unit)
+            value = self.value * numerator / denominator
         else:
             factor = registry.conversion_factor(self.unit, target_unit, self.substance, self.basis)
             value = self.value * (factor * correction)
