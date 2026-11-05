@@ -61,10 +61,12 @@ _CACHED_METHODS = (
     "parse_unit",
     "dimension_vector",
     "get_dimension",
+    "unit_factor_split",
     "unit_factor_parts",
     "unit_factor",
     "get_conversion_factor",
     "combine_units",
+    "currency_terms",
 )
 
 
@@ -441,18 +443,47 @@ class UnitRegistry:
 
     # -------------------------------------------------------- conversion factors
 
-    def unit_factor_parts(self, unit: str) -> Tuple[float, float]:
-        """Size of ``unit`` relative to the base units as ``(numerator, denominator)``."""
+    def unit_factor_split(self, unit: str) -> Tuple[float, float, Tuple[Tuple[str, int], ...]]:
+        """``(numerator, denominator, currencies)``: size of ``unit`` with currencies kept apart.
+
+        Currency atoms contribute only their scale (``kEUR`` -> 1000); their
+        exchange rates are returned as ``(code, exponent)`` pairs. Converting between
+        units of the same currency (``kEUR`` -> ``EUR``) is therefore exact.
+        """
         numerator = denominator = 1.0
+        currencies: Dict[str, int] = {}
         for atom, exp in self.parse_unit(unit):
-            atom_factor = self._conversion_factors.get(atom)
-            if atom_factor is None:
-                raise MissingDataError(f"No conversion factor defined for unit '{atom}'.")
+            info = self.currency_of(atom)
+            if info is not None:
+                code, atom_factor = info
+                currencies[code] = currencies.get(code, 0) + exp
+            else:
+                atom_factor = self._conversion_factors.get(atom)
+                if atom_factor is None:
+                    raise MissingDataError(f"No conversion factor defined for unit '{atom}'.")
             if exp > 0:
                 numerator *= atom_factor**exp
             else:
                 denominator *= atom_factor**-exp
+        return numerator, denominator, tuple((code, exp) for code, exp in currencies.items() if exp)
+
+    def _apply_currency_factors(
+        self, numerator: float, denominator: float, currencies
+    ) -> Tuple[float, float]:
+        for code, exp in currencies:
+            factor = self._conversion_factors.get(code)
+            if factor is None:
+                raise MissingDataError(f"No conversion factor defined for currency '{code}'.")
+            if exp > 0:
+                numerator *= factor**exp
+            elif exp < 0:
+                denominator *= factor**-exp
         return numerator, denominator
+
+    def unit_factor_parts(self, unit: str) -> Tuple[float, float]:
+        """Size of ``unit`` relative to the base units as ``(numerator, denominator)``."""
+        numerator, denominator, currencies = self.unit_factor_split(unit)
+        return self._apply_currency_factors(numerator, denominator, currencies)
 
     def unit_factor(self, unit: str) -> float:
         """Size of ``unit`` relative to the coherent base units (J, W, kg, m3, m2, s, USD)."""
@@ -477,10 +508,17 @@ class UnitRegistry:
         return numerator / denominator
 
     def scaling_parts(self, from_unit: str, to_unit: str) -> Tuple[float, float]:
-        """``(numerator, denominator)`` of the factor between two units of the same dimension."""
-        from_num, from_den = self.unit_factor_parts(from_unit)
-        to_num, to_den = self.unit_factor_parts(to_unit)
-        return from_num * to_den, from_den * to_num
+        """``(numerator, denominator)`` of the factor between two units of the same dimension.
+
+        Exchange rates are applied only for currencies whose exponent differs, so
+        ``kEUR`` -> ``EUR`` is exactly 1000.
+        """
+        from_num, from_den, from_currencies = self.unit_factor_split(from_unit)
+        to_num, to_den, to_currencies = self.unit_factor_split(to_unit)
+        net: Dict[str, int] = dict(from_currencies)
+        for code, exp in to_currencies:
+            net[code] = net.get(code, 0) - exp
+        return self._apply_currency_factors(from_num * to_den, from_den * to_num, net.items())
 
     def conversion_factor(
         self,
@@ -519,7 +557,8 @@ class UnitRegistry:
                 f"({from_unit} -> {to_unit}). Specify one, e.g. Quantity(..., substance='coal')."
             )
         ratio = self._amount_ratio(source_dim, target_dim, substance, basis)
-        return self.unit_factor(from_unit) * ratio**exponent / self.unit_factor(to_unit)
+        numerator, denominator = self.scaling_parts(from_unit, to_unit)
+        return numerator / denominator * ratio**exponent
 
     @staticmethod
     def _amount_dimension_swap(difference: Dict[str, int]) -> Optional[Tuple[str, str, int]]:
@@ -597,12 +636,18 @@ class UnitRegistry:
             items = self._merge_same_kind(items, scale)
         return self.format_terms([(atom, exp) for atom, exp, _ in items]), scale[0], scale[1]
 
-    def _scale_by(self, scale: List[float], atom: str, exp: int) -> None:
-        """Multiply ``scale`` (numerator, denominator) by ``factor(atom) ** exp``."""
+    def _scale_by(self, scale: List[float], atom: str, exp: int, same_currency: bool = False) -> None:
+        """Multiply ``scale`` (numerator, denominator) by ``factor(atom) ** exp``.
+
+        With ``same_currency`` a currency atom contributes only its scale, which is
+        exact when atoms of one currency are merged (``kEUR/EUR`` -> 1000).
+        """
+        info = self.currency_of(atom) if same_currency else None
+        factor = info[1] if info is not None else self._conversion_factors[atom]
         if exp > 0:
-            scale[0] *= self._conversion_factors[atom] ** exp
+            scale[0] *= factor**exp
         elif exp < 0:
-            scale[1] *= self._conversion_factors[atom] ** -exp
+            scale[1] *= factor**-exp
 
     def _same_kind(self, atom1: str, atom2: str) -> bool:
         dim = self._dimensions[atom1]
@@ -627,8 +672,8 @@ class UnitRegistry:
                     break
                 if self._same_kind(existing[0], atom):
                     # atom**exp == (factor(atom) / factor(existing))**exp * existing**exp
-                    self._scale_by(scale, atom, exp)
-                    self._scale_by(scale, existing[0], -exp)
+                    self._scale_by(scale, atom, exp, same_currency=True)
+                    self._scale_by(scale, existing[0], -exp, same_currency=True)
                     existing[1] += exp
                     existing[2] = existing[2] | origin
                     break
@@ -706,14 +751,14 @@ class UnitRegistry:
             return atom, 1.0
         return info["currency"], float(info.get("scale", 1.0))
 
-    def currency_terms(self, unit: str) -> List[Tuple[str, str, int]]:
+    def currency_terms(self, unit: str) -> Tuple[Tuple[str, str, int], ...]:
         """Currency atoms of a unit as ``(atom, currency_code, exponent)`` tuples."""
         result = []
         for atom, exp in self.parse_unit(unit):
             info = self.currency_of(atom)
             if info is not None:
                 result.append((atom, info[0], exp))
-        return result
+        return tuple(result)
 
     # ------------------------------------------------------ legacy/compat helpers
 

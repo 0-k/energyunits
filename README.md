@@ -187,6 +187,9 @@ print(Quantity(30, "EUR/MWh", "natural_gas", basis="HHV").to(basis="LHV"))  # 33
 # A US Henry Hub price (HHV) in the European LHV convention
 henry_hub = Quantity(3.5, "USD/MMBTU", "natural_gas", basis="HHV")
 print(henry_hub.to("USD/MWh", basis="LHV"))   # 13.27 USD/MWh of natural_gas
+
+# Mixed bases are aligned in arithmetic: an HHV price times fuel energy on LHV
+print(henry_hub * Quantity(1000, "MWh", "natural_gas"))   # 13268.61 USD of natural_gas
 ```
 
 ### Emissions

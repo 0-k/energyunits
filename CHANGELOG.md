@@ -35,6 +35,11 @@ listed under "Fixed" should be re-checked.
   returned an object array of quantities.
 - `GJ / h`, `MW × MW` and products with dimensionless quantities raised errors.
 - Malformed units such as `"MW//h"` or `"MW/"` were accepted.
+- Conversions of units with several currencies (`EUR/kUSD` -> `GBP/kUSD`) ignored
+  the reference year and used the latest exchange rates.
+- Conversions between prefixes of one currency were not exact
+  (`1 kEUR -> 999.9999999999999 EUR`).
+- Numeric strings in pandas Series and object arrays were silently parsed.
 - `pandas_tools.convert_units` used static exchange rates and could not convert
   substance-dependent units.
 - Tests mutated the global registries and depended on execution order.
@@ -54,8 +59,13 @@ listed under "Fixed" should be re-checked.
 - **Basis conversion** rescales energy amounts, rescales per-energy units (prices,
   emission factors) inversely and only re-labels masses and volumes.
 - **Addition, subtraction and comparison** convert the right operand to the left
-  operand's heating value basis and (for costs) reference year before combining.
-- **Products and quotients** keep the reference year of the operand that has one.
+  operand's heating value basis and (for costs) reference year before combining; a
+  fuel mass or volume is converted to energy at the left basis.
+- **Products and quotients** align what cancels: fuel energy of one substance on
+  different bases (`USD/MWh (HHV) × MWh (LHV)`) and money of different reference
+  years (`EUR (2015) / EUR/MWh (2024)`). They keep the basis of the operand with fuel
+  energy (`MW (HHV) × h` is HHV energy) and the reference year of the monetary
+  operand.
 - **Input validation**: values must be numeric (stored as float arrays), the basis
   must be HHV/LHV (case-insensitive), reference years must be integers.
 - `str()` of very small values uses significant digits (`0.00034 t/kWh` instead of
@@ -107,7 +117,8 @@ listed under "Fixed" should be re-checked.
   reference year metadata; conversions go through `Quantity.to`.
 - `load_units`, `load_substances`, `load_inflation` and `load_exchange_rates` accept a
   mapping as well as a file path, validate the data (unknown sections, non-positive
-  factors, malformed rules and years), and are thread-safe: conversions running in
+  factors, malformed rules and years, empty series, non-positive heating values and
+  densities, LHV above HHV, mass fractions outside 0-1), and are thread-safe: conversions running in
   other threads keep seeing the existing definitions while data is loaded.
 - Registries: `reset()`, `UnitRegistry.parse_unit`, `dimension_vector`,
   `is_compatible`, `multiply_units`, `divide_units`, `conversion_factor`

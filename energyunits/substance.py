@@ -2,6 +2,7 @@
 
 import difflib
 import json
+import math
 import threading
 from collections.abc import Mapping
 from pathlib import Path
@@ -32,6 +33,8 @@ _NUMERIC_FIELDS = (
     "moisture_content",
 )
 _RANGE_FIELDS = ("lhv_range", "carbon_intensity_range")
+_POSITIVE_FIELDS = ("hhv", "lhv", "density")
+_FRACTION_FIELDS = ("carbon_content", "hydrogen_content", "ash_content", "moisture_content")
 
 
 def _freeze(value):
@@ -59,8 +62,19 @@ def _validate(name, props) -> None:
         raise ValueError(f"Properties of substance '{name}' must be a JSON object")
     for field in _NUMERIC_FIELDS:
         value = props.get(field)
-        if value is not None and not is_number(value):
+        if value is None:
+            continue
+        if not is_number(value) or not math.isfinite(value):
             raise ValueError(f"Property '{field}' of substance '{name}' must be a number or null")
+        if field in _POSITIVE_FIELDS and value <= 0:
+            raise ValueError(f"Property '{field}' of substance '{name}' must be positive, got {value}")
+        if field in _FRACTION_FIELDS and not 0 <= value <= 1:
+            raise ValueError(f"Property '{field}' of substance '{name}' must be between 0 and 1, got {value}")
+        if field == "carbon_intensity" and value < 0:
+            raise ValueError(f"Property 'carbon_intensity' of substance '{name}' must not be negative")
+    lhv, hhv = props.get("lhv"), props.get("hhv")
+    if lhv is not None and hhv is not None and lhv > hhv:
+        raise ValueError(f"Substance '{name}': lhv ({lhv}) must not exceed hhv ({hhv})")
     for field in _RANGE_FIELDS:
         value = props.get(field)
         if value is None:

@@ -1,6 +1,5 @@
 """Shared helpers for loading custom data into the registries."""
 
-import copy
 import json
 import math
 import os
@@ -15,10 +14,19 @@ DataSource = Union[str, "os.PathLike[str]", Mapping]
 _MAX_LISTED = 10
 
 
+def _plain(value):
+    """Copy of nested data with mappings as dicts and sequences as lists (like parsed JSON)."""
+    if isinstance(value, Mapping):
+        return {key: _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    return value
+
+
 def read_source(source: DataSource) -> dict:
-    """Return the data of a JSON file path or a (deep-copied) mapping."""
+    """Return the data of a JSON file path, or a copy of a mapping (read-only views included)."""
     if isinstance(source, Mapping):
-        return copy.deepcopy(dict(source))
+        return _plain(source)
     if isinstance(source, (str, os.PathLike)):
         with open(source, encoding="utf-8") as f:
             data = json.load(f)

@@ -180,8 +180,11 @@ class TestMetadataPropagation:
     def test_reference_year_from_either_operand(self):
         assert (Quantity(2, "MW") * Quantity(5, "USD/kW", reference_year=2020)).reference_year == 2020
         assert (Quantity(5, "USD", reference_year=2020) / Quantity(2, "MWh")).reference_year == 2020
+        # money of different years is aligned to the left operand's year before dividing
         mixed = Quantity(5, "USD", reference_year=2020) / Quantity(2, "USD/MWh", reference_year=2021)
-        assert mixed.reference_year is None
+        price_2020 = Quantity(2, "USD/MWh", reference_year=2021).to(reference_year=2020).value
+        assert mixed.reference_year == 2020
+        assert mixed.value == pytest.approx(5 / price_2020)
 
 
 class TestSerialization:

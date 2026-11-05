@@ -182,9 +182,10 @@ first and then converted with the exchange rate of the *target* year. An
 ### Addition, subtraction and comparison
 
 The right operand is *aligned* to the left one (`Quantity._align`): converted to
-the left unit, to the left heating value basis (if both refer to an energy amount
-of a known substance) and, for monetary units, to the left reference year. Then the
-values are combined. Mixing substances drops the substance and warns.
+the left unit, to the left heating value basis (if it has a substance; a mass or
+volume is then converted to energy at that basis, so `MMBTU (HHV) + m3` adds HHV
+energy) and, for monetary units, to the left reference year. Then the values are
+combined; an operand that already matches is used as is. Mixing substances drops the substance and warns.
 `==` uses a relative tolerance of 1e-9 so that conversions that differ only by
 floating point round-off compare equal; incompatible quantities are unequal.
 `sum()` works because `0 + quantity` is supported.
@@ -211,9 +212,16 @@ floating point round-off compare equal; incompatible quantities are unequal.
 3. **Format** the remaining atoms canonically: numerator atoms joined with `·`,
    then `/atom` for every denominator atom.
 
+Before multiplying or dividing, what can cancel is aligned: if both operands are
+fuel energy of the same substance on different bases, the right one is converted
+to the left basis (`USD/MWh (HHV) × MWh (LHV)`), and if both are monetary with
+different reference years, the right one is inflated to the left year
+(`EUR (2015) / EUR/MWh (2024)`).
+
 Metadata of products and quotients: the substance is kept if equal or if only one
-operand has one; the basis is kept only if equal; the reference year is taken from
-whichever operand has one (and dropped if they disagree).
+operand has one. The basis is that of the operand with fuel energy
+(`MW (HHV) × h` is HHV energy), or dropped if two such operands disagree. The
+reference year is that of the monetary operand, or of whichever operand has one.
 
 Scalars and numeric arrays scale the value and keep unit and metadata.
 `number / quantity` returns the reciprocal unit (`1 / Quantity(4, "h")` is

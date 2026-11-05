@@ -3,7 +3,7 @@
 import json
 import threading
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from ._loading import DataSource, raise_conflicts, read_source
 from ._warnings import warn
@@ -130,27 +130,26 @@ class ExchangeRateRegistry:
         """Correction applied on top of the static registry factor for a currency change.
 
         The unit registry converts currencies with static (most recent) rates.
-        This returns ``(year_rate / static_rate) ** exponent`` for a conversion
-        between units that contain one currency each, so that the combined
-        factor uses the exchange rate of ``year``. Returns 1.0 when no currency
-        change is involved or no year-dependent data is available.
+        For every currency whose exponent differs between the two units this
+        multiplies by ``(year_rate / static_rate) ** exponent``, so the combined
+        factor uses the exchange rates of ``year`` (also for units with several
+        currencies such as ``EUR/kUSD``). Currencies without year-dependent data
+        keep their static rate. Returns 1.0 when no currency changes.
         """
         from .registry import registry
 
-        source = registry.currency_terms(from_unit)
-        target = registry.currency_terms(to_unit)
-        if len(source) != 1 or len(target) != 1:
-            return 1.0
-        (_, source_code, source_exp), (_, target_code, target_exp) = source[0], target[0]
-        if source_code == target_code or source_exp != target_exp:
-            return 1.0
-        if not (self.has_currency(source_code) and self.has_currency(target_code)):
-            return 1.0
-        if not (registry.has_unit(source_code) and registry.has_unit(target_code)):
-            return 1.0
-        static = registry.get_conversion_factor(source_code, target_code)
-        dynamic = self.get_conversion_factor(source_code, target_code, year)
-        return (dynamic / static) ** source_exp
+        exponents: Dict[str, int] = {}
+        for _, code, exp in registry.currency_terms(from_unit):
+            exponents[code] = exponents.get(code, 0) + exp
+        for _, code, exp in registry.currency_terms(to_unit):
+            exponents[code] = exponents.get(code, 0) - exp
+        correction = 1.0
+        for code, exp in exponents.items():
+            if exp == 0 or code == "USD" or not self.has_currency(code) or not registry.has_unit(code):
+                continue
+            static = registry.get_conversion_factor(code, "USD")
+            correction *= (self.get_exchange_rate(code, year) / static) ** exp
+        return correction
 
     def get_supported_currencies(self) -> List[str]:
         """Currencies with exchange rate data (always includes USD)."""

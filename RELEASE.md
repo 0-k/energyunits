@@ -88,9 +88,10 @@ pytest
 Notes:
 
 - `fetch` also shows revisions of earlier years; review them before writing.
-- Setting a value for a year that was a projection moves that currency's
-  `projected_from` boundary forward. Add or adjust placeholder years by hand in
-  `inflation.json` if needed.
+- Setting the first projected year of a currency (its `projected_from`) makes it
+  historical and moves the boundary forward, so set the years in order. Setting a
+  later year only changes that placeholder. `fetch` counts a year only once it is
+  complete (December or a later month published).
 - Exchange rates can also be entered by hand: `set fx JPY 2026 147.2 --per-usd`
   (JPY and CNY are quoted per USD by the Fed; EUR and GBP as USD per unit).
 - If README examples print values that depend on revised data, `tests/test_readme.py`

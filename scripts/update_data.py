@@ -27,8 +27,9 @@ Yearly update, once the annual averages of the previous year are published
     python scripts/update_data.py sync
     pytest
 
-Setting a historical value for a year that was a projection moves the
-``projected_from`` boundary of that currency forward.
+Setting the first projected year of a currency (its ``projected_from``) marks it
+as historical and moves the boundary forward; set the years in order. Setting a
+later year only changes that projection.
 """
 
 import argparse
@@ -146,14 +147,25 @@ def annual_average_inflation(monthly: Dict[str, float], min_months: int = 11) ->
     """Inflation in percent from a monthly price index, BLS style.
 
     The annual average index (rounded to three decimals, as published by BLS) is
-    compared with that of the previous year. Years with fewer than ``min_months``
-    observations (the current year, or gaps) are skipped. ``min_months=11``
-    accepts 2025, for which October was not collected.
+    compared with that of the previous year. A year counts only once it is
+    complete: at least ``min_months`` observations, and either December or a later
+    observation is published. ``min_months=11`` accepts 2025, for which October was
+    not collected, but not the current year with January to November published.
     """
-    by_year: Dict[int, List[float]] = {}
+    by_year: Dict[int, Dict[int, float]] = {}
     for date, value in monthly.items():
-        by_year.setdefault(int(date[:4]), []).append(value)
-    averages = {year: round(sum(v) / len(v), 3) for year, v in by_year.items() if len(v) >= min_months}
+        by_year.setdefault(int(date[:4]), {})[int(date[5:7])] = value
+    last_year = max(by_year, default=0)
+
+    def complete(year: int) -> bool:
+        months = by_year[year]
+        return len(months) >= min_months and (12 in months or year < last_year)
+
+    averages = {
+        year: round(sum(months.values()) / len(months), 3)
+        for year, months in by_year.items()
+        if complete(year)
+    }
     return {
         year: round((averages[year] / averages[year - 1] - 1) * 100, 2)
         for year in sorted(averages)
@@ -184,13 +196,22 @@ def _merge(target: dict, new: Dict[int, float], since: int) -> List[Change]:
 
 
 def _mark_historical(inflation: dict, currency: str, year: int) -> None:
+    """Move the projection boundary past ``year`` if it is the first projected year.
+
+    Setting a later year only updates that projection: the years before it are
+    still placeholders, so they must not become historical.
+    """
     projected = inflation.setdefault("_metadata", {}).setdefault("projected_from", {})
-    if currency in projected and year >= projected[currency]:
+    if projected.get(currency) == year:
         projected[currency] = year + 1
 
 
 def set_inflation(files: DataFiles, currency: str, year: int, rate: float) -> None:
-    """Set the (historical) inflation rate of one year in percent."""
+    """Set the inflation rate of one year in percent.
+
+    Setting the first projected year makes it historical (``projected_from`` moves
+    forward); setting a later projected year only changes that placeholder.
+    """
     if not -50 < rate < 100:
         raise ValueError(f"Implausible inflation rate: {rate} %")
     data = files.load("inflation")
@@ -242,7 +263,7 @@ def fetch(
     target = inflation.setdefault("USD", {})
     changes["inflation USD (%)"] = _merge(target, usd_rates, since)
     inflation["USD"] = _sorted_years(target)
-    for year in usd_rates:
+    for year in sorted(usd_rates):
         if year >= since:
             _mark_historical(inflation, "USD", year)
 

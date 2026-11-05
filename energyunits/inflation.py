@@ -44,6 +44,8 @@ def parse_annual_series(data: dict, what: str, valid, requirement: str) -> Dict[
             raise ValueError(f"Invalid currency code {currency!r} in {what}")
         if not isinstance(year_data, Mapping):
             raise ValueError(f"{what} for {currency} must map years to values")
+        if not year_data:
+            raise ValueError(f"{what} for {currency} must contain at least one year")
         values = {}
         for year, value in year_data.items():
             where = f"{what} for {currency}"
@@ -159,8 +161,14 @@ class InflationRegistry:
         return factor if to_year > from_year else 1.0 / factor
 
     def get_available_years(self, currency: str) -> Tuple[int, int]:
-        """First and last reference year that can be converted for a currency."""
-        years = sorted(self._inflation_data[currency])
+        """First and last reference year that can be converted for a currency.
+
+        Raises:
+            MissingDataError: if there is no inflation data for the currency.
+        """
+        years = sorted(self._inflation_data.get(currency, ()))
+        if not years:
+            raise MissingDataError(f"No inflation data for currency '{currency}'")
         return years[0] - 1, years[-1]
 
     def uses_projection(self, currency: str, from_year: int, to_year: int) -> bool:

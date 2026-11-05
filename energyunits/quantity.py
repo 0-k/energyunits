@@ -43,6 +43,8 @@ def _as_array(value) -> np.ndarray:
     if value is None:
         raise TypeError("Quantity value must be numeric, got None")
     if hasattr(value, "to_numpy") and not isinstance(value, np.ndarray):
+        if getattr(getattr(value, "dtype", None), "kind", "O") in "OSU":
+            _reject_strings(value.to_numpy(), value)
         try:
             return value.to_numpy(dtype=float, na_value=np.nan)
         except (TypeError, ValueError):
@@ -54,11 +56,18 @@ def _as_array(value) -> np.ndarray:
     if kind in "biu":
         return array.astype(float)
     if kind == "O":
+        _reject_strings(array, value)
         try:
             return np.asarray(value, dtype=float)
         except (TypeError, ValueError):
             pass
     raise TypeError(f"Quantity value must be numeric, got {type(value).__name__} with dtype '{array.dtype}'")
+
+
+def _reject_strings(array: np.ndarray, value) -> None:
+    """NumPy and pandas parse numeric strings when casting to float; values must be numbers."""
+    if any(isinstance(item, (str, bytes)) for item in np.asarray(array, dtype=object).flat):
+        raise TypeError(f"Quantity value must be numeric, got strings in {type(value).__name__}")
 
 
 def _is_numeric_operand(other) -> bool:
@@ -264,7 +273,10 @@ class Quantity:
         if correction == 1.0 and registry.is_compatible(self.unit, target_unit):
             # Two-step scaling keeps common conversions exact (100 MWh -> 360.0 GJ).
             numerator, denominator = registry.scaling_parts(self.unit, target_unit)
-            value = self.value * numerator / denominator
+            if numerator == denominator:
+                value = self.value.copy()
+            else:
+                value = self.value * numerator / denominator
         else:
             factor = registry.conversion_factor(self.unit, target_unit, self.substance, self.basis)
             value = self.value * (factor * correction)
@@ -470,23 +482,40 @@ class Quantity:
 
     # --------------------------------------------------------------- arithmetic
 
+    def _basis_matters(self) -> bool:
+        """True if the heating value basis changes what this quantity means (fuel energy)."""
+        return self.substance is not None and registry.dimension_exponent(self.unit, "ENERGY") != 0
+
+    def _has_currency(self) -> bool:
+        return bool(registry.currency_terms(self.unit))
+
+    def _basis_target(self, other: "Quantity") -> Optional[str]:
+        """Basis that ``other`` must be converted to before it is combined with this quantity."""
+        if other.substance is None or (other.basis or "LHV") == (self.basis or "LHV"):
+            return None
+        return self.basis or "LHV"
+
+    def _year_target(self, other: "Quantity") -> Optional[int]:
+        """Reference year that ``other`` must be converted to before it is combined with this quantity."""
+        if (
+            self.reference_year is None
+            or other.reference_year is None
+            or self.reference_year == other.reference_year
+            or not other._has_currency()
+        ):
+            return None
+        return self.reference_year
+
     def _align(self, other: "Quantity") -> "Quantity":
-        """``other`` converted to this quantity's unit, heating value basis and reference year."""
-        target_basis = None
-        if (
-            other.substance is not None
-            and (other.basis or "LHV") != (self.basis or "LHV")
-            and registry.dimension_exponent(other.unit, "ENERGY") != 0
-        ):
-            target_basis = self.basis or "LHV"
-        target_year = None
-        if (
-            self.reference_year is not None
-            and other.reference_year is not None
-            and self.reference_year != other.reference_year
-            and registry.currency_terms(other.unit)
-        ):
-            target_year = self.reference_year
+        """``other`` converted to this quantity's unit, heating value basis and reference year.
+
+        A mass or volume of fuel is converted to an energy unit at this quantity's
+        basis, so ``HHV energy + m3`` adds HHV energy.
+        """
+        target_basis = self._basis_target(other)
+        target_year = self._year_target(other)
+        if target_basis is None and target_year is None and other.unit == self.unit:
+            return other
         return other.to(self.unit, basis=target_basis, reference_year=target_year)
 
     def _merged_substance(self, other: "Quantity", verb: Optional[str] = None) -> Optional[str]:
@@ -503,6 +532,38 @@ class Quantity:
             )
         return None
 
+    def _merged_basis(self, other: "Quantity") -> Optional[str]:
+        """Basis of a result combining two (aligned) quantities.
+
+        Only operands with fuel energy carry a meaningful basis: ``MW (HHV) * h``
+        is HHV energy. Conflicting bases give ``None``.
+        """
+        if self.basis == other.basis:
+            return self.basis
+        relevant = [q for q in (self, other) if q._basis_matters()]
+        if len(relevant) == 1:
+            return relevant[0].basis
+        if not relevant:
+            return self.basis if self.basis is not None else other.basis
+        if (self.basis or "LHV") == (other.basis or "LHV"):
+            return self.basis or other.basis
+        return None
+
+    def _merged_year(self, other: "Quantity") -> Optional[int]:
+        """Reference year of a result combining two (aligned) quantities.
+
+        The year of a quantity without a currency is only a label, so the year of
+        the monetary operand wins. Conflicting years give ``None``.
+        """
+        if self.reference_year is None or self.reference_year == other.reference_year:
+            return other.reference_year if self.reference_year is None else self.reference_year
+        if other.reference_year is None:
+            return self.reference_year
+        self_money, other_money = self._has_currency(), other._has_currency()
+        if self_money != other_money:
+            return self.reference_year if self_money else other.reference_year
+        return None
+
     def _add_or_subtract(self, other: "Quantity", sign: int, verb: str) -> "Quantity":
         aligned = self._align(other)
         value = self.value + aligned.value if sign > 0 else self.value - aligned.value
@@ -513,13 +574,7 @@ class Quantity:
             basis = aligned.basis
         else:
             basis = None
-        if self.reference_year is None:
-            year = aligned.reference_year
-        elif aligned.reference_year is None or aligned.reference_year == self.reference_year:
-            year = self.reference_year
-        else:
-            year = None
-        return self._make(value, self.unit, substance, basis, year)
+        return self._make(value, self.unit, substance, basis, self._merged_year(aligned))
 
     def __add__(self, other: "Quantity") -> "Quantity":
         if not isinstance(other, Quantity):
@@ -554,18 +609,28 @@ class Quantity:
         return self._with_value(np.round(self.value, ndigits or 0))
 
     def _multiply_or_divide(self, other: "Quantity", multiply: bool) -> "Quantity":
+        # Align what can cancel: fuel energy of the same substance on different bases
+        # (USD/MWh HHV * MWh LHV) and money of different price years (EUR 2015 / EUR/MWh 2024).
+        if (
+            (self.basis or "LHV") != (other.basis or "LHV")
+            and self.substance == other.substance
+            and self._basis_matters()
+            and other._basis_matters()
+        ):
+            other = other._convert_basis(self.basis or "LHV")
+        if (
+            self.reference_year != other.reference_year
+            and self._year_target(other) is not None
+            and self._has_currency()
+        ):
+            other = other._convert_reference_year(self.reference_year)
         unit, numerator, denominator = registry.combine_units(self.unit, other.unit, 1 if multiply else -1)
         value = self.value * other.value if multiply else self.value / other.value
         if numerator != denominator:
             value = value * numerator / denominator
-        basis = self.basis if self.basis == other.basis else None
-        if self.reference_year is None:
-            year = other.reference_year
-        elif other.reference_year is None or other.reference_year == self.reference_year:
-            year = self.reference_year
-        else:
-            year = None
-        return self._make(value, unit, self._merged_substance(other), basis, year)
+        return self._make(
+            value, unit, self._merged_substance(other), self._merged_basis(other), self._merged_year(other)
+        )
 
     def __mul__(self, other: Union["Quantity", ArrayLike]) -> "Quantity":
         if isinstance(other, Quantity):

@@ -66,9 +66,25 @@ def test_annual_average_inflation(ud):
     assert ud.annual_average_inflation(monthly) == {2024: 3.0, 2025: 2.0}
 
 
+def _months(year, value, months=range(1, 13)):
+    return {f"{year}-{month:02d}-01": value for month in months}
+
+
 def test_annual_average_tolerates_one_missing_month(ud):
-    text = _monthly_csv("CPI", {2024: 100.0, 2025: 102.0}, {2025: 11})
-    assert ud.annual_average_inflation(ud.parse_fred_csv(text)) == {2025: 2.0}
+    # October 2025 was not collected
+    monthly = {**_months(2024, 100.0), **_months(2025, 102.0, [m for m in range(1, 13) if m != 10])}
+    assert ud.annual_average_inflation(monthly) == {2025: 2.0}
+
+
+def test_unfinished_year_is_skipped(ud):
+    # January to November of the current year are published, December is not
+    monthly = {**_months(2025, 100.0), **{f"2026-{m:02d}-01": 100.0 + m for m in range(1, 12)}}
+    assert ud.annual_average_inflation(monthly) == {}
+
+
+def test_missing_december_is_accepted_once_later_data_exists(ud):
+    monthly = {**_months(2024, 100.0), **_months(2025, 102.0, range(1, 12)), "2026-01-01": 103.0}
+    assert ud.annual_average_inflation(monthly) == {2025: 2.0}
 
 
 def test_exchange_rate_conventions(ud):
@@ -132,6 +148,18 @@ def test_set_values_by_hand(ud, files):
     assert files.load("exchange_rates")["CNY"][str(first_projected)] == pytest.approx(1 / 7.05)
     with pytest.raises(ValueError):
         ud.set_inflation(files, "GBP", first_projected, 250)
+
+
+def test_setting_a_later_projection_keeps_earlier_years_projected(ud, files):
+    first_projected = files.load("inflation")["_metadata"]["projected_from"]["EUR"]
+    ud.set_inflation(files, "EUR", first_projected + 2, 2.3)
+    inflation = files.load("inflation")
+    assert inflation["EUR"][str(first_projected + 2)] == 2.3
+    assert inflation["_metadata"]["projected_from"]["EUR"] == first_projected
+    # setting the years in order moves the boundary
+    ud.set_inflation(files, "EUR", first_projected, 2.4)
+    ud.set_inflation(files, "EUR", first_projected + 1, 2.2)
+    assert files.load("inflation")["_metadata"]["projected_from"]["EUR"] == first_projected + 2
 
 
 def test_validate_detects_problems(ud, files):
