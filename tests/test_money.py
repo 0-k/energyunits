@@ -111,7 +111,7 @@ class TestInflation:
 
     def test_custom_inflation_data(self, tmp_path):
         path = tmp_path / "inflation.json"
-        path.write_text('{"USD": {"2031": 3.0}, "_metadata": {"projected_from": {"USD": 2031}}}')
+        path.write_text('{"USD": {"2031": 3.0}}')
         inflation_registry.load_inflation(str(path))
         with pytest.warns(EnergyUnitsWarning):
             result = Quantity(100, "USD", reference_year=2030).to(reference_year=2031)

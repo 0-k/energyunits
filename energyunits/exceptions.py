@@ -26,5 +26,9 @@ class MissingDataError(EnergyUnitsError):
     """Required data is not available (heating value, density, inflation or exchange rate)."""
 
 
+class DefinitionConflictError(EnergyUnitsError):
+    """Loaded data would change an existing definition (pass ``overwrite=True`` to allow it)."""
+
+
 class EnergyUnitsWarning(UserWarning):
     """Warning category for assumptions made by energyunits (e.g. projected data)."""

@@ -23,6 +23,7 @@ Example::
 
 from . import units
 from .exceptions import (
+    DefinitionConflictError,
     EnergyUnitsError,
     EnergyUnitsWarning,
     IncompatibleUnitsError,
@@ -37,6 +38,7 @@ __version__ = "0.3.0"
 __all__ = [
     "Quantity",
     "units",
+    "DefinitionConflictError",
     "EnergyUnitsError",
     "EnergyUnitsWarning",
     "IncompatibleUnitsError",

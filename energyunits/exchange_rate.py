@@ -1,11 +1,14 @@
 """Exchange rate utilities for currency conversions with year-dependent rates."""
 
 import json
+import threading
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
+from ._loading import DataSource, raise_conflicts, read_source
 from ._warnings import warn
 from .exceptions import MissingDataError
+from .inflation import merge_annual_series, parse_annual_series
 
 _DATA_DIR = Path(__file__).parent / "data"
 
@@ -20,36 +23,47 @@ class ExchangeRateRegistry:
     """
 
     def __init__(self) -> None:
+        self._lock = threading.RLock()
         self._load_defaults()
 
     def _load_defaults(self) -> None:
-        self._exchange_rate_data: Dict[str, Dict[int, float]] = {"USD": {}}
         with open(_DATA_DIR / "exchange_rates.json", encoding="utf-8") as f:
-            self._ingest(json.load(f))
+            self._ingest(json.load(f), overwrite=False, replace_all=True)
 
     def reset(self) -> None:
-        """Discard custom data and reload the bundled defaults."""
+        """Discard custom data and reload the bundled defaults.
+
+        This affects every user of the registry in the process; it is meant for
+        scripts and tests, not for libraries.
+        """
         self._load_defaults()
 
-    def load_exchange_rates(self, file_path: str) -> None:
-        """Load custom exchange rates (USD per unit) from a JSON file.
+    def load_exchange_rates(self, source: DataSource, overwrite: bool = False) -> None:
+        """Load custom exchange rates (USD per unit) from a JSON file or a mapping.
 
-        Format: ``{"AUD": {"2020": 0.69, ...}, ...}``.
+        Format: ``{"AUD": {"2020": 0.69, ...}, ...}``. Entries for USD are ignored.
+        New currencies and years are added; replacing a bundled rate needs
+        ``overwrite=True``. A new currency also needs a currency unit (see
+        :meth:`UnitRegistry.load_units`).
+
+        Raises:
+            DefinitionConflictError: if a rate differs from existing data.
+            ValueError: if the data is malformed (nothing is loaded).
         """
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
-        self._ingest(data)
+        self._ingest(read_source(source), overwrite=overwrite)
 
-    def _ingest(self, data: dict) -> None:
-        for currency, year_data in data.items():
-            if currency.startswith("_") or currency == "USD":
-                continue
-            rates = self._exchange_rate_data.setdefault(currency, {})
-            for year, rate in year_data.items():
-                rate = float(rate)
-                if rate <= 0:
-                    raise ValueError(f"Exchange rate for {currency} in {year} must be positive")
-                rates[int(year)] = rate
+    def _ingest(self, data: dict, overwrite: bool, replace_all: bool = False) -> None:
+        data = {currency: years for currency, years in data.items() if currency != "USD"}
+        rates = parse_annual_series(
+            data, "Exchange rate", lambda rate: rate > 0, "must be positive (USD per unit)"
+        )
+        with self._lock:
+            conflicts: List[str] = []
+            current = {"USD": {}} if replace_all else self._exchange_rate_data
+            merged = merge_annual_series(current, rates, "exchange rate", conflicts)
+            if not overwrite:
+                raise_conflicts("exchange rates", conflicts)
+            self._exchange_rate_data = merged
 
     def has_currency(self, currency: str) -> bool:
         """True if year-dependent rates are available for ``currency``."""

@@ -250,7 +250,7 @@ class TestSubstanceRegistry:
 
     def test_ranges_available_for_sensitivity_analysis(self):
         props = substance_registry.get_properties("lignite")
-        assert props["lhv_range"] == [5.5, 21.6]
+        assert props["lhv_range"] == (5.5, 21.6)
         assert (
             props["carbon_intensity_range"][0]
             < props["carbon_intensity"]

@@ -27,11 +27,38 @@ decisions.
 | `pandas_tools.py` | Optional helpers that store units in `DataFrame.attrs` |
 | `units.py` | String constants for every unit (IDE autocompletion) |
 | `exceptions.py` | Exception and warning classes |
+| `_loading.py` | Reading data sources and reporting definition conflicts (shared by the registries) |
 | `data/*.json` | Bundled data |
 
 Each registry module exposes a module-level singleton (`registry`,
 `substance_registry`, `inflation_registry`, `exchange_rate_registry`) with
 `load_*()` methods to add data and `reset()` to restore the defaults.
+
+### Loading data
+
+The registries are shared by all code in the process, so loading follows rules that
+let independent packages add data without affecting each other:
+
+1. **Validate first.** `load_*(source, overwrite=False)` accepts a JSON file path or a
+   mapping (deep-copied). All entries are validated (unknown sections, unit names,
+   positive factors, numeric properties, ranges, years) before anything changes.
+2. **Detect conflicts.** An entry whose name exists with a different definition
+   (bundled or loaded earlier) is a conflict; identical entries are accepted, so
+   loading is idempotent. Multiplication rules are identified by their two
+   dimensions, division rules by numerator and denominator, inflation and exchange
+   rates by currency and year, `projected_from` by currency. Floats are compared
+   with a relative tolerance of 1e-12.
+3. **All or nothing.** Conflicts raise `DefinitionConflictError` listing them, unless
+   `overwrite=True`; nothing is loaded.
+4. **Copy on write.** The new state is built on copies and committed by replacing
+   the containers under a lock, so loads are serialised and readers in other
+   threads never see a half-loaded state or a dict that changes while they iterate.
+   `UnitRegistry` then installs fresh `lru_cache`s for its cached methods; a result
+   that another thread computed from the previous data can only land in the
+   discarded caches.
+
+Substance properties are stored frozen (`MappingProxyType`, lists as tuples):
+`substance_registry[name]` returns the read-only view, `get_properties()` a copy.
 
 ## Quantity
 
@@ -293,6 +320,14 @@ year money in the target currency" with the target year's market exchange rate a
 the source country's price development. The alternative path gives different
 numbers; the warning makes the choice visible.
 
+**Why shared registries?** Units in energy models are strings read from data
+files, and a `Quantity` is plain data that can be pickled and combined with any other.
+Separate registry objects (as in pint) isolate packages completely, but every quantity
+then carries its registry and mixing quantities from two registries has to fail. The
+loading rules above give most of the isolation for packages that add data; a scoped
+override (`contextvars`) or separate registries can be added later without changing
+the existing API.
+
 **Why physical CO2 for biomass?** The library reports what is emitted. Accounting
 conventions (biogenic CO2 counted as zero) are a reporting decision left to the
 model; `carbon_intensity` is the physical factor (IPCC Table 1.4 lists 112 kg/GJ for
@@ -314,6 +349,8 @@ pandas, builds the documentation and smoke-tests the built wheel.
   dimension, see the tests). Affine units such as degree Celsius
   would need special handling.
 - No uncertainty propagation.
+- One set of registries per process: there is no scoped override (for example for a
+  sensitivity run in one thread) yet.
 - One currency per unit for year-specific exchange rates and inflation
   (units such as `USD/EUR` use static rates).
 - Inflation and exchange rate data cover 2000-2025 (inflation projections to 2030).

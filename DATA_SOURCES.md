@@ -301,7 +301,8 @@ multiplies by the product of `(1 + rate/100)` for all years after A up to B.
 
 \* Projections: placeholders equal to the 2 % central bank target, not forecasts.
 Conversions that use them emit an `EnergyUnitsWarning`. Replace them with your own
-assumptions via `inflation_registry.load_inflation()` where it matters.
+assumptions via `inflation_registry.load_inflation(..., overwrite=True)` where it matters
+(replacing bundled values needs `overwrite=True` and applies to the whole process).
 
 Notes:
 

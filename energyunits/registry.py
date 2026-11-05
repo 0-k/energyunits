@@ -31,11 +31,15 @@ dimensions the factors must be coherent with the definition, i.e.
 
 import difflib
 import json
+import math
 import re
+import threading
+from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
+from ._loading import DataSource, is_number, raise_conflicts, read_source, same_value
 from .exceptions import IncompatibleUnitsError, MissingDataError, UnknownUnitError
 
 #: Parsed unit: tuple of ``(atomic_unit, exponent)`` pairs.
@@ -52,96 +56,243 @@ _DATA_DIR = Path(__file__).parent / "data"
 _SPLIT_RE = re.compile(r"\s*([/·*])\s*")
 _INVALID_ATOM_RE = re.compile(r"[/·*\s]")
 
+#: Methods whose results are cached. Each data version gets fresh caches (see ``_install_caches``).
+_CACHED_METHODS = (
+    "parse_unit",
+    "dimension_vector",
+    "get_dimension",
+    "unit_factor_parts",
+    "unit_factor",
+    "get_conversion_factor",
+    "combine_units",
+)
+
+
+#: Sections of a units file that map a name to a definition.
+_MAPPING_SECTIONS = (
+    "dimensions",
+    "conversion_factors",
+    "base_units",
+    "preferred_units",
+    "derived_dimensions",
+    "currency_units",
+    "corresponding_units",
+)
+#: Sections that hold rules, and the part of a rule that identifies it.
+_RULE_SECTIONS = {
+    "dimensional_multiplication_rules": lambda rule: tuple(sorted(rule["dimensions"])),
+    "dimensional_division_rules": lambda rule: (rule["numerator_dimension"], rule["denominator_dimension"]),
+}
+
+
+def _name(value, what: str) -> str:
+    if not isinstance(value, str) or not value or value != value.strip():
+        raise ValueError(f"{what} must be a non-empty string without surrounding whitespace, got {value!r}")
+    return value
+
+
+def _normalize_entry(section: str, key, value):
+    """Validate one entry of a units file and return it in canonical form."""
+    where = f"{section}[{key!r}]"
+    if section == "dimensions":
+        if not isinstance(key, str) or not key or key == "1" or _INVALID_ATOM_RE.search(key):
+            raise ValueError(
+                f"Invalid unit name {key!r}: unit names must be non-empty and must not "
+                "contain whitespace, '/', '*' or '·'."
+            )
+        return _name(value, where)
+    if section == "conversion_factors":
+        if not is_number(value) or not math.isfinite(value) or value <= 0:
+            raise ValueError(f"{where} must be a positive number, got {value!r}")
+        return float(value)
+    if section == "derived_dimensions":
+        if not isinstance(value, Mapping) or not value:
+            raise ValueError(f"{where} must map dimension names to integer exponents")
+        composition = {}
+        for dim, exp in value.items():
+            if not isinstance(exp, int) or isinstance(exp, bool):
+                raise ValueError(f"{where}: exponent of {dim!r} must be an integer, got {exp!r}")
+            composition[_name(dim, where)] = exp
+        return composition
+    if section == "currency_units":
+        if not isinstance(value, Mapping) or "currency" not in value:
+            raise ValueError(f"{where} must be an object with a 'currency' entry")
+        scale = value.get("scale", 1.0)
+        if not is_number(scale) or not math.isfinite(scale) or scale <= 0:
+            raise ValueError(f"{where}: scale must be a positive number, got {scale!r}")
+        return {"currency": _name(value["currency"], where), "scale": float(scale)}
+    # base_units, preferred_units, corresponding_units: name -> unit name
+    return _name(value, where)
+
+
+def _normalize_rule(section: str, rule) -> dict:
+    where = f"rule {rule!r} in {section}"
+    if not isinstance(rule, Mapping):
+        raise ValueError(f"{where} must be an object")
+    try:
+        if section == "dimensional_multiplication_rules":
+            dims = rule["dimensions"]
+            if not isinstance(dims, (list, tuple)) or len(dims) != 2:
+                raise ValueError(f"{where}: 'dimensions' must list two dimensions")
+            normalized = {
+                "dimensions": [_name(d, where) for d in dims],
+                "source_dimension": _name(rule["source_dimension"], where),
+                "result_dimension": _name(rule["result_dimension"], where),
+            }
+            if normalized["source_dimension"] not in normalized["dimensions"]:
+                raise ValueError(f"{where}: 'source_dimension' must be one of 'dimensions'")
+            return normalized
+        return {
+            "numerator_dimension": _name(rule["numerator_dimension"], where),
+            "denominator_dimension": _name(rule["denominator_dimension"], where),
+            "result_dimension": _name(rule["result_dimension"], where),
+        }
+    except KeyError as exc:
+        raise ValueError(f"{where} is missing {exc.args[0]!r}") from None
+
+
+def _name_vector(
+    derived: Dict[str, Dict[str, int]], name: str, _seen: Tuple[str, ...] = ()
+) -> DimensionVector:
+    """Dimension vector of a named dimension, resolving derived dimensions."""
+    if name == DIMENSIONLESS:
+        return ()
+    composition = derived.get(name)
+    if composition is None:
+        return ((name, 1),)
+    if name in _seen:
+        raise ValueError(f"Circular definition of derived dimension '{name}'")
+    vector: Dict[str, int] = {}
+    for sub_name, exp in composition.items():
+        for dim, sub_exp in _name_vector(derived, sub_name, _seen + (name,)):
+            vector[dim] = vector.get(dim, 0) + sub_exp * exp
+    return tuple(sorted((d, e) for d, e in vector.items() if e))
+
 
 class UnitRegistry:
     """Registry of units, dimensions and conversion factors.
 
     A module-level instance is available as :data:`energyunits.registry.registry`.
+    Loading never changes an existing definition unless ``overwrite=True`` is
+    passed, so packages can add their own units without affecting each other.
     """
 
     def __init__(self) -> None:
+        self._lock = threading.RLock()
         self._load_defaults()
 
     # ------------------------------------------------------------------ loading
 
     def _load_defaults(self) -> None:
-        self._dimensions: Dict[str, str] = {}
-        self._conversion_factors: Dict[str, float] = {}
-        self._base_units: Dict[str, str] = {}
-        self._preferred_units: Dict[str, str] = {}
-        self._derived_dimensions: Dict[str, Dict[str, int]] = {}
-        self._currency_units: Dict[str, dict] = {}
-        self._corresponding_units: Dict[str, str] = {}
-        self._dimensional_multiplication_rules: List[dict] = []
-        self._dimensional_division_rules: List[dict] = []
         with open(_DATA_DIR / "units.json", encoding="utf-8") as f:
-            self._ingest(json.load(f))
+            self._ingest(json.load(f), overwrite=False, replace_all=True)
 
     def reset(self) -> None:
-        """Discard all custom units and reload the bundled defaults."""
+        """Discard all custom units and reload the bundled defaults.
+
+        This affects every user of the registry in the process; it is meant for
+        scripts and tests, not for libraries.
+        """
         self._load_defaults()
 
-    def load_units(self, file_path: str) -> None:
-        """Load additional units from a JSON file.
+    def load_units(self, source: DataSource, overwrite: bool = False) -> None:
+        """Load additional units from a JSON file or a mapping.
 
-        The file may contain any of the sections of the bundled ``units.json``:
+        The data may contain any of the sections of the bundled ``units.json``:
         ``dimensions``, ``conversion_factors``, ``base_units``, ``preferred_units``,
         ``derived_dimensions``, ``currency_units``, ``corresponding_units``,
         ``dimensional_multiplication_rules`` and ``dimensional_division_rules``.
-        Existing entries with the same name are overwritten.
+        Keys starting with ``_`` are ignored (comments).
+
+        Loading is all or nothing. Entries identical to existing ones are
+        accepted, so loading the same data twice is harmless.
+
+        Args:
+            source: Path of a JSON file, or a mapping with the same structure.
+            overwrite: Replace existing definitions that differ from the loaded
+                ones. Without it such conflicts raise :class:`DefinitionConflictError`.
+                Overwriting changes results for every user of the registry in the process.
+
+        Raises:
+            DefinitionConflictError: if an entry would change an existing definition.
+            ValueError: if the data is malformed (nothing is loaded).
         """
-        with open(file_path, encoding="utf-8") as f:
-            data = json.load(f)
-        self._ingest(data)
+        self._ingest(read_source(source), overwrite=overwrite)
 
-    def _ingest(self, data: dict) -> None:
-        dimensions = data.get("dimensions", {})
-        for unit in dimensions:
-            if not isinstance(unit, str) or not unit or unit == "1" or _INVALID_ATOM_RE.search(unit):
-                raise ValueError(
-                    f"Invalid unit name {unit!r}: unit names must be non-empty and must not "
-                    "contain whitespace, '/', '*' or '·'."
-                )
-        self._dimensions.update(dimensions)
-        self._conversion_factors.update(
-            {unit: float(factor) for unit, factor in data.get("conversion_factors", {}).items()}
-        )
-        self._base_units.update(data.get("base_units", {}))
-        self._preferred_units.update(data.get("preferred_units", {}))
-        for name, composition in data.get("derived_dimensions", {}).items():
-            self._derived_dimensions[name] = {dim: int(exp) for dim, exp in composition.items()}
-        self._currency_units.update(data.get("currency_units", {}))
-        self._corresponding_units.update(data.get("corresponding_units", {}))
-        for rule in data.get("dimensional_multiplication_rules", []):
-            if rule not in self._dimensional_multiplication_rules:
-                self._dimensional_multiplication_rules.append(rule)
-        for rule in data.get("dimensional_division_rules", []):
-            if rule not in self._dimensional_division_rules:
-                self._dimensional_division_rules.append(rule)
-        self._rebuild()
+    def _ingest(self, data: dict, overwrite: bool, replace_all: bool = False) -> None:
+        unknown = [
+            k
+            for k in data
+            if not str(k).startswith("_") and k not in _MAPPING_SECTIONS + tuple(_RULE_SECTIONS)
+        ]
+        if unknown:
+            raise ValueError(
+                f"Unknown section(s) in units data: {', '.join(map(repr, unknown))}. "
+                f"Valid sections: {', '.join(_MAPPING_SECTIONS + tuple(_RULE_SECTIONS))}"
+            )
+        entries = {}
+        for section in _MAPPING_SECTIONS:
+            values = data.get(section, {})
+            if not isinstance(values, Mapping):
+                raise ValueError(f"Section '{section}' must be an object")
+            entries[section] = {key: _normalize_entry(section, key, value) for key, value in values.items()}
+        rules = {}
+        for section in _RULE_SECTIONS:
+            values = data.get(section, [])
+            if not isinstance(values, list):
+                raise ValueError(f"Section '{section}' must be a list")
+            rules[section] = [_normalize_rule(section, rule) for rule in values]
 
-    def _rebuild(self) -> None:
-        self._clear_caches()
-        names = list(self._dimensions.values()) + list(self._derived_dimensions) + list(self._base_units)
-        self._vector_names: Dict[DimensionVector, str] = {(): DIMENSIONLESS}
-        for name in dict.fromkeys(names):
-            self._vector_names.setdefault(self._dimension_name_vector(name), name)
+        with self._lock:
+            # Build the new state on copies and commit it only if everything is valid.
+            state = {}
+            for section in _MAPPING_SECTIONS:
+                state[section] = {} if replace_all else dict(getattr(self, "_" + section))
+            for section in _RULE_SECTIONS:
+                state[section] = [] if replace_all else list(getattr(self, "_" + section))
 
-    def _clear_caches(self) -> None:
-        for method in (
-            UnitRegistry.parse_unit,
-            UnitRegistry.unit_factor_parts,
-            UnitRegistry.dimension_vector,
-            UnitRegistry.get_dimension,
-            UnitRegistry.unit_factor,
-            UnitRegistry.get_conversion_factor,
-            UnitRegistry.combine_units,
-        ):
-            method.cache_clear()
+            conflicts = []
+            for section in _MAPPING_SECTIONS:
+                target = state[section]
+                for key, value in entries[section].items():
+                    if key in target and not same_value(target[key], value):
+                        conflicts.append(f"{section}[{key!r}]: {target[key]!r} -> {value!r}")
+                    target[key] = value
+            for section, identify in _RULE_SECTIONS.items():
+                target = state[section]
+                for rule in rules[section]:
+                    index = next((i for i, r in enumerate(target) if identify(r) == identify(rule)), None)
+                    if index is None:
+                        target.append(rule)
+                    elif not same_value(target[index], rule):
+                        conflicts.append(f"{section} for {identify(rule)}: {target[index]!r} -> {rule!r}")
+                        target[index] = rule
+            if not overwrite:
+                raise_conflicts("units", conflicts)
+
+            derived = state["derived_dimensions"]
+            names = list(state["dimensions"].values()) + list(derived) + list(state["base_units"])
+            vector_names: Dict[DimensionVector, str] = {(): DIMENSIONLESS}
+            for name in dict.fromkeys(names):
+                vector_names.setdefault(_name_vector(derived, name), name)
+
+            for section, value in state.items():
+                setattr(self, "_" + section, value)
+            self._vector_names = vector_names
+            self._install_caches()
+
+    def _install_caches(self) -> None:
+        """Give each cached method a fresh cache for the current data.
+
+        Replacing the caches (instead of clearing them) means that a result
+        computed from the previous data, e.g. by another thread that was
+        converting during the load, can never be returned afterwards.
+        """
+        for name in _CACHED_METHODS:
+            setattr(self, name, lru_cache(maxsize=4096)(getattr(type(self), name).__get__(self)))
 
     # ------------------------------------------------------------------ parsing
 
-    @lru_cache(maxsize=4096)
     def parse_unit(self, unit: str) -> Terms:
         """Parse a unit string into ``((atom, exponent), ...)``.
 
@@ -208,21 +359,9 @@ class UnitRegistry:
 
     # --------------------------------------------------------------- dimensions
 
-    def _dimension_name_vector(self, name: str, _seen: Tuple[str, ...] = ()) -> DimensionVector:
-        if name == DIMENSIONLESS:
-            return ()
-        composition = self._derived_dimensions.get(name)
-        if composition is None:
-            return ((name, 1),)
-        if name in _seen:
-            raise ValueError(f"Circular definition of derived dimension '{name}'")
-        vector: Dict[str, int] = {}
-        for sub_name, exp in composition.items():
-            for dim, sub_exp in self._dimension_name_vector(sub_name, _seen + (name,)):
-                vector[dim] = vector.get(dim, 0) + sub_exp * exp
-        return tuple(sorted((d, e) for d, e in vector.items() if e))
+    def _dimension_name_vector(self, name: str) -> DimensionVector:
+        return _name_vector(self._derived_dimensions, name)
 
-    @lru_cache(maxsize=4096)
     def dimension_vector(self, unit: str) -> DimensionVector:
         """Return the dimension of ``unit`` expressed in base dimensions.
 
@@ -238,7 +377,6 @@ class UnitRegistry:
         """Exponent of a base dimension in ``unit`` (e.g. ENERGY in ``"USD/MWh"`` is -1)."""
         return dict(self.dimension_vector(unit)).get(dimension, 0)
 
-    @lru_cache(maxsize=4096)
     def get_dimension(self, unit: str) -> str:
         """Return the dimension name of a unit.
 
@@ -303,7 +441,6 @@ class UnitRegistry:
 
     # -------------------------------------------------------- conversion factors
 
-    @lru_cache(maxsize=4096)
     def unit_factor_parts(self, unit: str) -> Tuple[float, float]:
         """Size of ``unit`` relative to the base units as ``(numerator, denominator)``."""
         numerator = denominator = 1.0
@@ -317,13 +454,11 @@ class UnitRegistry:
                 denominator *= atom_factor**-exp
         return numerator, denominator
 
-    @lru_cache(maxsize=4096)
     def unit_factor(self, unit: str) -> float:
         """Size of ``unit`` relative to the coherent base units (J, W, kg, m3, m2, s, USD)."""
         numerator, denominator = self.unit_factor_parts(unit)
         return numerator / denominator
 
-    @lru_cache(maxsize=4096)
     def get_conversion_factor(self, from_unit: str, to_unit: str) -> float:
         """Factor ``f`` such that ``value_in_to_unit = value_in_from_unit * f``.
 
@@ -447,7 +582,6 @@ class UnitRegistry:
         unit, numerator, denominator = self.combine_units(unit1, unit2, -1)
         return unit, numerator / denominator
 
-    @lru_cache(maxsize=4096)
     def combine_units(self, unit1: str, unit2: str, sign: int) -> Tuple[str, float, float]:
         """Unit of ``unit1 * unit2`` (``sign=1``) or ``unit1 / unit2`` (``sign=-1``).
 

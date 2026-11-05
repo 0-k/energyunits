@@ -61,8 +61,17 @@ listed under "Fixed" should be re-checked.
 - `str()` of very small values uses significant digits (`0.00034 t/kWh` instead of
   `0.00 t/kWh`); arrays show the number of values after the unit.
 - Errors are raised as `EnergyUnitsError` subclasses (`UnknownUnitError`,
-  `IncompatibleUnitsError`, `UnknownSubstanceError`, `MissingDataError`), all of
-  which are `ValueError`s. Warnings use `EnergyUnitsWarning` and point at user code.
+  `IncompatibleUnitsError`, `UnknownSubstanceError`, `MissingDataError`,
+  `DefinitionConflictError`), all of which are `ValueError`s. Warnings use
+  `EnergyUnitsWarning` and point at user code.
+- **Loading data no longer overwrites existing definitions.** The `load_*` methods of
+  all registries raise `DefinitionConflictError` when an entry would change an
+  existing unit, substance, rule, rate or `projected_from` year (bundled or loaded
+  earlier); pass `overwrite=True` to replace it. Loading identical data again is
+  accepted. Loading is all or nothing: invalid or conflicting data leaves the
+  registry unchanged (previously a failed load could leave it partially updated).
+- `substance_registry[name]` returns a read-only view; `get_properties()` returns a
+  copy. IPCC ranges are `(lower, upper)` tuples.
 - `import energyunits` no longer imports pandas.
 - Python 3.10 or newer is required (3.9 is end-of-life).
 
@@ -96,6 +105,10 @@ listed under "Fixed" should be re-checked.
   specifications (`f"{q:.1f}"`), pickling; pandas Series as operands.
 - `pandas_tools`: `get_units`, `to_quantity`, `from_quantity`; substance, basis and
   reference year metadata; conversions go through `Quantity.to`.
+- `load_units`, `load_substances`, `load_inflation` and `load_exchange_rates` accept a
+  mapping as well as a file path, validate the data (unknown sections, non-positive
+  factors, malformed rules and years), and are thread-safe: conversions running in
+  other threads keep seeing the existing definitions while data is loaded.
 - Registries: `reset()`, `UnitRegistry.parse_unit`, `dimension_vector`,
   `is_compatible`, `multiply_units`, `divide_units`, `conversion_factor`
   (substance-aware), `preferred_unit`, `currency_of`.

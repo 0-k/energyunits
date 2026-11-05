@@ -336,7 +336,8 @@ print(Quantity(1, MWh).to(GJ))   # 3.60 GJ
 ## Extending
 
 All data lives in JSON files under `energyunits/data/`. Additional units, substances,
-inflation rates and exchange rates can be loaded at runtime:
+inflation rates and exchange rates can be loaded at runtime, from a JSON file or a dict
+with the same structure:
 
 ```python
 import json
@@ -345,9 +346,7 @@ from energyunits import Quantity
 from energyunits.registry import registry
 from energyunits.substance import substance_registry
 
-with open("custom_units.json", "w") as f:
-    json.dump({"dimensions": {"MMscf": "VOLUME"}, "conversion_factors": {"MMscf": 28316.846592}}, f)
-registry.load_units("custom_units.json")
+registry.load_units({"dimensions": {"MMscf": "VOLUME"}, "conversion_factors": {"MMscf": 28316.846592}})
 print(Quantity(1, "MMscf").to("m3"))   # 28316.85 m3
 
 with open("custom_fuels.json", "w") as f:
@@ -358,9 +357,40 @@ print(Quantity(1, "t", "biomethane").to("MWh"))   # 13.89 MWh of biomethane
 
 Conversion factors are relative to the SI base unit of each dimension (J, W, kg, m3,
 m2, s, USD). Use `inflation_registry.load_inflation()` and
-`exchange_rate_registry.load_exchange_rates()` for economic data, and `.reset()` on any
-registry to restore the bundled defaults. The file formats are described in
-[ARCHITECTURE.md](https://github.com/0-k/energyunits/blob/master/ARCHITECTURE.md).
+`exchange_rate_registry.load_exchange_rates()` for economic data. The formats are
+described in [ARCHITECTURE.md](https://github.com/0-k/energyunits/blob/master/ARCHITECTURE.md).
+
+### Loaded data is shared, existing definitions are protected
+
+The registries are shared by all code in the Python process, including other packages
+that use energyunits. Loading is therefore additive:
+
+- New names are added. Data identical to an existing definition is accepted, so loading
+  the same file twice is harmless.
+- Data that would change an existing definition, bundled or loaded by other code, raises
+  `DefinitionConflictError` and nothing is loaded:
+
+```python
+from energyunits import DefinitionConflictError
+from energyunits.substance import substance_registry
+
+try:
+    substance_registry.load_substances({"coal": {"lhv": 20.0, "carbon_intensity": 94.6}})
+except DefinitionConflictError as error:
+    print(str(error).splitlines()[1].strip())   # coal: lhv 25.8 -> 20.0, carbon_content 0.66564 -> 0.516; would drop 10 other properties
+```
+
+- Use a new name instead (`"my_coal"`), or pass `overwrite=True` to replace the
+  definition deliberately, for every user in the process.
+- `substance_registry["coal"]` is read-only; `substance_registry.get_properties("coal")`
+  returns a copy that you can modify and load under a new name.
+- Loading is thread-safe, and conversions running in other threads keep seeing the
+  existing definitions.
+
+**In a library** that depends on energyunits, load your data at import time under names
+with your own prefix (`mylib_coal`, `mylib_MMscf`), never pass `overwrite=True` for names
+you did not define, and never call `reset()`, which removes every custom definition in
+the process. `reset()` is meant for scripts and tests.
 
 ## Errors and warnings
 
@@ -372,6 +402,7 @@ All errors derive from `energyunits.EnergyUnitsError`, which is a `ValueError`:
 | `IncompatibleUnitsError` | units cannot be converted, or a substance is required          |
 | `UnknownSubstanceError`  | a substance is unknown                                         |
 | `MissingDataError`       | a heating value, density, inflation or exchange rate is missing |
+| `DefinitionConflictError` | loaded data would change an existing definition              |
 
 ```python
 from energyunits import IncompatibleUnitsError, Quantity
