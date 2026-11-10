@@ -76,9 +76,9 @@ print(Quantity(1500, "USD/kW") * Quantity(500, "MW"))   # 750000000.00 USD
 
 ## Units
 
-Unit strings combine registered units with `/` and `·` (or `*`). Operators are
-evaluated left to right, so every unit after a `/` is in the denominator:
-`"EUR/kW/a"` is euros per kilowatt per year. `""` is dimensionless and `"1/h"` a rate.
+Unit strings combine registered units with `/` and `·` (or `*`). Every unit after
+the first `/` is in the denominator: `"EUR/kW/a"` and `"EUR/kW·a"` are both euros
+per kilowatt per year. `""` is dimensionless and `"1/h"` a rate.
 
 ```python
 from energyunits import Quantity
@@ -349,7 +349,9 @@ from energyunits import Quantity
 from energyunits.registry import registry
 from energyunits.substance import substance_registry
 
-registry.load_units({"dimensions": {"MMscf": "VOLUME"}, "conversion_factors": {"MMscf": 28316.846592}})
+registry.load_units(
+    {"dimensions": {"MMscf": "VOLUME"}, "conversion_factors": {"MMscf": {"value": 1e6, "unit": "ft3"}}}
+)
 print(Quantity(1, "MMscf").to("m3"))   # 28316.85 m3
 
 with open("custom_fuels.json", "w") as f:

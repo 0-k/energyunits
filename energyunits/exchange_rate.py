@@ -5,10 +5,16 @@ import threading
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from ._loading import DataSource, raise_conflicts, read_source
+from ._loading import (
+    DataSource,
+    _currency_from_string,
+    merge_annual_series,
+    parse_annual_series,
+    raise_conflicts,
+    read_source,
+)
 from ._warnings import warn
 from .exceptions import MissingDataError
-from .inflation import merge_annual_series, parse_annual_series
 
 _DATA_DIR = Path(__file__).parent / "data"
 
@@ -164,7 +170,6 @@ class ExchangeRateRegistry:
 
     def detect_currency_from_unit(self, unit: str) -> Optional[str]:
         """Detect the currency code contained in a unit string (e.g. ``"EUR/MWh"`` -> ``"EUR"``)."""
-        from .inflation import _currency_from_string
         from .registry import registry
 
         try:

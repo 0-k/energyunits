@@ -9,7 +9,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Dict, List, Optional
 
-from ._loading import DataSource, is_number, raise_conflicts, read_source, same_value
+from ._loading import DataSource, is_comment, is_number, raise_conflicts, read_source, same_value
 from .exceptions import EnergyUnitsError, MissingDataError, UnknownSubstanceError
 
 _DATA_DIR = Path(__file__).parent / "data"
@@ -176,10 +176,15 @@ class SubstanceRegistry:
     def _ingest(self, data: dict, overwrite: bool, replace_all: bool = False) -> None:
         entries = {}
         for name, props in data.items():
-            if isinstance(name, str) and name.startswith("_"):
+            if is_comment(name):
                 continue
             _validate(name, props)
-            entries[name] = _freeze(_complete_carbon(_thaw(props)))
+            completed = _complete_carbon(_thaw(props))
+            try:
+                _validate(name, completed)
+            except ValueError as exc:
+                raise ValueError(f"{exc} (derived from carbon_intensity and lhv)") from None
+            entries[name] = _freeze(completed)
         with self._lock:
             substances = {} if replace_all else dict(self._substances)
             conflicts = [
@@ -229,6 +234,11 @@ class SubstanceRegistry:
     def lhv_hhv_ratio(self, substance_id: str) -> float:
         """Ratio of lower to higher heating value."""
         return self.lhv(substance_id) / self.hhv(substance_id)
+
+    def has_heating_values(self, substance_id: Optional[str]) -> bool:
+        """True if the substance is known and has both heating values (HHV/LHV matter for it)."""
+        props = self._substances.get(substance_id)
+        return props is not None and props.get("lhv") is not None and props.get("hhv") is not None
 
     def list_substances(self, has_property: Optional[str] = None) -> List[str]:
         """List all available substances, optionally filtered by property.

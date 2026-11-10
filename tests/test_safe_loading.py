@@ -227,7 +227,10 @@ def test_conversions_in_other_threads_are_unaffected_by_loading():
     try:
         for i in range(200):
             registry.load_units(
-                {"dimensions": {f"u{i}": "ENERGY"}, "conversion_factors": {f"u{i}": float(i + 1)}}
+                {
+                    "dimensions": {f"u{i}": "ENERGY"},
+                    "conversion_factors": {f"u{i}": {"value": float(i + 1), "unit": "J"}},
+                }
             )
             substance_registry.load_substances({f"fuel{i}": {"lhv": 20.0 + i}})
     finally:

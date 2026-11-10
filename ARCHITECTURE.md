@@ -84,13 +84,13 @@ All operations return new objects. NumPy defers to `Quantity` in mixed operation
 ### Syntax
 
 A unit string is a sequence of registered *atomic* units joined by `/` or
-`·`/`*`. Operators have equal precedence and are evaluated left to right, so
-every atom after a `/` is in the denominator:
+`·`/`*`. Every atom after the first `/` is in the denominator, also when it is
+joined with `·` (`"EUR/kW·a"` is the same as `"EUR/kW/a"`):
 
 ```text
 "MWh"         energy
 "USD/kW"      currency / power
-"EUR/kW/a"    (EUR / kW) / a          -> EUR per kW and year
+"EUR/kW/a"    EUR / (kW · a)          -> EUR per kW and year
 "USD·h/MWh"   (USD · h) / MWh
 "1/h"         reciprocal time
 ""            dimensionless
@@ -237,7 +237,7 @@ ignored by the loaders.
 | Section | Content |
 |---------|---------|
 | `dimensions` | atom -> dimension name |
-| `conversion_factors` | atom -> factor relative to the base unit of its dimension |
+| `conversion_factors` | atom -> factor relative to the base unit of its dimension, or `{"value": x, "unit": u}` relative to any registered unit |
 | `base_units` | dimension -> unit with factor 1 (SI-coherent) |
 | `preferred_units` | dimension -> unit chosen by calculations |
 | `derived_dimensions` | e.g. `{"POWER": {"ENERGY": 1, "TIME": -1}}` |
@@ -250,9 +250,13 @@ Example custom file:
 ```json
 {
   "dimensions": {"MMscf": "VOLUME", "AUD": "CURRENCY"},
-  "conversion_factors": {"MMscf": 28316.846592, "AUD": 0.65}
+  "conversion_factors": {"MMscf": {"value": 1e6, "unit": "ft3"}, "AUD": 0.65}
 }
 ```
+
+Prefer the `{"value": ..., "unit": ...}` form: it does not depend on the base
+units, which changed in 0.3 (0.2 used MWh, MW, t and h). A plain number for a
+new energy, power, mass or time unit emits a warning for that reason.
 
 Unit names must not contain whitespace, `/`, `*` or `·`.
 

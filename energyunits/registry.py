@@ -3,13 +3,13 @@
 Unit strings
 ------------
 A unit string is a sequence of registered *atomic* units joined by ``/``
-(division) or ``·`` / ``*`` (multiplication). Operators have equal precedence
-and are evaluated left to right, so every atom after a ``/`` is in the
-denominator::
+(division) or ``·`` / ``*`` (multiplication). Everything after the first ``/``
+is in the denominator, also when it is joined with ``·`` or ``*``::
 
     "MWh"          energy
     "USD/kW"       currency per power
-    "EUR/kW/a"     (EUR / kW) / a, e.g. fixed O&M cost
+    "EUR/kW/a"     EUR / (kW · a), e.g. fixed O&M cost
+    "EUR/kW·a"     the same: a product after a slash stays in the denominator
     "t/MWh"        emission factor
     "MW·h"         power times time (same dimension as "MWh")
     "1/h"          a rate
@@ -39,7 +39,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from ._loading import DataSource, is_number, raise_conflicts, read_source, same_value
+from ._loading import DataSource, is_comment, is_number, raise_conflicts, read_source, same_value
+from ._warnings import warn
 from .exceptions import IncompatibleUnitsError, MissingDataError, UnknownUnitError
 
 #: Parsed unit: tuple of ``(atomic_unit, exponent)`` pairs.
@@ -80,6 +81,8 @@ _MAPPING_SECTIONS = (
     "currency_units",
     "corresponding_units",
 )
+#: Base units of energyunits 0.2 that changed in 0.3 (see ``UnitRegistry.load_units``).
+_PRE_03_BASE_UNITS = {"ENERGY": "MWh", "POWER": "MW", "MASS": "t", "TIME": "h"}
 #: Sections that hold rules, and the part of a rule that identifies it.
 _RULE_SECTIONS = {
     "dimensional_multiplication_rules": lambda rule: tuple(sorted(rule["dimensions"])),
@@ -104,9 +107,16 @@ def _normalize_entry(section: str, key, value):
             )
         return _name(value, where)
     if section == "conversion_factors":
+        reference = None
+        if isinstance(value, Mapping):
+            if set(value) != {"value", "unit"}:
+                raise ValueError(
+                    f"{where} must be a number or {{'value': number, 'unit': unit}}, got {value!r}"
+                )
+            value, reference = value["value"], _name(value["unit"], where)
         if not is_number(value) or not math.isfinite(value) or value <= 0:
             raise ValueError(f"{where} must be a positive number, got {value!r}")
-        return float(value)
+        return float(value) if reference is None else _RelativeFactor(float(value), reference)
     if section == "derived_dimensions":
         if not isinstance(value, Mapping) or not value:
             raise ValueError(f"{where} must map dimension names to integer exponents")
@@ -127,6 +137,13 @@ def _normalize_entry(section: str, key, value):
     return _name(value, where)
 
 
+class _RelativeFactor(tuple):
+    """Conversion factor given as ``(value, unit)`` instead of relative to the base unit."""
+
+    def __new__(cls, value: float, unit: str):
+        return super().__new__(cls, (value, unit))
+
+
 def _normalize_rule(section: str, rule) -> dict:
     where = f"rule {rule!r} in {section}"
     if not isinstance(rule, Mapping):
@@ -137,7 +154,7 @@ def _normalize_rule(section: str, rule) -> dict:
             if not isinstance(dims, (list, tuple)) or len(dims) != 2:
                 raise ValueError(f"{where}: 'dimensions' must list two dimensions")
             normalized = {
-                "dimensions": [_name(d, where) for d in dims],
+                "dimensions": sorted(_name(d, where) for d in dims),
                 "source_dimension": _name(rule["source_dimension"], where),
                 "result_dimension": _name(rule["result_dimension"], where),
             }
@@ -204,7 +221,19 @@ class UnitRegistry:
         ``dimensions``, ``conversion_factors``, ``base_units``, ``preferred_units``,
         ``derived_dimensions``, ``currency_units``, ``corresponding_units``,
         ``dimensional_multiplication_rules`` and ``dimensional_division_rules``.
-        Keys starting with ``_`` are ignored (comments).
+        Keys starting with ``_`` are ignored (comments), also inside a section.
+
+        A conversion factor is either a number relative to the base unit of the
+        dimension (J, W, kg, m3, m2, s, USD), or, more readable and independent
+        of the base units, relative to any registered unit::
+
+            {"dimensions": {"boe": "ENERGY"},
+             "conversion_factors": {"boe": {"value": 1.7, "unit": "MWh"}}}
+
+        energyunits 0.2 used MWh, MW, t and h as base units. Files written for
+        0.2 must be updated; a plain number for a new energy, power, mass or
+        time unit therefore emits a warning that names the base unit it is
+        interpreted in. The explicit form does not warn.
 
         Loading is all or nothing. Entries identical to existing ones are
         accepted, so loading the same data twice is harmless.
@@ -219,9 +248,20 @@ class UnitRegistry:
             DefinitionConflictError: if an entry would change an existing definition.
             ValueError: if the data is malformed (nothing is loaded).
         """
-        self._ingest(read_source(source), overwrite=overwrite)
+        ambiguous = self._ingest(read_source(source), overwrite=overwrite)
+        if ambiguous:
+            listed = ", ".join(
+                f"'{unit}' (in {self._base_units.get(dim, '?')}, 0.2: {_PRE_03_BASE_UNITS[dim]})"
+                for unit, dim in ambiguous
+            )
+            warn(
+                f"Conversion factors given as plain numbers are relative to the SI base units since "
+                f"energyunits 0.3: {listed}. Data written for 0.2 gives wrong results. Write the factor "
+                f"as {{'value': ..., 'unit': ...}} to state its unit and to silence this warning."
+            )
 
-    def _ingest(self, data: dict, overwrite: bool, replace_all: bool = False) -> None:
+    def _ingest(self, data: dict, overwrite: bool, replace_all: bool = False) -> list:
+        """Validate and merge units data; returns new units whose plain factor may predate 0.3."""
         unknown = [
             k
             for k in data
@@ -237,7 +277,11 @@ class UnitRegistry:
             values = data.get(section, {})
             if not isinstance(values, Mapping):
                 raise ValueError(f"Section '{section}' must be an object")
-            entries[section] = {key: _normalize_entry(section, key, value) for key, value in values.items()}
+            entries[section] = {
+                key: _normalize_entry(section, key, value)
+                for key, value in values.items()
+                if not is_comment(key)
+            }
         rules = {}
         for section in _RULE_SECTIONS:
             values = data.get(section, [])
@@ -252,6 +296,22 @@ class UnitRegistry:
                 state[section] = {} if replace_all else dict(getattr(self, "_" + section))
             for section in _RULE_SECTIONS:
                 state[section] = [] if replace_all else list(getattr(self, "_" + section))
+
+            # Factors given relative to another unit: resolve against existing and loaded plain factors.
+            factors = entries["conversion_factors"]
+            plain = {**state["conversion_factors"]}
+            plain.update({k: v for k, v in factors.items() if not isinstance(v, _RelativeFactor)})
+            ambiguous = [key for key, v in factors.items() if not isinstance(v, _RelativeFactor)]
+            ambiguous = [key for key in ambiguous if key not in state["conversion_factors"]]
+            for key, value in factors.items():
+                if isinstance(value, _RelativeFactor):
+                    amount, reference = value
+                    if isinstance(plain.get(reference), _RelativeFactor) or reference not in plain:
+                        raise ValueError(
+                            f"conversion_factors[{key!r}] refers to unit {reference!r}, which has no "
+                            "conversion factor (it must be a registered unit or have a plain number here)"
+                        )
+                    factors[key] = amount * plain[reference]
 
             conflicts = []
             for section in _MAPPING_SECTIONS:
@@ -282,6 +342,8 @@ class UnitRegistry:
                 setattr(self, "_" + section, value)
             self._vector_names = vector_names
             self._install_caches()
+            dimensions = state["dimensions"]
+            return [(key, dimensions[key]) for key in ambiguous if dimensions.get(key) in _PRE_03_BASE_UNITS]
 
     def _install_caches(self) -> None:
         """Give each cached method a fresh cache for the current data.
@@ -313,7 +375,9 @@ class UnitRegistry:
         sign = 1
         for index, part in enumerate(parts):
             if index % 2:
-                sign = -1 if part == "/" else 1
+                # Sticky: "EUR/kW·a" means EUR/(kW·a), as it is commonly written.
+                if part == "/":
+                    sign = -1
                 continue
             atom = part.strip()
             if not atom:
@@ -378,6 +442,26 @@ class UnitRegistry:
     def dimension_exponent(self, unit: str, dimension: str) -> int:
         """Exponent of a base dimension in ``unit`` (e.g. ENERGY in ``"USD/MWh"`` is -1)."""
         return dict(self.dimension_vector(unit)).get(dimension, 0)
+
+    def fuel_energy_exponent(self, unit: str) -> int:
+        """Exponent with which the energy of a fuel enters ``unit`` (for HHV/LHV conversions).
+
+        Normally the net ENERGY exponent (``"MWh"`` 1, ``"USD/MWh"`` -1, ``"t"`` 0).
+        A unit with energy in both numerator and denominator that cancels
+        (``"GJ/MWh"``, ``"MJ/kWh"``, ``"GJ/h/MW"``) is read as a heat rate, fuel
+        energy per unit of output, so the fuel energy is in the numerator.
+        """
+        net = self.dimension_exponent(unit, "ENERGY")
+        if net:
+            return net
+        positive = negative = 0
+        for atom, exp in self.parse_unit(unit):
+            energy = self._atom_vector(atom).get("ENERGY", 0) * exp
+            if energy > 0:
+                positive += energy
+            else:
+                negative -= energy
+        return positive if positive and negative else 0
 
     def get_dimension(self, unit: str) -> str:
         """Return the dimension name of a unit.
@@ -662,7 +746,15 @@ class UnitRegistry:
         return True
 
     def _merge_same_kind(self, items: list, scale: List[float]) -> list:
-        """Merge atoms of the same kind, converting later atoms into earlier ones."""
+        """Merge atoms of the same kind (``MWh`` and ``GJ``, ``EUR`` and ``kEUR``).
+
+        In this order, so that the unit that survives is the one that did not cancel:
+
+        1. identical atoms are added up (``USD/GJ * GJ/MWh`` -> ``USD/MWh``);
+        2. numerator and denominator atoms of different operands cancel
+           (``USD/GJ * kJ/MWh`` -> ``USD/MWh``);
+        3. what is left of a kind is expressed in its first atom (``MWh * GJ`` -> ``MWh·MWh``).
+        """
         merged: list = []
         for atom, exp, origin in items:
             for existing in merged:
@@ -670,6 +762,28 @@ class UnitRegistry:
                     existing[1] += exp
                     existing[2] = existing[2] | origin
                     break
+            else:
+                merged.append([atom, exp, set(origin)])
+        merged = [item for item in merged if item[1] != 0]
+
+        for upper in merged:
+            for lower in merged:
+                if upper[1] <= 0:
+                    break
+                if lower[1] >= 0 or not self._same_kind(upper[0], lower[0]):
+                    continue
+                if upper[2] == lower[2] and len(upper[2]) == 1:
+                    continue  # same operand: left to step 3
+                count = min(upper[1], -lower[1])
+                self._scale_by(scale, upper[0], count, same_currency=True)
+                self._scale_by(scale, lower[0], -count, same_currency=True)
+                upper[1] -= count
+                lower[1] += count
+        merged = [item for item in merged if item[1] != 0]
+
+        result: list = []
+        for atom, exp, origin in merged:
+            for existing in result:
                 if self._same_kind(existing[0], atom):
                     # atom**exp == (factor(atom) / factor(existing))**exp * existing**exp
                     self._scale_by(scale, atom, exp, same_currency=True)
@@ -678,8 +792,8 @@ class UnitRegistry:
                     existing[2] = existing[2] | origin
                     break
             else:
-                merged.append([atom, exp, set(origin)])
-        return [item for item in merged if item[1] != 0]
+                result.append([atom, exp, origin])
+        return [item for item in result if item[1] != 0]
 
     def _result_unit(self, atom: str, result_dimension: str) -> Optional[str]:
         corresponding = self._corresponding_units.get(atom)

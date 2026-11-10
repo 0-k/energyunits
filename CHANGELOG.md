@@ -45,28 +45,44 @@ listed under "Fixed" should be re-checked.
 - Tests mutated the global registries and depended on execution order.
 
 ### Changed
-- **Unit algebra** is based on a parser (`/` and `·`/`*`, evaluated left to right)
+- **Unit algebra** is based on a parser (`/` and `·`/`*`; everything after the
+  first `/` is in the denominator, so `EUR/kW·a` equals `EUR/kW/a`)
   and dimension vectors with `POWER = ENERGY / TIME`, so equivalent units are
   compatible (`GJ/h` and `MW`, `kWh/kW` and `h`, `EUR/MW` and `EUR·h/MWh`).
 - **Conversion factors** are stored relative to SI-coherent base units (J, W, kg,
   m3, s, USD); common conversions are now exact in floating point
-  (`100 MWh -> 360.0 GJ`).
+  (`100 MWh -> 360.0 GJ`). **Custom unit files written for 0.2 must be updated**,
+  because 0.2 used MWh, MW, t and h as base units. `load_units` accepts factors
+  relative to any registered unit (`{"boe": {"value": 1.7, "unit": "MWh"}}`) and
+  warns when a plain number defines a new energy, power, mass or time unit.
 - **Power and energy are no longer converted implicitly**: `Quantity(100, "MW").to("MWh")`
   (which assumed one hour) now raises; multiply by a duration instead.
   `registry.convert_between_dimensions(..., hours=...)` keeps the old behaviour.
 - **Conversion order** in `.to()` is basis -> substance -> unit -> reference year
   (previously substance -> basis -> ...).
 - **Basis conversion** rescales energy amounts, rescales per-energy units (prices,
-  emission factors) inversely and only re-labels masses and volumes.
+  emission factors) inversely and only re-labels masses and volumes. Energy per
+  energy (`GJ/MWh`) is a heat rate with the fuel energy in the numerator. A
+  dimensionless quantity cannot be converted (an efficiency and a share of fuel
+  energy convert differently) and raises.
 - **Addition, subtraction and comparison** convert the right operand to the left
   operand's heating value basis and (for costs) reference year before combining; a
-  fuel mass or volume is converted to energy at the left basis.
+  fuel mass or volume is converted to energy at the left basis. Quantities without
+  a substance, or of a substance without heating values (`wind`, `solar`), fit
+  either basis and are combined as they are.
+- **`==`** returns `False` only for incompatible units; an unknown substance or
+  missing exchange rate or inflation data raises, as for `<` and `>`.
 - **Products and quotients** align what cancels: fuel energy of one substance on
   different bases (`USD/MWh (HHV) × MWh (LHV)`) and money of different reference
   years (`EUR (2015) / EUR/MWh (2024)`). They keep the basis of the operand with fuel
   energy (`MW (HHV) × h` is HHV energy) and the reference year of the monetary
-  operand.
-- **Input validation**: values must be numeric (stored as float arrays), the basis
+  operand. Exchange rates (`EUR/USD`) are not inflation-adjusted, and missing
+  inflation data gives a warning and a result without reference year.
+- **Products and quotients cancel units across the operands first**, so the unit
+  that did not cancel survives: `USD/GJ × GJ/MWh` is `USD/MWh` and
+  `GJ / (GJ/MWh)` is `MWh`.
+- **Input validation**: values must be numeric (stored as float arrays; strings, dates
+  and durations are rejected, also in pandas objects), the basis
   must be HHV/LHV (case-insensitive), reference years must be integers.
 - `str()` of very small values uses significant digits (`0.00034 t/kWh` instead of
   `0.00 t/kWh`); arrays show the number of values after the unit.
@@ -112,7 +128,8 @@ listed under "Fixed" should be re-checked.
 - `Quantity`: unary minus/plus, `abs()`, `sum()` support, `number / quantity`,
   indexing, iteration, `len()`, `.sum()`/`.mean()`/`.min()`/`.max()`, `.shape`,
   `.copy()`, `.is_compatible()`, `float()` for dimensionless quantities, format
-  specifications (`f"{q:.1f}"`), pickling; pandas Series as operands.
+  specifications (`f"{q:.1f}"`), pickling; pandas Series as operands;
+  `np.sum`, `np.mean`, `np.min` and `np.max` return a `Quantity`.
 - `pandas_tools`: `get_units`, `to_quantity`, `from_quantity`; substance, basis and
   reference year metadata; conversions go through `Quantity.to`.
 - `load_units`, `load_substances`, `load_inflation` and `load_exchange_rates` accept a

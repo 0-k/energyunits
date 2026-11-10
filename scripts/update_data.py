@@ -244,9 +244,10 @@ def fetch(
     since: int = 2000,
     write: bool = False,
     timeout: float = 30,
-    out=sys.stdout,
+    out=None,
 ) -> Dict[str, List[Change]]:
     """Download FRED data, report differences and optionally write them."""
+    out = sys.stdout if out is None else out  # looked up at call time, so redirection works
     fx = files.load("exchange_rates")
     inflation = files.load("inflation")
     changes: Dict[str, List[Change]] = {}

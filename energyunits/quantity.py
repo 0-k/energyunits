@@ -8,7 +8,7 @@ from typing import Iterator, Optional, Sequence, Tuple, Union
 import numpy as np
 
 from ._warnings import warn
-from .exceptions import EnergyUnitsError, IncompatibleUnitsError
+from .exceptions import EnergyUnitsError, IncompatibleUnitsError, MissingDataError
 from .registry import AMOUNT_DIMENSIONS, registry
 
 ArrayLike = Union[float, int, Sequence[float], np.ndarray]
@@ -43,7 +43,15 @@ def _as_array(value) -> np.ndarray:
     if value is None:
         raise TypeError("Quantity value must be numeric, got None")
     if hasattr(value, "to_numpy") and not isinstance(value, np.ndarray):
-        if getattr(getattr(value, "dtype", None), "kind", "O") in "OSU":
+        # A Series or Index has one dtype, a DataFrame one per column.
+        dtypes = [value.dtype] if hasattr(value, "dtype") else list(getattr(value, "dtypes", [None]))
+        kinds = {getattr(dtype, "kind", "O") for dtype in dtypes}
+        if kinds & set("Mm"):
+            raise TypeError(
+                f"Quantity value must be numeric, got dates or durations in {type(value).__name__}; "
+                "convert them to numbers first (e.g. series.dt.total_seconds() / 3600 for hours)"
+            )
+        if kinds - set("biuf"):
             _reject_strings(value.to_numpy(), value)
         try:
             return value.to_numpy(dtype=float, na_value=np.nan)
@@ -215,7 +223,10 @@ class Quantity:
           (``USD/t`` -> ``USD/MWh``, ``MW`` -> ``t/h``).
         * **basis**: ``"HHV"`` or ``"LHV"``. Energy amounts are rescaled with the
           substance's LHV/HHV ratio, per-energy units (e.g. ``USD/MWh``) inversely;
-          mass and volume amounts are only re-labelled.
+          mass and volume amounts are only re-labelled. A unit of energy per
+          energy (``GJ/MWh``, ``MJ/kWh``) is a heat rate: fuel energy per unit of
+          output. A dimensionless quantity cannot be converted, because an
+          efficiency and a share of fuel energy would convert differently.
         * **substance**: combustion products ``"CO2"``, ``"H2O"`` or ``"ash"`` from
           the fuel composition (``t coal`` -> ``t CO2``, ``MW gas`` -> ``t/h CO2``).
         * **reference_year**: inflation adjustment of monetary quantities.
@@ -287,7 +298,13 @@ class Quantity:
         if self.substance is None:
             raise EnergyUnitsError("Substance must be specified for basis conversion")
         current_basis = self.basis or "LHV"
-        exponent = registry.dimension_exponent(self.unit, "ENERGY")
+        exponent = registry.fuel_energy_exponent(self.unit)
+        if current_basis != target_basis and exponent == 0 and registry.dimension_vector(self.unit) == ():
+            raise EnergyUnitsError(
+                f"Cannot convert a dimensionless quantity from {current_basis} to {target_basis}: an "
+                "efficiency (output per fuel energy) and a share of fuel energy convert differently. "
+                "Convert the energy quantities before dividing them, or use a heat rate such as 'GJ/MWh'."
+            )
         if current_basis == target_basis or exponent == 0:
             return self._make(self.value.copy(), self.unit, self.substance, target_basis, self.reference_year)
 
@@ -358,11 +375,14 @@ class Quantity:
                 f"Cannot detect currency from unit '{self.unit}'. "
                 f"Supported currencies: {inflation_registry.get_supported_currencies()}"
             )
-        if len(terms) > 1:
+        exponents = _currency_exponents(self.unit)
+        if len(exponents) > 1:
             raise EnergyUnitsError(
                 f"Cannot adjust inflation for a unit with several currencies: '{self.unit}'"
             )
-        _, currency, exponent = terms[0]
+        if not exponents:  # the currency cancels, e.g. 'EUR/kEUR'
+            return self._make(self.value.copy(), self.unit, self.substance, self.basis, target_year)
+        ((currency, exponent),) = exponents.items()
         factor = inflation_registry.get_cumulative_inflation_factor(
             currency, self.reference_year, target_year
         )
@@ -453,7 +473,8 @@ class Quantity:
                 f"Only dimensionless quantities can be converted to float, not '{self.unit}'. "
                 f"Use quantity.value or quantity.to(unit).value instead."
             )
-        return float(self.value * registry.unit_factor(self.unit))
+        # Through the regular conversion, so that currencies use the rates of the reference year.
+        return float(self._convert_unit("").value)
 
     def __getitem__(self, key) -> "Quantity":
         return self._with_value(self.value[key])
@@ -464,36 +485,66 @@ class Quantity:
         for item in self.value:
             yield self._with_value(item)
 
-    def sum(self, axis=None) -> "Quantity":
-        """Sum of the values (same unit and metadata)."""
-        return self._with_value(np.sum(self.value, axis=axis))
+    def _reduce(self, function, axis, out, kwargs) -> "Quantity":
+        # ``np.sum(quantity)`` and friends call these methods with ``out`` (and ``dtype``).
+        if out is not None:
+            raise TypeError("Quantity reductions do not support the 'out' argument")
+        return self._with_value(function(self.value, axis=axis, **kwargs))
 
-    def mean(self, axis=None) -> "Quantity":
-        """Mean of the values (same unit and metadata)."""
-        return self._with_value(np.mean(self.value, axis=axis))
+    def sum(self, axis=None, dtype=None, out=None, **kwargs) -> "Quantity":
+        """Sum of the values (same unit and metadata). Also used by ``numpy.sum``."""
+        return self._reduce(np.sum, axis, out, kwargs)
 
-    def min(self, axis=None) -> "Quantity":
-        """Minimum of the values (same unit and metadata)."""
-        return self._with_value(np.min(self.value, axis=axis))
+    def mean(self, axis=None, dtype=None, out=None, **kwargs) -> "Quantity":
+        """Mean of the values (same unit and metadata). Also used by ``numpy.mean``."""
+        return self._reduce(np.mean, axis, out, kwargs)
 
-    def max(self, axis=None) -> "Quantity":
-        """Maximum of the values (same unit and metadata)."""
-        return self._with_value(np.max(self.value, axis=axis))
+    def min(self, axis=None, out=None, **kwargs) -> "Quantity":
+        """Minimum of the values (same unit and metadata). Also used by ``numpy.min``."""
+        return self._reduce(np.min, axis, out, kwargs)
+
+    def max(self, axis=None, out=None, **kwargs) -> "Quantity":
+        """Maximum of the values (same unit and metadata). Also used by ``numpy.max``."""
+        return self._reduce(np.max, axis, out, kwargs)
 
     # --------------------------------------------------------------- arithmetic
 
     def _basis_matters(self) -> bool:
         """True if the heating value basis changes what this quantity means (fuel energy)."""
-        return self.substance is not None and registry.dimension_exponent(self.unit, "ENERGY") != 0
+        from .substance import substance_registry
+
+        return (
+            self.substance is not None
+            and registry.fuel_energy_exponent(self.unit) != 0
+            and substance_registry.has_heating_values(self.substance)
+        )
+
+    def _effective_basis(self) -> Optional[str]:
+        """Basis this quantity is on, or ``None`` if it has none.
+
+        A fuel without an explicit basis is on LHV. Quantities without a
+        substance, or of a substance without heating values (wind, electricity),
+        fit either basis unless they are labelled explicitly.
+        """
+        from .substance import substance_registry
+
+        if self.substance is None:
+            return self.basis
+        if not substance_registry.has_heating_values(self.substance):
+            return None
+        return self.basis or "LHV"
 
     def _has_currency(self) -> bool:
         return bool(registry.currency_terms(self.unit))
 
     def _basis_target(self, other: "Quantity") -> Optional[str]:
         """Basis that ``other`` must be converted to before it is combined with this quantity."""
-        if other.substance is None or (other.basis or "LHV") == (self.basis or "LHV"):
+        mine, theirs = self._effective_basis(), other._effective_basis()
+        if other.substance is None or mine is None or theirs is None or mine == theirs:
             return None
-        return self.basis or "LHV"
+        if registry.dimension_vector(other.unit) == () and registry.fuel_energy_exponent(other.unit) == 0:
+            return None  # plain numbers (efficiencies, shares) cannot be converted between bases
+        return mine
 
     def _year_target(self, other: "Quantity") -> Optional[int]:
         """Reference year that ``other`` must be converted to before it is combined with this quantity."""
@@ -568,13 +619,9 @@ class Quantity:
         aligned = self._align(other)
         value = self.value + aligned.value if sign > 0 else self.value - aligned.value
         substance = self._merged_substance(other, verb)
-        if self.basis == aligned.basis or aligned.basis is None:
-            basis = self.basis
-        elif self.basis is None:
-            basis = aligned.basis
-        else:
-            basis = None
-        return self._make(value, self.unit, substance, basis, self._merged_year(aligned))
+        return self._make(
+            value, self.unit, substance, self._merged_basis(aligned), self._merged_year(aligned)
+        )
 
     def __add__(self, other: "Quantity") -> "Quantity":
         if not isinstance(other, Quantity):
@@ -622,8 +669,15 @@ class Quantity:
             self.reference_year != other.reference_year
             and self._year_target(other) is not None
             and self._has_currency()
+            and len(_currency_exponents(other.unit)) == 1  # not an exchange rate such as EUR/USD
         ):
-            other = other._convert_reference_year(self.reference_year)
+            try:
+                other = other._convert_reference_year(self.reference_year)
+            except MissingDataError as exc:
+                warn(
+                    f"Price years {self.reference_year} and {other.reference_year} were combined without "
+                    f"inflation adjustment ({exc}); the result has no reference year."
+                )
         unit, numerator, denominator = registry.combine_units(self.unit, other.unit, 1 if multiply else -1)
         value = self.value * other.value if multiply else self.value / other.value
         if numerator != denominator:
@@ -683,14 +737,16 @@ class Quantity:
     def __eq__(self, other: object) -> bool:
         """Equality after unit conversion, with a relative tolerance of 1e-9.
 
-        Quantities of incompatible dimensions are not equal.
+        Quantities of incompatible dimensions are not equal. Comparisons that
+        cannot be evaluated (unknown substance, missing exchange rate or
+        inflation data) raise, like the ordering comparisons.
         """
         if not isinstance(other, Quantity):
             return NotImplemented
         try:
             aligned = self._align(other)
             return bool(np.all(np.isclose(self.value, aligned.value, rtol=1e-9, atol=0.0)))
-        except (ValueError, TypeError):
+        except IncompatibleUnitsError:
             return False
 
     def __ne__(self, other: object) -> bool:
@@ -704,3 +760,11 @@ def _changes_currency(from_unit: str, to_unit: str) -> bool:
     source = {code for _, code, _ in registry.currency_terms(from_unit)}
     target = {code for _, code, _ in registry.currency_terms(to_unit)}
     return bool(source) and bool(target) and source != target
+
+
+def _currency_exponents(unit: str) -> dict:
+    """Net exponent per currency code in ``unit`` (``EUR·MWh/kEUR`` -> ``{}``)."""
+    exponents: dict = {}
+    for _, code, exp in registry.currency_terms(unit):
+        exponents[code] = exponents.get(code, 0) + exp
+    return {code: exp for code, exp in exponents.items() if exp}

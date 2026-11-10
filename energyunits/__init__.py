@@ -21,7 +21,7 @@ Example::
     Quantity(1000, "EUR/kW", reference_year=2015).to("USD/kW", reference_year=2024)
 """
 
-from . import units
+from . import pandas_tools, units
 from .exceptions import (
     DefinitionConflictError,
     EnergyUnitsError,
@@ -38,6 +38,7 @@ __version__ = "0.3.0"
 __all__ = [
     "Quantity",
     "units",
+    "pandas_tools",
     "DefinitionConflictError",
     "EnergyUnitsError",
     "EnergyUnitsWarning",
@@ -47,13 +48,3 @@ __all__ = [
     "UnknownUnitError",
     "__version__",
 ]
-
-
-def __getattr__(name):
-    # Import the optional pandas integration lazily so that importing
-    # energyunits stays fast and pandas remains optional.
-    if name == "pandas_tools":
-        import importlib
-
-        return importlib.import_module(".pandas_tools", __name__)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

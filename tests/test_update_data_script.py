@@ -99,7 +99,7 @@ def _next_year(files):
     return max(int(y) for y in files.load("exchange_rates")["EUR"]) + 1
 
 
-def test_fetch_with_fake_downloads(ud, files):
+def test_fetch_with_fake_downloads(ud, files, capsys):
     year = _next_year(files)
 
     def fake_get(url, timeout):
@@ -108,6 +108,10 @@ def test_fetch_with_fake_downloads(ud, files):
             return _monthly_csv(series, {year - 2: 313.689, year - 1: 321.9, year: 330.0}, {})
         values = {"AEXUSEU": 1.17, "AEXUSUK": 1.35, "AEXJPUS": 150.0, "AEXCHUS": 7.1}
         return f"observation_date,{series}\n{year}-01-01,{values[series]}\n"
+
+    # Without ``out`` the report goes to the stdout that is current at call time.
+    ud.fetch(files, get=fake_get, since=year)
+    assert "Nothing written" in capsys.readouterr().out
 
     out = io.StringIO()
     changes = ud.fetch(files, get=fake_get, since=year, out=out)
