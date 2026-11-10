@@ -126,11 +126,12 @@ class TestQuantityOperations:
         total = energy1 + energy2
         assert total.substance is None
 
-        # Addition clears basis if different
+        # Addition with different bases converts to the basis of the first operand
         energy1 = Quantity(100, "MWh", "natural_gas", "HHV")
         energy2 = Quantity(100, "MWh", "natural_gas", "LHV")
         total = energy1 + energy2
-        assert total.basis is None
+        assert total.basis == "HHV"
+        assert total.value == pytest.approx(100 + 100 * 53.33 / 48.0)
 
         # Multiplication by scalar
         energy = Quantity(100, "MWh")

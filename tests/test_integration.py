@@ -21,9 +21,7 @@ class TestEnergySystemModels:
         hours_per_year = 8760
 
         # FIXED: Use for_duration to properly convert MW to MWh, then convert to GWh
-        annual_generation_mwh = (
-            plant_capacity * Quantity(hours_per_year, "h") * capacity_factor
-        )
+        annual_generation_mwh = plant_capacity * Quantity(hours_per_year, "h") * capacity_factor
         annual_generation = annual_generation_mwh.to("GWh")
 
         # Alternative calculation using for_duration
@@ -34,9 +32,7 @@ class TestEnergySystemModels:
         # Values should match
         assert annual_generation.value == pytest.approx(annual_generation_alt.value)
         assert annual_generation.unit == "GWh"
-        assert annual_generation.value == pytest.approx(
-            7446
-        )  # 1000 * 0.85 * 8760 / 1000
+        assert annual_generation.value == pytest.approx(7446)  # 1000 * 0.85 * 8760 / 1000
 
         # Fuel consumption
         # First get energy content of coal
@@ -85,9 +81,7 @@ class TestEnergySystemModels:
 
         assert wind_generation.value == pytest.approx(200 * 8760 * 0.35)
         assert solar_generation.value == pytest.approx(100 * 8760 * 0.25)
-        assert total_generation.value == pytest.approx(
-            (200 * 8760 * 0.35) + (100 * 8760 * 0.25)
-        )
+        assert total_generation.value == pytest.approx((200 * 8760 * 0.35) + (100 * 8760 * 0.25))
 
         # CO2 emissions (should be very low or zero for renewables)
         wind_emissions = wind_generation.to(substance="CO2")
@@ -121,9 +115,7 @@ class TestEnergySystemModels:
         discharging_power = Quantity(20, "MW")
 
         # Time to fully discharge from 50%
-        hours_to_discharge = (
-            state_of_charge * battery_capacity.value
-        ) / discharging_power.value
+        hours_to_discharge = (state_of_charge * battery_capacity.value) / discharging_power.value
         assert hours_to_discharge == pytest.approx(2.5)  # 50 MWh / 20 MW = 2.5 h
 
     def test_energy_cost_calculations(self):
@@ -134,8 +126,8 @@ class TestEnergySystemModels:
         # Adjust for inflation
         price_2025 = price_2020.to(reference_year=2025)
 
-        # With historical inflation rates (2021-2025)
-        historical_factor = 1.047 * 1.08 * 1.0412 * 1.0315 * 1.025
+        # With historical CPI-U inflation rates (2021-2025)
+        historical_factor = 1.047 * 1.08 * 1.0412 * 1.0295 * 1.026
         assert price_2025.value == pytest.approx(50 * historical_factor, rel=1e-3)
         assert price_2025.unit == "USD/MWh"
         assert price_2025.reference_year == 2025
@@ -147,7 +139,7 @@ class TestEnergySystemModels:
         # Create proper cost quantity
         cost_quantity = Quantity(cost, "USD", reference_year=2025)
 
-        assert cost_quantity.value == pytest.approx(10000 * 50 * historical_factor)
+        assert cost_quantity.value == pytest.approx(10000 * price_2025.value)
 
         # Convert to another currency
         cost_eur = cost_quantity.to("EUR")

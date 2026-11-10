@@ -1,217 +1,112 @@
 # Release Process for EnergyUnits
 
-This document describes how to release a new version of EnergyUnits to PyPI.
+Releases are published to PyPI by GitHub Actions when a GitHub release is
+published (`.github/workflows/publish.yml`), using PyPI trusted publishing.
 
-## Prerequisites
+## One-time setup
 
-### 1. Set up PyPI Trusted Publishing
+### 1. Trusted publishing on PyPI and TestPyPI
 
-The project uses PyPI's trusted publishing (OpenID Connect) which is more secure than API tokens. You need to configure this once:
+On <https://pypi.org> (and <https://test.pypi.org> for test releases): Account
+settings -> Publishing -> *Add a new pending publisher*:
 
-#### For TestPyPI (recommended to test first):
+| Field | PyPI | TestPyPI |
+|-------|------|----------|
+| PyPI project name | `energyunits` | `energyunits` |
+| Owner | `0-k` | `0-k` |
+| Repository name | `energyunits` | `energyunits` |
+| Workflow name | `publish.yml` | `publish-test.yml` |
+| Environment name | `pypi` | `testpypi` |
 
-1. Go to https://test.pypi.org and log in (create account if needed)
-2. Go to Account Settings → Publishing → Add a new pending publisher
-3. Fill in the form:
-   - **PyPI Project Name**: `energyunits`
-   - **Owner**: `0-k` (your GitHub username/org)
-   - **Repository name**: `energyunits`
-   - **Workflow name**: `publish-test.yml`
-   - **Environment name**: `testpypi`
-4. Click "Add"
+### 2. GitHub environments
 
-#### For PyPI (production):
+Repository Settings -> Environments: create `pypi` and `testpypi`. Optionally add a
+protection rule (required reviewer) to `pypi`.
 
-1. Go to https://pypi.org and log in
-2. Go to Account Settings → Publishing → Add a new pending publisher
-3. Fill in the form:
-   - **PyPI Project Name**: `energyunits`
-   - **Owner**: `0-k`
-   - **Repository name**: `energyunits`
-   - **Workflow name**: `publish.yml`
-   - **Environment name**: `pypi`
-4. Click "Add"
+### 3. Optional: Codecov and Read the Docs
 
-### 2. Create GitHub Environments
+- Add a `CODECOV_TOKEN` repository secret for coverage uploads (CI does not fail
+  without it).
+- Import the repository on <https://readthedocs.org>; `.readthedocs.yaml` is ready.
 
-Create the required environments in your GitHub repository:
+## Releasing a version
 
-1. Go to your repository on GitHub
-2. Navigate to Settings → Environments
-3. Create two environments:
-   - **testpypi** (for test releases)
-   - **pypi** (for production releases)
-4. (Optional) Add protection rules to require approval before publishing
-
-## Release Process
-
-### Step 1: Update Version
-
-Update the version number in two places:
-
-```bash
-# In pyproject.toml
-version = "X.Y.Z"
-
-# In energyunits/__init__.py
-__version__ = "X.Y.Z"
-```
-
-### Step 2: Update CHANGELOG
-
-Add release notes to `CHANGELOG.md` following the existing format:
-
-```markdown
-## [X.Y.Z] - YYYY-MM-DD
-
-### Added
-- New features
-
-### Changed
-- Changes to existing functionality
-
-### Fixed
-- Bug fixes
-
-### Deprecated
-- Soon-to-be removed features
-
-### Removed
-- Removed features
-
-### Security
-- Security fixes
-```
-
-### Step 3: Test the Build Locally
-
-```bash
-# Install build tools
-pip install build twine
-
-# Build the package
-python -m build
-
-# Check the built package
-twine check dist/*
-
-# Optionally, test install locally
-pip install dist/energyunits-X.Y.Z-py3-none-any.whl
-```
-
-### Step 4: Commit and Push
-
-```bash
-git add pyproject.toml energyunits/__init__.py CHANGELOG.md
-git commit -m "chore: bump version to X.Y.Z"
-git push origin main
-```
-
-### Step 5: Test on TestPyPI (Recommended)
-
-1. Go to GitHub Actions
-2. Select "Publish to TestPyPI" workflow
-3. Click "Run workflow" → "Run workflow"
-4. Wait for the workflow to complete
-5. Test installing from TestPyPI:
+1. **Bump the version** in `energyunits/__init__.py` (`__version__ = "X.Y.Z"`).
+   It is the single source of truth; `pyproject.toml` reads it.
+2. **Update `CHANGELOG.md`**: add a `## [X.Y.Z] - YYYY-MM-DD` section and the link at
+   the bottom.
+3. **Check locally**:
+   ```bash
+   pip install -e ".[dev]"
+   pytest
+   black --check energyunits tests && isort --check-only energyunits tests && flake8 energyunits
+   rm -rf dist && python -m build && twine check --strict dist/*
+   ```
+4. **Merge to `master`** via a pull request and wait for CI to pass.
+5. **Optional: test on TestPyPI.** Actions -> "Publish to TestPyPI" -> Run workflow,
+   then:
    ```bash
    pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple energyunits
    ```
-
-### Step 6: Create a GitHub Release
-
-1. Go to your repository on GitHub
-2. Click "Releases" → "Create a new release"
-3. Click "Choose a tag" and create a new tag: `vX.Y.Z` (e.g., `v0.1.0`)
-4. Set the release title: `vX.Y.Z`
-5. Copy the relevant section from CHANGELOG.md into the release description
-6. Click "Publish release"
-
-### Step 7: Automatic PyPI Publishing
-
-Once you publish the release, the GitHub Action will automatically:
-1. Build the package
-2. Publish to PyPI
-
-You can monitor the progress in the "Actions" tab.
-
-### Step 8: Verify the Release
-
-1. Check that the package appears on PyPI: https://pypi.org/project/energyunits/
-2. Test installing the package:
+   A version number can only be uploaded once per index.
+6. **Create a GitHub release** with tag `vX.Y.Z` (exactly matching `__version__`)
+   targeting `master`, and paste the changelog section as release notes.
+7. **Publishing runs automatically.** The workflow checks that the tag matches the
+   package version, runs the tests, builds the sdist and wheel, checks them with
+   twine and uploads them to PyPI.
+8. **Verify**:
    ```bash
-   pip install energyunits
-   ```
-3. Verify the version:
-   ```bash
+   pip install --upgrade energyunits
    python -c "import energyunits; print(energyunits.__version__)"
    ```
 
-## Troubleshooting
+## Data updates (yearly)
 
-### Trusted Publishing Not Set Up
-
-**Error**: `Error: Invalid or non-existent authentication information`
-
-**Solution**: Make sure you've configured trusted publishing on PyPI/TestPyPI (see Prerequisites above).
-
-### Environment Not Found
-
-**Error**: `Environment not found`
-
-**Solution**: Create the required environments in GitHub repository settings.
-
-### Build Fails
-
-**Error**: Build process fails during GitHub Action
-
-**Solution**:
-1. Check the GitHub Actions logs
-2. Try building locally with `python -m build`
-3. Ensure all files are committed and pushed
-
-### Package Already Exists
-
-**Error**: `File already exists`
-
-**Solution**: You cannot re-upload the same version. Increment the version number and try again.
-
-## Version Numbering
-
-EnergyUnits follows [Semantic Versioning](https://semver.org/):
-
-- **MAJOR** version (X.0.0): Incompatible API changes
-- **MINOR** version (0.X.0): New functionality, backwards compatible
-- **PATCH** version (0.0.X): Bug fixes, backwards compatible
-
-Examples:
-- `0.1.0` → `0.1.1`: Bug fix release
-- `0.1.0` → `0.2.0`: New features, backwards compatible
-- `0.9.0` → `1.0.0`: First stable release with API guarantees
-- `1.0.0` → `2.0.0`: Breaking changes to API
-
-## Pre-releases
-
-For alpha/beta releases, append to the version:
-
-```
-version = "0.2.0a1"  # Alpha release
-version = "0.2.0b1"  # Beta release
-version = "0.2.0rc1" # Release candidate
-```
-
-## Quick Reference
+Exchange rates and inflation should be refreshed once a year, when the annual
+averages of the previous year are published (Federal Reserve G.5A in early January;
+BLS, Eurostat, ONS, Statistics Bureau of Japan and NBS by mid-February). The
+developer tool `scripts/update_data.py` does the bookkeeping. It is not part of the
+installed package and needs only the standard library:
 
 ```bash
-# Complete release checklist
-1. Update version in pyproject.toml and __init__.py
-2. Update CHANGELOG.md
-3. python -m build
-4. twine check dist/*
-5. git commit -am "chore: bump version to X.Y.Z"
-6. git push
-7. Test on TestPyPI (via GitHub Actions)
-8. Create GitHub release with tag vX.Y.Z
-9. Automatic PyPI publish
-10. Verify on PyPI
+# Exchange rates (EUR, GBP, JPY, CNY) and US CPI-U from FRED: review, then write
+python scripts/update_data.py fetch
+python scripts/update_data.py fetch --write
+
+# Inflation rates that are not on FRED, entered by hand
+python scripts/update_data.py set inflation EUR 2026 2.4   # Eurostat HICP, annual average rate of change
+python scripts/update_data.py set inflation GBP 2026 3.1   # ONS series D7G7
+python scripts/update_data.py set inflation JPY 2026 2.0   # Statistics Bureau of Japan
+python scripts/update_data.py set inflation CNY 2026 0.5   # National Bureau of Statistics of China
+
+# Regenerate derived data and verify
+python scripts/update_data.py sync    # static currency factors in units.json, tables in DATA_SOURCES.md
+python scripts/update_data.py check   # also runs in CI
+pytest
 ```
+
+Notes:
+
+- `fetch` also shows revisions of earlier years; review them before writing.
+- Setting the first projected year of a currency (its `projected_from`) makes it
+  historical and moves the boundary forward, so set the years in order. Setting a
+  later year only changes that placeholder. `fetch` counts a year only once it is
+  complete (December or a later month published).
+- Exchange rates can also be entered by hand: `set fx JPY 2026 147.2 --per-usd`
+  (JPY and CNY are quoted per USD by the Fed; EUR and GBP as USD per unit).
+- If README examples print values that depend on revised data, `tests/test_readme.py`
+  fails and the documented output in `README.md` needs updating.
+- Add a line to `CHANGELOG.md` and to the version history in `DATA_SOURCES.md`.
+
+## Versioning
+
+EnergyUnits follows [Semantic Versioning](https://semver.org/). Before 1.0, minor
+versions may contain breaking changes, which are listed in the changelog.
+
+## Troubleshooting
+
+- **`invalid-publisher` / authentication errors**: the trusted publisher on PyPI does
+  not match the workflow file name or environment name above.
+- **"Release tag does not match package version"**: the tag must be `v` +
+  `__version__`, e.g. `v0.3.0`.
+- **`File already exists`**: a version cannot be re-uploaded; bump the version.

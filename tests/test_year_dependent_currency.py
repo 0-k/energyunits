@@ -1,7 +1,9 @@
 """Tests for year-dependent currency conversions."""
 
 import warnings
+
 import pytest
+
 from energyunits import Quantity
 from energyunits.exchange_rate import exchange_rate_registry
 
@@ -15,8 +17,8 @@ class TestYearDependentExchangeRates:
         rate_2010 = exchange_rate_registry.get_exchange_rate("EUR", 2010)
         rate_2023 = exchange_rate_registry.get_exchange_rate("EUR", 2023)
 
-        assert rate_2010 == pytest.approx(1.3257, rel=1e-4)
-        assert rate_2023 == pytest.approx(1.0813, rel=1e-4)
+        assert rate_2010 == pytest.approx(1.3261, rel=1e-4)
+        assert rate_2023 == pytest.approx(1.0817, rel=1e-4)
         assert rate_2010 > rate_2023  # EUR was stronger in 2010
 
     def test_brexit_impact_on_gbp(self):
@@ -26,8 +28,8 @@ class TestYearDependentExchangeRates:
 
         # GBP dropped significantly after Brexit referendum
         assert rate_2015 > rate_2017
-        assert rate_2015 == pytest.approx(1.5286, rel=1e-4)
-        assert rate_2017 == pytest.approx(1.2886, rel=1e-4)
+        assert rate_2015 == pytest.approx(1.5284, rel=1e-4)
+        assert rate_2017 == pytest.approx(1.2890, rel=1e-4)
 
     def test_jpy_depreciation(self):
         """Test JPY depreciation in recent years."""
@@ -45,8 +47,8 @@ class TestYearDependentExchangeRates:
 
     def test_missing_year_error(self):
         """Test error when requesting unavailable year."""
-        with pytest.raises(ValueError, match="No exchange rate data for EUR in year 2009"):
-            exchange_rate_registry.get_exchange_rate("EUR", 2009)
+        with pytest.raises(ValueError, match="No exchange rate data for EUR in year 1999"):
+            exchange_rate_registry.get_exchange_rate("EUR", 1999)
 
     def test_unsupported_currency_error(self):
         """Test error for unsupported currency."""
@@ -56,9 +58,11 @@ class TestYearDependentExchangeRates:
     def test_default_to_most_recent_year(self):
         """Test that None year defaults to most recent."""
         rate_none = exchange_rate_registry.get_exchange_rate("EUR", None)
-        rate_2025 = exchange_rate_registry.get_exchange_rate("EUR", 2025)
+        latest_year = exchange_rate_registry.get_available_years("EUR")[1]
+        rate_latest = exchange_rate_registry.get_exchange_rate("EUR", latest_year)
 
-        assert rate_none == rate_2025
+        assert latest_year >= 2025
+        assert rate_none == rate_latest
 
 
 class TestCurrencyConversionWithoutInflation:
@@ -69,8 +73,9 @@ class TestCurrencyConversionWithoutInflation:
         cost_eur = Quantity(100, "EUR")
         cost_usd = cost_eur.to("USD")
 
-        # Should use most recent rate (2025: 1.08)
-        assert cost_usd.value == pytest.approx(100 * 1.08, rel=1e-2)
+        # Should use the most recent annual average (2025: 1.1306 at the time of writing)
+        latest = exchange_rate_registry.get_exchange_rate("EUR")
+        assert cost_usd.value == pytest.approx(100 * latest, rel=1e-12)
         assert cost_usd.unit == "USD"
 
     def test_currency_conversion_with_explicit_year(self):
@@ -78,8 +83,8 @@ class TestCurrencyConversionWithoutInflation:
         cost_eur = Quantity(100, "EUR", reference_year=2010)
         cost_usd = cost_eur.to("USD")
 
-        # Should use 2010 rate (1.3257)
-        assert cost_usd.value == pytest.approx(100 * 1.3257, rel=1e-2)
+        # Should use 2010 rate (1.3261)
+        assert cost_usd.value == pytest.approx(100 * 1.3261, rel=1e-4)
         assert cost_usd.unit == "USD"
 
     def test_compound_unit_currency_conversion(self):
@@ -87,8 +92,8 @@ class TestCurrencyConversionWithoutInflation:
         price_eur = Quantity(50, "EUR/MWh", reference_year=2020)
         price_usd = price_eur.to("USD/MWh")
 
-        # Should use 2020 rate (1.1422)
-        assert price_usd.value == pytest.approx(50 * 1.1422, rel=1e-2)
+        # Should use 2020 rate (1.1410)
+        assert price_usd.value == pytest.approx(50 * 1.1410, rel=1e-4)
         assert price_usd.unit == "USD/MWh"
 
     def test_roundtrip_currency_conversion(self):
@@ -190,9 +195,9 @@ class TestCurrencyWithInflationCombined:
         usd_2010 = eur_2010.to("USD")
         usd_2023 = eur_2023.to("USD")
 
-        # 2010 rate (1.3257) vs 2023 rate (1.0813)
-        assert usd_2010.value == pytest.approx(132.57, rel=1e-2)
-        assert usd_2023.value == pytest.approx(108.13, rel=1e-2)
+        # 2010 rate (1.3261) vs 2023 rate (1.0817)
+        assert usd_2010.value == pytest.approx(132.61, rel=1e-4)
+        assert usd_2023.value == pytest.approx(108.17, rel=1e-4)
         assert usd_2010.value > usd_2023.value  # EUR was stronger in 2010
 
 
@@ -202,12 +207,12 @@ class TestExchangeRateRegistry:
     def test_convert_currency(self):
         """Test currency conversion helper."""
         result = exchange_rate_registry.convert_currency(100, "EUR", "USD", 2020)
-        assert result == pytest.approx(100 * 1.1422, rel=1e-4)
+        assert result == pytest.approx(100 * 1.1410, rel=1e-4)
 
     def test_get_conversion_factor(self):
         """Test getting conversion factor."""
         factor = exchange_rate_registry.get_conversion_factor("EUR", "USD", 2020)
-        assert factor == pytest.approx(1.1422, rel=1e-4)
+        assert factor == pytest.approx(1.1410, rel=1e-4)
 
     def test_detect_currency_from_unit(self):
         """Test currency detection from unit strings."""
@@ -243,8 +248,9 @@ class TestEdgeCases:
         cost = Quantity(100, "EUR")  # No reference year
         converted = cost.to("USD")
 
-        # Should use 2025 rate
-        assert converted.value == pytest.approx(100 * 1.08, rel=1e-2)
+        # Should use the most recent annual average
+        latest = exchange_rate_registry.get_exchange_rate("EUR")
+        assert converted.value == pytest.approx(100 * latest, rel=1e-12)
 
     def test_same_currency_no_conversion_needed(self):
         """Test converting to same currency is no-op."""
@@ -271,6 +277,6 @@ class TestEdgeCases:
         cost_eur = Quantity(100, "EUR", reference_year=2020)
         cost_gbp = cost_eur.to("GBP")
 
-        # EUR to GBP via USD: 100 * 1.1422 / 1.2837
-        expected = 100 * 1.1422 / 1.2837
+        # EUR to GBP via USD: 100 * 1.1410 / 1.2829
+        expected = 100 * 1.1410 / 1.2829
         assert cost_gbp.value == pytest.approx(expected, rel=1e-3)

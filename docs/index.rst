@@ -1,8 +1,6 @@
 EnergyUnits
 ===========
 
-A Python library for handling units, conversions, and calculations in energy system modeling.
-
 .. include:: ../README.md
    :parser: myst_parser.sphinx_
 
@@ -12,6 +10,7 @@ A Python library for handling units, conversions, and calculations in energy sys
 
    api
    architecture
+   data_sources
    changelog
 
 

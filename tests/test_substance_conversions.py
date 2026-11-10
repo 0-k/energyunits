@@ -14,8 +14,8 @@ class TestSubstanceConversions:
         coal = Quantity(1, "t", "coal")
         co2 = coal.to(substance="CO2")
 
-        # Coal has 75% carbon content: 1000 kg * 0.75 * (44/12) = 2750 kg CO2
-        expected_co2 = 1000 * 0.75 * (44 / 12) / 1000  # Convert back to tonnes
+        # Coal (IPCC other bituminous coal): NCV 25.8 MJ/kg x 94.6 kg CO2/GJ = 2.44 t CO2 per t
+        expected_co2 = 25.8 * 94.6 / 1000
         assert co2.value == pytest.approx(expected_co2)
         assert co2.unit == "t"
         assert co2.substance == "CO2"
@@ -47,19 +47,19 @@ class TestSubstanceConversions:
         test_cases = [
             (
                 "lignite",
-                {"carbon_content": 0.65, "hydrogen_content": 0.04, "ash_content": 0.15},
+                {"carbon_content": 0.327791, "hydrogen_content": 0.04, "ash_content": 0.15},
             ),
             (
                 "anthracite",
-                {"carbon_content": 0.85, "hydrogen_content": 0.04, "ash_content": 0.05},
+                {"carbon_content": 0.715803, "hydrogen_content": 0.04, "ash_content": 0.05},
             ),
             (
                 "diesel",
-                {"carbon_content": 0.86, "hydrogen_content": 0.14, "ash_content": 0.0},
+                {"carbon_content": 0.868991, "hydrogen_content": 0.14, "ash_content": 0.0},
             ),
             (
                 "wood_pellets",
-                {"carbon_content": 0.50, "hydrogen_content": 0.06, "ash_content": 0.01},
+                {"carbon_content": 0.46, "hydrogen_content": 0.055, "ash_content": 0.0092},
             ),
         ]
 
@@ -69,23 +69,17 @@ class TestSubstanceConversions:
             # Test CO2
             co2 = fuel.to(substance="CO2")
             expected_co2 = composition["carbon_content"] * (44 / 12)
-            assert co2.value == pytest.approx(
-                expected_co2
-            ), f"CO2 calculation failed for {fuel_name}"
+            assert co2.value == pytest.approx(expected_co2), f"CO2 calculation failed for {fuel_name}"
 
             # Test H2O
             h2o = fuel.to(substance="H2O")
             expected_h2o = composition["hydrogen_content"] * (18 / 2)
-            assert h2o.value == pytest.approx(
-                expected_h2o
-            ), f"H2O calculation failed for {fuel_name}"
+            assert h2o.value == pytest.approx(expected_h2o), f"H2O calculation failed for {fuel_name}"
 
             # Test ash
             ash = fuel.to(substance="ash")
             expected_ash = composition["ash_content"]
-            assert ash.value == pytest.approx(
-                expected_ash
-            ), f"Ash calculation failed for {fuel_name}"
+            assert ash.value == pytest.approx(expected_ash), f"Ash calculation failed for {fuel_name}"
 
     def test_renewable_zero_emissions(self):
         """Test that renewable sources produce zero combustion products."""
@@ -135,9 +129,8 @@ class TestSubstanceConversions:
         co2 = gas_volume.to(substance="CO2")
 
         # Verify the calculation chain
-        # 1000 m3 * 0.75 kg/m3 = 750 kg gas
-        # 750 kg * 0.75 carbon * (44/12) = 2062.5 kg CO2
-        expected_co2 = 1000 * 0.75 * 0.75 * (44 / 12) / 1000  # Convert to tonnes
+        # 1000 m3 at 15 °C * 0.74 kg/m3 = 740 kg gas; * 0.7344 carbon * (44/12) = 1993 kg CO2
+        expected_co2 = 1000 * 0.74 * 0.7344 * (44 / 12) / 1000  # Convert to tonnes
         assert co2.value == pytest.approx(expected_co2)
 
     def test_array_substance_conversions(self):
@@ -149,7 +142,7 @@ class TestSubstanceConversions:
 
         # Each element should be converted correctly
         for i, mass in enumerate(coal_masses):
-            expected_co2 = mass * 0.75 * (44 / 12)
+            expected_co2 = mass * 25.8 * 94.6 / 1000
             assert co2_array.value[i] == pytest.approx(expected_co2)
 
     def test_basis_conversion_with_substances(self):
@@ -201,9 +194,7 @@ class TestSubstanceConversions:
 
             # Both should be positive and reasonable values
             assert co2_kg_per_mwh > 0, f"Calculated CO2 should be positive for {fuel}"
-            assert (
-                stored_intensity >= 0
-            ), f"Stored intensity should be non-negative for {fuel}"
+            assert stored_intensity >= 0, f"Stored intensity should be non-negative for {fuel}"
 
             # For fossil fuels, calculated values should be in reasonable range (100-500 kg CO2/MWh)
             if fuel != "wood_pellets":  # Biomass might be considered carbon neutral
@@ -316,13 +307,13 @@ class TestSubstanceRegistryDirectly:
         lhv_coal = substance_registry.lhv("coal")
 
         assert hhv_coal > lhv_coal  # HHV should always be higher
-        assert hhv_coal == 26.0
-        assert lhv_coal == 25.0
+        assert hhv_coal == 27.16
+        assert lhv_coal == 25.8
 
     def test_lhv_hhv_ratio(self):
         """Test LHV/HHV ratio calculation."""
         ratio = substance_registry.lhv_hhv_ratio("coal")
-        expected_ratio = 25.0 / 26.0
+        expected_ratio = 25.8 / 27.16
         assert ratio == pytest.approx(expected_ratio)
 
     def test_density_method(self):
@@ -354,6 +345,6 @@ class TestSubstanceRegistryDirectly:
         ash = substance_registry.calculate_combustion_product(coal, "ash")
 
         # Verify calculations
-        assert co2.value == pytest.approx(1.0 * 0.75 * (44 / 12))
+        assert co2.value == pytest.approx(1.0 * 25.8 * 94.6 / 1000)
         assert h2o.value == pytest.approx(1.0 * 0.05 * (18 / 2))
         assert ash.value == pytest.approx(1.0 * 0.10)

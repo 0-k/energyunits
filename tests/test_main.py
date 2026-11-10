@@ -152,9 +152,7 @@ class TestHeatingValues:
 
         # LHV should be lower (typically ~10% for natural gas)
         assert gas_energy_lhv.value < gas_energy_hhv.value
-        assert gas_energy_lhv.value == pytest.approx(
-            0.9 * gas_energy_hhv.value, rel=0.1
-        )
+        assert gas_energy_lhv.value == pytest.approx(0.9 * gas_energy_hhv.value, rel=0.1)
 
     def test_co2_emissions_conversion(self):
         """Test converting to CO2 emissions using unified .to() method."""
@@ -275,7 +273,7 @@ class TestMathOperations:
 class TestPandasIntegration:
     def test_pandas_unit_operations(self):
         """Test integration with pandas DataFrames."""
-        import pandas as pd
+        pd = pytest.importorskip("pandas")
 
         from energyunits.pandas_tools import add_units, convert_units
 
@@ -313,6 +311,4 @@ class TestCostCalculations:
         capex_2025 = capex_2015.to(reference_year=2025)
 
         assert capex_2025.unit == "USD/kW"
-        assert (
-            capex_2025.value > capex_2015.value
-        )  # Inflation should increase the value
+        assert capex_2025.value > capex_2015.value  # Inflation should increase the value

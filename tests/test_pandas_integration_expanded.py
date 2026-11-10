@@ -116,9 +116,7 @@ class TestPandasToolsAdvanced:
 
         # Check that all values were converted correctly
         expected_values = df["energy"] * 3.6
-        assert df_converted["energy"].tolist() == pytest.approx(
-            expected_values.tolist()
-        )
+        assert df_converted["energy"].tolist() == pytest.approx(expected_values.tolist())
 
     def test_nan_handling_in_conversions(self):
         """Test handling of NaN values in unit conversions."""
@@ -168,9 +166,7 @@ class TestPandasToolsAdvanced:
         df_back = convert_units(df_j, "energy", "MWh")
 
         # Should get back original values
-        assert df_back["energy"].tolist() == pytest.approx(
-            df["energy"].tolist(), rel=1e-10
-        )
+        assert df_back["energy"].tolist() == pytest.approx(df["energy"].tolist(), rel=1e-10)
 
     def test_incompatible_unit_conversion_error(self):
         """Test error handling for incompatible unit conversions."""
@@ -197,9 +193,7 @@ class TestPandasIntegrationWithQuantities:
         energy_quantities = []
         for i, row in df_with_units.iterrows():
             fuel = row["fuel"] if row["fuel"] in ["coal", "gas"] else None
-            q = Quantity(
-                row["energy"], df_with_units.attrs["energy_unit"], substance=fuel
-            )
+            q = Quantity(row["energy"], df_with_units.attrs["energy_unit"], substance=fuel)
             energy_quantities.append(q)
 
         # Check that quantities were created correctly
@@ -271,9 +265,7 @@ class TestPandasIntegrationWithQuantities:
         """Test basis conversions (HHV/LHV) in DataFrames."""
         from energyunits.pandas_tools import add_units
 
-        df = pd.DataFrame(
-            {"energy_hhv": [100, 200, 300], "fuel": ["coal", "natural_gas", "oil"]}
-        )
+        df = pd.DataFrame({"energy_hhv": [100, 200, 300], "fuel": ["coal", "natural_gas", "oil"]})
         df_with_units = add_units(df, "energy_hhv", "MWh")
 
         # Convert to LHV basis
@@ -288,9 +280,7 @@ class TestPandasIntegrationWithQuantities:
         df_lhv = add_units(df_lhv, "energy_lhv", "MWh")
 
         # LHV values should be lower than HHV values
-        assert all(
-            lhv < hhv for lhv, hhv in zip(df_lhv["energy_lhv"], df_lhv["energy_hhv"])
-        )
+        assert all(lhv < hhv for lhv, hhv in zip(df_lhv["energy_lhv"], df_lhv["energy_hhv"]))
 
 
 class TestPandasDataAnalysis:
@@ -327,9 +317,7 @@ class TestPandasDataAnalysis:
         hours_per_year = 8760
         # generation_mwh is in TWh, capacity_mw is in GW
         # Capacity factor = Generation(TWh) / (Capacity(GW) * hours_per_year / 1000)
-        df_twh["capacity_factor"] = df_twh["generation_mwh"] / (
-            df_twh["capacity_mw"] * hours_per_year / 1000
-        )
+        df_twh["capacity_factor"] = df_twh["generation_mwh"] / (df_twh["capacity_mw"] * hours_per_year / 1000)
 
         # Check unit conversions
         assert df_twh.attrs["capacity_mw_unit"] == "GW"
@@ -374,18 +362,11 @@ class TestPandasDataAnalysis:
             df = add_units(df, f"{cost_col}_2024", "USD/MWh")
 
         # Check that 2024 values are identical to original 2024 values
-        assert df["coal_cost_usd_per_mwh_2024"].iloc[4] == pytest.approx(
-            df["coal_cost_usd_per_mwh"].iloc[4]
-        )
-        assert df["gas_cost_usd_per_mwh_2024"].iloc[4] == pytest.approx(
-            df["gas_cost_usd_per_mwh"].iloc[4]
-        )
+        assert df["coal_cost_usd_per_mwh_2024"].iloc[4] == pytest.approx(df["coal_cost_usd_per_mwh"].iloc[4])
+        assert df["gas_cost_usd_per_mwh_2024"].iloc[4] == pytest.approx(df["gas_cost_usd_per_mwh"].iloc[4])
 
         # Earlier years should have higher inflation-adjusted values
-        assert (
-            df["coal_cost_usd_per_mwh_2024"].iloc[0]
-            > df["coal_cost_usd_per_mwh"].iloc[0]
-        )
+        assert df["coal_cost_usd_per_mwh_2024"].iloc[0] > df["coal_cost_usd_per_mwh"].iloc[0]
 
     def test_emissions_intensity_calculation(self):
         """Test calculation of emissions intensity across different data types."""
@@ -436,10 +417,7 @@ class TestPandasDataAnalysis:
         assert df["emissions_mt"].iloc[gas_idx] > 0
 
         # Coal should have higher emission intensity than gas
-        assert (
-            df["emission_intensity"].iloc[coal_idx]
-            > df["emission_intensity"].iloc[gas_idx]
-        )
+        assert df["emission_intensity"].iloc[coal_idx] > df["emission_intensity"].iloc[gas_idx]
 
 
 class TestPandasErrorHandling:
@@ -489,9 +467,7 @@ class TestPandasErrorHandling:
         """Test that unit metadata persists through various DataFrame operations."""
         from energyunits.pandas_tools import add_units
 
-        df = pd.DataFrame(
-            {"energy": [100, 200, 300, 400], "fuel": ["coal", "gas", "wind", "solar"]}
-        )
+        df = pd.DataFrame({"energy": [100, 200, 300, 400], "fuel": ["coal", "gas", "wind", "solar"]})
         df_with_units = add_units(df, "energy", "MWh")
 
         # Test various pandas operations

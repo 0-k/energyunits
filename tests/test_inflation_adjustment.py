@@ -21,9 +21,7 @@ class TestInflationAdjustment:
 
     def test_backward_adjustment(self):
         """Test deflation to past years."""
-        capex_2022 = Quantity(
-            1130.76, "USD/kW", reference_year=2022
-        )  # 1000 * 1.047 * 1.08
+        capex_2022 = Quantity(1130.76, "USD/kW", reference_year=2022)  # 1000 * 1.047 * 1.08
         capex_2020 = capex_2022.to(reference_year=2020)
 
         assert capex_2020.value == pytest.approx(1000, rel=1e-2)
@@ -85,9 +83,10 @@ class TestInflationErrors:
 
     def test_unsupported_currency(self):
         """Test error for unsupported currency."""
-        quantity = Quantity(1000, "JPY/kW", reference_year=2020)
+        _register_currency_without_inflation_data("AUD")
+        quantity = Quantity(1000, "AUD/kW", reference_year=2020)
 
-        with pytest.raises(ValueError, match="Cannot detect currency"):
+        with pytest.raises(ValueError, match="Currency 'AUD' not supported"):
             quantity.to(reference_year=2025)
 
     def test_year_out_of_range(self):
@@ -144,3 +143,15 @@ class TestInflationMath:
         cost_2023_steps = cost_2022.to(reference_year=2023)
 
         assert cost_2023_steps.value == pytest.approx(cost_2023_direct.value, rel=1e-10)
+
+
+def _register_currency_without_inflation_data(code):
+    """Register a currency unit that has no inflation data (registries reset after each test)."""
+    import json
+    import tempfile
+
+    from energyunits.registry import registry
+
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump({"dimensions": {code: "CURRENCY"}, "conversion_factors": {code: 0.65}}, f)
+    registry.load_units(f.name)

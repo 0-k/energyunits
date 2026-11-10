@@ -143,7 +143,7 @@ class TestUnusualScenarios:
         # Oil barrels
         oil = Quantity(1000, "barrel", "oil")
         oil_m3 = oil.to("m3")
-        assert oil_m3.value == pytest.approx(159)  # 1 barrel = 159 liters = 0.159 m3
+        assert oil_m3.value == pytest.approx(158.987294928)  # 1 barrel = 42 US gal = 158.987 L
 
     def test_substance_mixtures(self):
         """Test handling substance mixtures and edge cases."""

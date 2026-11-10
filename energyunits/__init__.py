@@ -1,47 +1,50 @@
 """
-EnergyUnits: A Python library for energy system modeling with units and conversions.
+EnergyUnits: units, conversions and calculations for energy system modeling.
 
-This library provides tools for working with energy units, performing conversions,
-and handling energy-related calculations in a consistent way.
+Example::
 
-Example:
-    ```python
     from energyunits import Quantity
 
     # Basic unit conversion
     energy = Quantity(100, "MWh")
-    energy_gj = energy.to("GJ")  # 360 GJ
+    energy.to("GJ")                                  # 360 GJ
 
     # Substance-based conversions
     coal = Quantity(1000, "t", "coal")
-    energy = coal.to("MWh")  # Uses heating values
-    emissions = coal.to("t", substance="CO2")  # Combustion products
+    coal.to("MWh")                                   # energy content (LHV)
+    coal.to("t", substance="CO2")                    # combustion CO2
 
-    # Power and energy relationships
-    capacity = Quantity(50, "MW")
-    time = Quantity(24, "h")
-    daily_energy = capacity * time  # 1200 MWh
-    ```
+    # Power x time = energy, with automatic unit handling
+    Quantity(50, "MW") * Quantity(30, "min")         # 25 MWh
+
+    # Costs with inflation and year-dependent exchange rates
+    Quantity(1000, "EUR/kW", reference_year=2015).to("USD/kW", reference_year=2024)
 """
 
+from . import pandas_tools, units
+from .exceptions import (
+    DefinitionConflictError,
+    EnergyUnitsError,
+    EnergyUnitsWarning,
+    IncompatibleUnitsError,
+    MissingDataError,
+    UnknownSubstanceError,
+    UnknownUnitError,
+)
 from .quantity import Quantity
-from . import units
 
-# Import pandas integration if pandas is available
-try:
-    import pandas as pd  # noqa: F401
+__version__ = "0.3.0"
 
-    from . import pandas_tools
-
-    _has_pandas = True
-except ImportError:
-    # Pandas integration is optional
-    _has_pandas = False
-    pandas_tools = None
-
-__version__ = "0.2.0"
-
-# Define public API
-__all__ = ["Quantity", "units"]
-if _has_pandas:
-    __all__.append("pandas_tools")
+__all__ = [
+    "Quantity",
+    "units",
+    "pandas_tools",
+    "DefinitionConflictError",
+    "EnergyUnitsError",
+    "EnergyUnitsWarning",
+    "IncompatibleUnitsError",
+    "MissingDataError",
+    "UnknownSubstanceError",
+    "UnknownUnitError",
+    "__version__",
+]

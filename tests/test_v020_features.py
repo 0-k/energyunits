@@ -159,9 +159,7 @@ class TestSubstanceMismatchWarning:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             result = a + b
-            substance_warnings = [
-                x for x in w if "different substances" in str(x.message)
-            ]
+            substance_warnings = [x for x in w if "different substances" in str(x.message)]
             assert len(substance_warnings) == 0
             assert result.substance == "coal"
 
@@ -183,9 +181,7 @@ class TestSubstanceMismatchWarning:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             result = a - b
-            substance_warnings = [
-                x for x in w if "different substances" in str(x.message)
-            ]
+            substance_warnings = [x for x in w if "different substances" in str(x.message)]
             assert len(substance_warnings) == 0
             assert result.substance == "coal"
 

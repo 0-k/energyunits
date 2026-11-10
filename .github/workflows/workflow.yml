@@ -1,37 +1,132 @@
 name: build
 
-on: [push]
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-
+  lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install linters
+        run: python -m pip install black isort flake8
+      - name: black
+        run: black --check energyunits tests scripts
+      - name: isort
+        run: isort --check-only energyunits tests scripts
+      - name: flake8 (package and scripts)
+        run: flake8 energyunits scripts
+      - name: Data consistency (generated tables, static currency factors)
+        run: python scripts/update_data.py check
+      - name: flake8 (syntax errors and undefined names everywhere)
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: windows-latest
+            python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.12"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install package with test dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-      - name: set pythonpath
-        run: |
-          echo "PYTHONPATH=home/runner/work/" >> $GITHUB_ENV
-      - name: Lint with flake8
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      - name: Test with pytest
-        run: |
-          python -m pytest --import-mode=append tests/ --cov=energyunits tests/
+          python -m pip install -e ".[pandas,test]"
+      - name: Run tests
+        run: python -m pytest --cov=energyunits --cov-report=xml --cov-report=term
+      - name: Run examples
+        run: python examples/example_use_cases.py
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  test-without-pandas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install package without optional dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[test]"
+      - name: Run tests (pandas tests are skipped)
+        run: python -m pytest
+
+  test-oldest-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+      - name: Install the oldest supported numpy and pandas
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "numpy==1.22.4" "pandas==2.1.0" pytest
+          python -m pip install --no-deps -e .
+      - name: Run tests
+        run: python -m pytest
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install documentation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r docs/requirements.txt -e .
+      - name: Build documentation
+        run: sphinx-build -W --keep-going -b html docs docs/_build/html
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          twine check --strict dist/*
+      - name: Smoke-test the installed wheel
+        run: |
+          python -m venv /tmp/venv
+          /tmp/venv/bin/pip install dist/*.whl
+          cd /tmp
+          /tmp/venv/bin/python -c "
+          import energyunits
+          from energyunits import Quantity
+          assert Quantity(100, 'MWh').to('GJ') == Quantity(360, 'GJ')
+          assert Quantity(1, 't', 'coal').to('t', substance='CO2').value > 0
+          print('energyunits', energyunits.__version__, 'OK')
+          "

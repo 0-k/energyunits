@@ -1,0 +1,6 @@
+include LICENSE README.md CHANGELOG.md DATA_SOURCES.md ARCHITECTURE.md
+include energyunits/py.typed
+recursive-include energyunits/data *.json
+recursive-include tests *.py
+recursive-include examples *.py
+recursive-include scripts *.py
